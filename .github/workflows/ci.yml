@@ -9,6 +9,8 @@ on:
 
 permissions:
   contents: read
+  issues: write
+  pull-requests: write
 
 concurrency:
   group: ikant-ci-${{ github.workflow }}-${{ github.ref }}
@@ -57,3 +59,45 @@ jobs:
           python-version: '3.12'
       - name: Dynamic 10k plus no-novelty saturation
         run: python scripts/dynamic_stress.py --operations 10000 --novelty-tail 1000 --seed ${{ matrix.seed }}
+
+  report:
+    if: ${{ always() && github.event_name == 'pull_request' }}
+    needs: [unit-and-gates, static-stress, dynamic-stress]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Publish hosted CI receipt to PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const states = {
+              unit_and_gates: '${{ needs.unit-and-gates.result }}',
+              static_stress: '${{ needs.static-stress.result }}',
+              dynamic_stress: '${{ needs.dynamic-stress.result }}'
+            };
+            const ok = Object.values(states).every((v) => v === 'success');
+            const marker = '<!-- ikant-hosted-ci-receipt -->';
+            const body = [
+              marker,
+              '## iKant hosted CI receipt',
+              '',
+              `HOSTED_CI: ${ok ? 'PASS' : 'FAIL'}`,
+              `HEAD_SHA: ${context.sha}`,
+              `unit-and-gates: ${states.unit_and_gates}`,
+              `static-stress: ${states.static_stress}`,
+              `dynamic-stress[883,17,2026]: ${states.dynamic_stress}`,
+              '',
+              'This receipt is emitted by `.github/workflows/ci.yml` after all release gates complete.'
+            ].join('\n');
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number, per_page: 100
+            });
+            const previous = comments.find((c) => c.body && c.body.includes(marker));
+            if (previous) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: previous.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+            if (!ok) core.setFailed(`Hosted CI failed: ${JSON.stringify(states)}`);

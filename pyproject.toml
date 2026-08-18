@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ikant"
-version = "0.4.0a1"
-description = "ROA-aligned compact reticular cognitive runtime with persistent iKant chat telemetry"
+version = "0.5.0a1"
+description = "ROA-aligned reticular cognitive runtime with persistent operational self and functional psyche"
 readme = "README.md"
 requires-python = ">=3.11"
 
 [project.scripts]
-ikant = "ikant.host_cli:main"
+ikant = "ikant.v05_cli:main"
 
 [tool.setuptools.packages.find]
 include = ["ikant*"]

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ikant"
-version = "0.3.0a1"
-description = "ROA-aligned compact reticular cognitive runtime with deterministic host interaction contract"
+version = "0.4.0a1"
+description = "ROA-aligned compact reticular cognitive runtime with persistent iKant chat telemetry"
 readme = "README.md"
 requires-python = ">=3.11"
 

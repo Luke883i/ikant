@@ -1,0 +1,30 @@
+name: iKant v0.4 chat UX
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - 'agent/**'
+
+permissions:
+  contents: read
+
+jobs:
+  chat-design-system:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Compile
+        run: python -m compileall -q ikant tests scripts
+      - name: Chat UX unit and durable host integration
+        run: python -W error::ResourceWarning -m unittest tests.test_chat_v04 tests.test_chat_host_v04 -v
+      - name: 10k executable session-chat saturation plus no-novelty tail
+        run: python scripts/chat_ux_stress.py --cases 10000 --novelty-tail 2000 --seed 883
+      - name: Durable runtime chat stress
+        run: python scripts/chat_runtime_stress.py --turns 60
+      - name: Existing regression suite
+        run: python -W error::ResourceWarning -m unittest discover -s tests -q

@@ -19,7 +19,10 @@ class Runtime:
   if params and stored and asdict(params)!=stored:self.close();raise ValueError('runtime dynamics parameter mismatch')
   self.graph=read_json(self.graph_path,{'nodes':{},'relations':{},'seq':0});self.nodes={k:node_from_dict(v) for k,v in self.graph['nodes'].items()};self.relations={k:relation_from_dict(v) for k,v in self.graph['relations'].items()};self.incoming={};self.tokens={k:toks(n.text) for k,n in self.nodes.items()};self.events_mem=[];self.cycles={}
   for rid,r in self.relations.items():self.incoming.setdefault(r.target,[]).append(rid)
-  if durable and self.runtime.get('status')=='ACTIVE':self.integrity(raise_on_error=True)
+  if durable and self.runtime.get('status')=='ACTIVE':
+   try:self.integrity(raise_on_error=True)
+   except Exception:
+    self.close();raise
  @classmethod
  def initialize(cls,sdir,contract_text,*,durable=True,params=DEFAULT_DYNAMICS):
   sdir=Path(sdir);lock=acquire_writer_lock(sdir.parent/'.ikant.writer.lock') if durable else None
@@ -140,12 +143,29 @@ class Runtime:
  def integrity(self,*,raise_on_error=False):
   errs=[];receipt=load_receipt(self.state_dir);probe=load_probe(self.state_dir)
   if self.runtime.get('status')!='ACTIVE':errs.append('runtime not ACTIVE')
+  contract_path=self.root/'IKANT_ACCESS_CONTRACT.md'
+  if contract_path.exists():
+   ok,receipt_errors=validate_receipt(receipt,contract_path.read_text(encoding='utf-8'))
+   if not ok:errs.extend('admission '+x for x in receipt_errors)
   if receipt.get('receipt_id')!=self.runtime.get('admission_receipt_id'):errs.append('receipt binding')
   if probe.get('probe_id')!=self.runtime.get('probe_id') or not probe.get('consumed'):errs.append('probe binding')
   expected={p.id for p in PRINCIPLES};actual={n.metadata.get('principle_id') for n in self.nodes.values() if n.active and n.kind==NodeKind.PRINCIPLE}
   if actual!=expected:errs.append('Kant kernel')
-  out={'schema':'ikant-integrity/v0.1','ok':not errs,'errors':errs,'graph_seq':self.graph['seq'],'node_count':len(self.nodes),'relation_count':len(self.relations)}
-  if errs and raise_on_error:raise RuntimeError(';'.join(errs))
+  for r in self.relations.values():
+   if r.source not in self.nodes or r.target not in self.nodes:errs.append('relation endpoint missing');break
+  if self.durable:
+   seqs=[]
+   try:
+    if self.events_path.exists():
+     for line in self.events_path.read_text(encoding='utf-8').splitlines():
+      if line.strip():seqs.append(int(json.loads(line)['seq']))
+   except (ValueError,KeyError,json.JSONDecodeError):errs.append('event log malformed')
+   if seqs:
+    if seqs!=list(range(1,len(seqs)+1)):errs.append('event sequence non-contiguous')
+    if seqs[-1]!=self.graph.get('seq'):errs.append('event/graph sequence mismatch')
+   elif self.graph.get('seq',0)!=0:errs.append('event log missing')
+  out={'schema':'ikant-integrity/v0.1','ok':not errs,'errors':list(dict.fromkeys(errs)),'graph_seq':self.graph['seq'],'node_count':len(self.nodes),'relation_count':len(self.relations)}
+  if errs and raise_on_error:raise RuntimeError(';'.join(out['errors']))
   return out
  def status(self):
   xs=[n for n in self.nodes.values() if n.active];return {**self.runtime,'node_count':len(self.nodes),'active_node_count':len(xs),'relation_count':len(self.relations),'event_seq':self.graph['seq'],'mean_activation':round(avg([n.activation for n in xs]),6),'concentric_layers':[x.value for x in CONCENTRIC_ORDER]}

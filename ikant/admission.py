@@ -1,9 +1,10 @@
 from __future__ import annotations
-import hashlib, json, secrets, sys, tempfile
+import hashlib, json, re, secrets, sys, tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from .store import atomic_json_write, read_json
 ACCEPT='I ACCEPT'
+_NONCE_RE=re.compile(r'^[a-f0-9]{32}$')
 def now(): return datetime.now(timezone.utc).isoformat()
 def digest(text): return hashlib.sha256(text.replace('\r\n','\n').encode()).hexdigest()
 def issue_receipt(contract_text,user_message,*,actor_type='human',evidence_type='explicit_user_message'):
@@ -15,10 +16,20 @@ def validate_receipt(r,contract_text):
     errs=[]
     if not r: errs.append('missing receipt')
     else:
-        if r.get('contract_sha256')!=digest(contract_text): errs.append('contract digest mismatch')
+        if r.get('schema')!='ikant-admission-receipt/v0.1': errs.append('receipt schema mismatch')
+        csha=digest(contract_text)
+        if r.get('contract_sha256')!=csha: errs.append('contract digest mismatch')
         if r.get('accepted_phrase')!=ACCEPT or r.get('actor_type')!='human' or r.get('evidence_type')!='explicit_user_message': errs.append('acceptance binding mismatch')
-        if len(str(r.get('nonce','')))!=32: errs.append('nonce invalid')
-    return not errs,errs
+        nonce=str(r.get('nonce',''))
+        if not _NONCE_RE.fullmatch(nonce): errs.append('nonce invalid')
+        expected_evidence=hashlib.sha256(ACCEPT.encode()).hexdigest()
+        if r.get('evidence_sha256')!=expected_evidence: errs.append('acceptance evidence digest mismatch')
+        accepted=str(r.get('accepted_at',''))
+        if not accepted: errs.append('accepted_at missing')
+        if not errs:
+            expected_id='ADM-'+hashlib.sha256(f'{csha}|{expected_evidence}|{accepted}|{nonce}'.encode()).hexdigest()[:16]
+            if r.get('receipt_id')!=expected_id: errs.append('receipt id mismatch')
+    return not errs,list(dict.fromkeys(errs))
 def state_dir(root):return Path(root)/'.ikant'
 def save_receipt(sdir,r):atomic_json_write(Path(sdir)/'admission.json',r)
 def load_receipt(sdir):return read_json(Path(sdir)/'admission.json')

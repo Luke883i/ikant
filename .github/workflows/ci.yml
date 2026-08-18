@@ -1,88 +1,183 @@
-name: iKant PR2 bootstrap materializer
+name: iKant CI
 
 on:
   pull_request:
-    types: [labeled]
+    types: [opened, synchronize, reopened, labeled]
+  push:
     branches:
       - main
+      - 'agent/**'
 
 permissions:
-  contents: write
+  contents: read
   issues: write
   pull-requests: write
 
+concurrency:
+  group: ikant-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  materialize-pr2:
+  started:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Publish hosted CI running receipt
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- ikant-hosted-ci-receipt -->';
+            const body = [marker,'## iKant hosted CI receipt','','HOSTED_CI: RUNNING',`HEAD_SHA: ${context.sha}`,'','Hosted release gates are executing.'].join('\n');
+            const { owner, repo } = context.repo; const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments,{owner,repo,issue_number,per_page:100});
+            const previous = comments.find((c) => c.body && c.body.includes(marker));
+            if (previous) await github.rest.issues.updateComment({owner,repo,comment_id:previous.id,body});
+            else await github.rest.issues.createComment({owner,repo,issue_number,body});
+
+  unit-and-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Compile
+        run: python -m compileall -q ikant tests scripts
+      - name: Unit, edge and anti-regression tests
+        run: python -W error::ResourceWarning -m unittest discover -s tests -v
+      - name: Real dynamics tuning search
+        run: python scripts/tune_dynamics.py
+      - name: Quick release gate
+        run: python scripts/release_gate.py --quick
+
+  static-stress:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Publish materializer running receipt
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const marker = '<!-- ikant-pr2-materializer -->';
-            const body = `${marker}\nPR2_MATERIALIZER: RUNNING_CONTENT_ONLY\nEVENT_SHA: ${context.sha}`;
-            const {owner, repo} = context.repo; const issue_number = context.issue.number;
-            const comments = await github.paginate(github.rest.issues.listComments,{owner,repo,issue_number,per_page:100});
-            const old = comments.find(c => c.body && c.body.includes(marker));
-            if (old) await github.rest.issues.updateComment({owner,repo,comment_id:old.id,body});
-            else await github.rest.issues.createComment({owner,repo,issue_number,body});
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          fetch-depth: 0
-      - id: verify
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -euo pipefail
-          cp .ikant-publish/a.tar.xz /tmp/a.tar.xz
-          cat .ikant-publish/b.part.* > /tmp/b.tar.xz
-          cat .ikant-publish/c.part.* > /tmp/c.tar.xz
-          cat .ikant-publish/d.part.* > /tmp/d.tar.xz
-          echo 'd7f94ca8af3e346a58a29e53515aeddfcca02edabeaf33a78ef04b86ce0061e2  /tmp/a.tar.xz' | sha256sum -c -
-          echo 'c6b449b846fee9b891c0f97111c5acf5a95e80dbf04708471c07823d0c6768c1  /tmp/b.tar.xz' | sha256sum -c -
-          echo 'c262b619b5595827ad4793c108f01e5ce9ec6dba6a14e85aa2778fd12a6179ed  /tmp/c.tar.xz' | sha256sum -c -
-          echo '704f1bf335492f16929f61eb8868e0831197d67b250d3ba0191f10c540735fa9  /tmp/d.tar.xz' | sha256sum -c -
-      - id: publish
-        if: ${{ steps.verify.outcome == 'success' }}
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          tar -xJf /tmp/a.tar.xz -C .
-          git add pyproject.toml ikant/__init__.py ikant/model.py ikant/crc.py ikant/neurofunctional.py
-          git commit -m 'implement ROA aligned CRC cognitive core'
-          tar -xJf /tmp/b.tar.xz -C .
-          git add AGENTS.md ikant/validation.py ikant/cli.py ikant/surfaces.py ikant/cognitive.py ikant/proto_self.py ikant/central.py ikant/runtime.py
-          git commit -m 'close cognitive turn surfaces and durable integrity'
-          rm -rf /tmp/cstage && mkdir -p /tmp/cstage
-          tar -xJf /tmp/c.tar.xz -C /tmp/cstage
-          rm -rf scripts tests
-          cp -a /tmp/cstage/scripts ./scripts
-          cp -a /tmp/cstage/tests ./tests
-          git add scripts tests
-          git commit -m 'harden CRC release validation'
-          tar -xJf /tmp/d.tar.xz -C .
-          git add README.md docs backlog/IKANT_CRC_RUNTIME_SNAPSHOT_V02.docx
-          git commit -m 'document v0.2 convergence and runtime snapshot'
-          git rm -r .ikant-publish
-          git commit -m 'remove PR2 payload transport'
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
-      - name: Publish materializer final receipt
-        if: ${{ always() }}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/stress.py --cases 10000 --novelty-tail 1000 --seed 883
+
+  dynamic-stress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix: {seed: [1, 17, 97, 883, 2026]}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/dynamic_stress.py --operations 10000 --novelty-tail 1000 --seed ${{ matrix.seed }}
+
+  crc-stress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: {seed: [1, 17, 97, 883, 2026]}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/crc_stress.py --cases 10000 --seed ${{ matrix.seed }}
+
+  cognitive-stress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: {seed: [17, 883, 2026]}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/cognitive_stress.py --turns 500 --novelty-tail 100 --seed ${{ matrix.seed }}
+
+  edge-stress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix: {seed: [1, 97, 883]}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/edge_stress.py --cases 10000 --seed ${{ matrix.seed }}
+
+  central-stress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix: {seed: [1, 97, 883]}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/central_stress.py --cases 10000 --seed ${{ matrix.seed }}
+
+  surface-a-stress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix: {seed: [1, 883]}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/surface_a_stress.py --cases 10000 --seed ${{ matrix.seed }}
+
+  dialogue-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/dialogue_smoke.py
+
+  report:
+    if: ${{ always() && github.event_name == 'pull_request' }}
+    needs: [started, unit-and-gates, static-stress, dynamic-stress, crc-stress, cognitive-stress, edge-stress, central-stress, surface-a-stress, dialogue-smoke]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Publish hosted CI final receipt to PR
         uses: actions/github-script@v7
         with:
           script: |
-            const verify='${{ steps.verify.outcome }}'; const publish='${{ steps.publish.outcome }}';
-            const ok=verify==='success' && publish==='success';
-            const marker='<!-- ikant-pr2-materializer -->';
-            const body=`${marker}\nPR2_MATERIALIZER: ${ok ? 'PASS_CONTENT' : 'FAIL'}\nVERIFY: ${verify}\nPUBLISH: ${publish}\nEVENT_SHA: ${context.sha}`;
-            const {owner,repo}=context.repo; const issue_number=context.issue.number;
-            const comments=await github.paginate(github.rest.issues.listComments,{owner,repo,issue_number,per_page:100});
-            const old=comments.find(c=>c.body&&c.body.includes(marker));
-            if(old) await github.rest.issues.updateComment({owner,repo,comment_id:old.id,body});
+            const states = {
+              started:'${{ needs.started.result }}',
+              unit_and_gates:'${{ needs.unit-and-gates.result }}',
+              static_stress:'${{ needs.static-stress.result }}',
+              dynamic_stress:'${{ needs.dynamic-stress.result }}',
+              crc_stress:'${{ needs.crc-stress.result }}',
+              cognitive_stress:'${{ needs.cognitive-stress.result }}',
+              edge_stress:'${{ needs.edge-stress.result }}',
+              central_stress:'${{ needs.central-stress.result }}',
+              surface_a_stress:'${{ needs.surface-a-stress.result }}',
+              dialogue_smoke:'${{ needs.dialogue-smoke.result }}'
+            };
+            const ok = Object.values(states).every((v) => v === 'success');
+            const marker = '<!-- ikant-hosted-ci-receipt -->';
+            const body = [
+              marker,'## iKant hosted CI receipt','',`HOSTED_CI: ${ok ? 'PASS' : 'FAIL'}`,`HEAD_SHA: ${context.sha}`,
+              `unit-and-gates: ${states.unit_and_gates}`,`static-stress: ${states.static_stress}`,
+              `dynamic-stress[1,17,97,883,2026]: ${states.dynamic_stress}`,
+              `crc-stress[1,17,97,883,2026]: ${states.crc_stress}`,
+              `cognitive-stress[17,883,2026]: ${states.cognitive_stress}`,
+              `edge-stress[1,97,883]: ${states.edge_stress}`,`central-stress[1,97,883]: ${states.central_stress}`,
+              `surface-a-stress[1,883]: ${states.surface_a_stress}`,`dialogue-smoke: ${states.dialogue_smoke}`,'',
+              'This receipt is emitted by `.github/workflows/ci.yml` after all release gates complete.'
+            ].join('\n');
+            const { owner, repo } = context.repo; const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments,{owner,repo,issue_number,per_page:100});
+            const previous = comments.find((c) => c.body && c.body.includes(marker));
+            if (previous) await github.rest.issues.updateComment({owner,repo,comment_id:previous.id,body});
             else await github.rest.issues.createComment({owner,repo,issue_number,body});
-            if(!ok) core.setFailed(`materialization failed verify=${verify} publish=${publish}`);
+            if (!ok) core.setFailed(`Hosted CI failed: ${JSON.stringify(states)}`);

@@ -1,0 +1,59 @@
+name: iKant CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - 'agent/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ikant-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-and-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile
+        run: python -m compileall -q ikant tests scripts
+      - name: Unit and anti-regression tests
+        run: python -W error::ResourceWarning -m unittest discover -s tests -v
+      - name: Dynamics tuning invariants
+        run: python scripts/tune_dynamics.py
+      - name: Quick release gate
+        run: python scripts/release_gate.py --quick
+
+  static-stress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Static 10k plus no-novelty saturation
+        run: python scripts/stress.py --cases 10000 --novelty-tail 1000 --seed 883
+
+  dynamic-stress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [883, 17, 2026]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Dynamic 10k plus no-novelty saturation
+        run: python scripts/dynamic_stress.py --operations 10000 --novelty-tail 1000 --seed ${{ matrix.seed }}

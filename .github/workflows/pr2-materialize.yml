@@ -7,6 +7,12 @@ on:
     paths:
       - '.ikant-publish/**'
       - '.github/workflows/pr2-materialize.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.ikant-publish/**'
+      - '.github/workflows/pr2-materialize.yml'
 
 permissions:
   contents: write

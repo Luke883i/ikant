@@ -21,9 +21,8 @@ jobs:
         with:
           script: |
             const marker = '<!-- ikant-pr2-materializer -->';
-            const body = `${marker}\nPR2_MATERIALIZER: RUNNING\nEVENT_SHA: ${context.sha}`;
-            const {owner, repo} = context.repo;
-            const issue_number = context.issue.number;
+            const body = `${marker}\nPR2_MATERIALIZER: RUNNING_CONTENT_ONLY\nEVENT_SHA: ${context.sha}`;
+            const {owner, repo} = context.repo; const issue_number = context.issue.number;
             const comments = await github.paginate(github.rest.issues.listComments,{owner,repo,issue_number,per_page:100});
             const old = comments.find(c => c.body && c.body.includes(marker));
             if (old) await github.rest.issues.updateComment({owner,repo,comment_id:old.id,body});
@@ -33,7 +32,6 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
       - id: verify
-        name: Reconstruct and verify exact semantic payloads
         continue-on-error: true
         shell: bash
         run: |
@@ -47,7 +45,6 @@ jobs:
           echo 'c262b619b5595827ad4793c108f01e5ce9ec6dba6a14e85aa2778fd12a6179ed  /tmp/c.tar.xz' | sha256sum -c -
           echo '704f1bf335492f16929f61eb8868e0831197d67b250d3ba0191f10c540735fa9  /tmp/d.tar.xz' | sha256sum -c -
       - id: publish
-        name: Materialize atomic semantic commits
         if: ${{ steps.verify.outcome == 'success' }}
         continue-on-error: true
         shell: bash
@@ -61,29 +58,31 @@ jobs:
           tar -xJf /tmp/b.tar.xz -C .
           git add AGENTS.md ikant/validation.py ikant/cli.py ikant/surfaces.py ikant/cognitive.py ikant/proto_self.py ikant/central.py ikant/runtime.py
           git commit -m 'close cognitive turn surfaces and durable integrity'
-          tar -xJf /tmp/c.tar.xz -C .
-          git add .github/workflows/ci.yml scripts tests
+          rm -rf /tmp/cstage && mkdir -p /tmp/cstage
+          tar -xJf /tmp/c.tar.xz -C /tmp/cstage
+          rm -rf scripts tests
+          cp -a /tmp/cstage/scripts ./scripts
+          cp -a /tmp/cstage/tests ./tests
+          git add scripts tests
           git commit -m 'harden CRC release validation'
           tar -xJf /tmp/d.tar.xz -C .
           git add README.md docs backlog/IKANT_CRC_RUNTIME_SNAPSHOT_V02.docx
           git commit -m 'document v0.2 convergence and runtime snapshot'
-          git rm -r .ikant-publish .github/workflows/pr2-materialize.yml
-          git commit -m 'remove PR2 materialization bootstrap'
+          git rm -r .ikant-publish
+          git commit -m 'remove PR2 payload transport'
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
       - name: Publish materializer final receipt
         if: ${{ always() }}
         uses: actions/github-script@v7
         with:
           script: |
-            const verify = '${{ steps.verify.outcome }}';
-            const publish = '${{ steps.publish.outcome }}';
-            const ok = verify === 'success' && publish === 'success';
-            const marker = '<!-- ikant-pr2-materializer -->';
-            const body = `${marker}\nPR2_MATERIALIZER: ${ok ? 'PASS' : 'FAIL'}\nVERIFY: ${verify}\nPUBLISH: ${publish}\nEVENT_SHA: ${context.sha}`;
-            const {owner, repo} = context.repo;
-            const issue_number = context.issue.number;
-            const comments = await github.paginate(github.rest.issues.listComments,{owner,repo,issue_number,per_page:100});
-            const old = comments.find(c => c.body && c.body.includes(marker));
-            if (old) await github.rest.issues.updateComment({owner,repo,comment_id:old.id,body});
+            const verify='${{ steps.verify.outcome }}'; const publish='${{ steps.publish.outcome }}';
+            const ok=verify==='success' && publish==='success';
+            const marker='<!-- ikant-pr2-materializer -->';
+            const body=`${marker}\nPR2_MATERIALIZER: ${ok ? 'PASS_CONTENT' : 'FAIL'}\nVERIFY: ${verify}\nPUBLISH: ${publish}\nEVENT_SHA: ${context.sha}`;
+            const {owner,repo}=context.repo; const issue_number=context.issue.number;
+            const comments=await github.paginate(github.rest.issues.listComments,{owner,repo,issue_number,per_page:100});
+            const old=comments.find(c=>c.body&&c.body.includes(marker));
+            if(old) await github.rest.issues.updateComment({owner,repo,comment_id:old.id,body});
             else await github.rest.issues.createComment({owner,repo,issue_number,body});
-            if (!ok) core.setFailed(`materialization failed verify=${verify} publish=${publish}`);
+            if(!ok) core.setFailed(`materialization failed verify=${verify} publish=${publish}`);

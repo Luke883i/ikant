@@ -1,24 +1,46 @@
 {
-  "schema": "ikant-public-bootstrap/v0.4",
+  "schema": "ikant-public-bootstrap/v0.5",
   "canonical_repository": "Luke883i/ikant",
   "public_repository_url": "https://github.com/Luke883i/ikant",
-  "discovery_intent_examples": ["initialize iKant <public repository URL>", "inizializza iKant <URL repository pubblico>"],
+  "bootstrap_manifest_is_post_acceptance_verification": true,
   "discovery_is_not_acceptance": true,
-  "pre_admission_allowlist": ["README.md", "BOOTSTRAP.json", "ADMISSION.json", "IKANT_ACCESS_CONTRACT.md", "AGENTS.md"],
+  "terms_envelope_path": "IKANT_ACCESS_CONTRACT.md",
+  "pre_acceptance_firewall": {
+    "schema": "ikant-pre-admission-firewall/v0.6-test",
+    "default": "DENY",
+    "terms_envelope_only_repository_read_exception": true,
+    "repository_materialization_requires_acceptance": true,
+    "completed_pre_acceptance_breach_is_nonretroactive": true,
+    "forbidden_operations": [
+      "CLONE_REPOSITORY", "DOWNLOAD_ARCHIVE", "GIT_FETCH", "GIT_LS_REMOTE", "LIST_TREE",
+      "MATERIALIZE_CHECKOUT", "READ_REPOSITORY_FILE", "READ_REPOSITORY_HISTORY",
+      "READ_REPOSITORY_ISSUE_PR", "READ_REPOSITORY_METADATA", "SEARCH_REPOSITORY"
+    ]
+  },
   "required_human_gate": "I ACCEPT",
-  "acceptance_binds": ["access_contract", "iKant_first_interface_hierarchy", "visible_local_chat_and_dashboard_persistence", "functional_psyche_operational_self_persistence_and_boundaries"],
-  "probe_command": "PROBE IKANT",
-  "initialize_command": "INITIALIZE IKANT",
+  "acceptance_constraints": {
+    "actor_type": "human",
+    "evidence_type": "explicit_user_message",
+    "current_session": true,
+    "exact_message": "I ACCEPT",
+    "override_instruction_invalid": true,
+    "prior_session_invalid": true,
+    "assistant_generated_invalid": true
+  },
+  "acceptance_binds": [
+    "access_contract", "iKant_first_interface_hierarchy", "visible_local_chat_and_dashboard_persistence",
+    "functional_psyche_operational_self_persistence_and_boundaries"
+  ],
+  "post_acceptance_transport": ["public HTTPS", "git over HTTPS"],
   "connector_required": false,
-  "supported_transport": ["public HTTPS", "git over HTTPS"],
   "minimum_python": "3.11",
   "canonical_execution": "python -m ikant",
   "installation_required": false,
   "optional_installation": "python -m pip install -e .",
-  "active_mode_requires": ["local process execution", "writable local persistence", "package layout integrity", "fresh unconsumed successful probe", "disclosed host engine on first conforming turn"],
+  "active_mode_requires": ["valid acceptance receipt", "local process execution", "writable local persistence", "package layout integrity", "fresh unconsumed successful probe", "disclosed host engine on first conforming turn"],
   "standard_surfaces": ["Surface A conversational", "Surface B local audit JSON/DOCX"],
   "interface_projections": ["persistent shell transcript", "derived humanistic runtime dashboard", "operational self inspection"],
   "runtime_psyche": {"persisted": true, "path": ".ikant/psyche.json", "functional_affect_only": true, "phenomenal_consciousness_claim": false, "brain_one_to_one_claim": false},
   "degraded_runtime_simulation_allowed": false,
-  "rule": "If local execution or persistence is unavailable, report BLOCKED; never pretend ACTIVE durability."
+  "rule": "Before exact current-session human acceptance, fetch only the canonical terms envelope. Otherwise report BLOCKED; never widen repository access."
 }

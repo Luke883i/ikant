@@ -1,2 +1,2 @@
-from .host_cli import main
+from .v05_cli import main
 raise SystemExit(main())

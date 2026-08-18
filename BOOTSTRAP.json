@@ -1,12 +1,12 @@
 {
-  "schema": "ikant-public-bootstrap/v0.3",
+  "schema": "ikant-public-bootstrap/v0.4",
   "canonical_repository": "Luke883i/ikant",
   "public_repository_url": "https://github.com/Luke883i/ikant",
   "discovery_intent_examples": ["initialize iKant <public repository URL>", "inizializza iKant <URL repository pubblico>"],
   "discovery_is_not_acceptance": true,
   "pre_admission_allowlist": ["README.md", "BOOTSTRAP.json", "ADMISSION.json", "IKANT_ACCESS_CONTRACT.md", "AGENTS.md"],
   "required_human_gate": "I ACCEPT",
-  "acceptance_binds": ["access_contract", "iKant_first_interface_hierarchy", "visible_local_chat_and_dashboard_persistence"],
+  "acceptance_binds": ["access_contract", "iKant_first_interface_hierarchy", "visible_local_chat_and_dashboard_persistence", "functional_psyche_operational_self_persistence_and_boundaries"],
   "probe_command": "PROBE IKANT",
   "initialize_command": "INITIALIZE IKANT",
   "connector_required": false,
@@ -17,7 +17,8 @@
   "optional_installation": "python -m pip install -e .",
   "active_mode_requires": ["local process execution", "writable local persistence", "package layout integrity", "fresh unconsumed successful probe", "disclosed host engine on first conforming turn"],
   "standard_surfaces": ["Surface A conversational", "Surface B local audit JSON/DOCX"],
-  "interface_projections": ["persistent shell transcript", "derived end-user dashboard"],
+  "interface_projections": ["persistent shell transcript", "derived humanistic runtime dashboard", "operational self inspection"],
+  "runtime_psyche": {"persisted": true, "path": ".ikant/psyche.json", "functional_affect_only": true, "phenomenal_consciousness_claim": false, "brain_one_to_one_claim": false},
   "degraded_runtime_simulation_allowed": false,
   "rule": "If local execution or persistence is unavailable, report BLOCKED; never pretend ACTIVE durability."
 }

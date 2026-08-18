@@ -8,17 +8,33 @@ on:
 
 permissions:
   contents: write
+  issues: write
+  pull-requests: write
 
 jobs:
   materialize-pr2:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Publish materializer running receipt
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- ikant-pr2-materializer -->';
+            const body = `${marker}\nPR2_MATERIALIZER: RUNNING\nEVENT_SHA: ${context.sha}`;
+            const {owner, repo} = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments,{owner,repo,issue_number,per_page:100});
+            const old = comments.find(c => c.body && c.body.includes(marker));
+            if (old) await github.rest.issues.updateComment({owner,repo,comment_id:old.id,body});
+            else await github.rest.issues.createComment({owner,repo,issue_number,body});
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
-      - name: Reconstruct and verify exact semantic payloads
+      - id: verify
+        name: Reconstruct and verify exact semantic payloads
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -30,7 +46,10 @@ jobs:
           echo 'c6b449b846fee9b891c0f97111c5acf5a95e80dbf04708471c07823d0c6768c1  /tmp/b.tar.xz' | sha256sum -c -
           echo 'c262b619b5595827ad4793c108f01e5ce9ec6dba6a14e85aa2778fd12a6179ed  /tmp/c.tar.xz' | sha256sum -c -
           echo '704f1bf335492f16929f61eb8868e0831197d67b250d3ba0191f10c540735fa9  /tmp/d.tar.xz' | sha256sum -c -
-      - name: Materialize atomic semantic commits
+      - id: publish
+        name: Materialize atomic semantic commits
+        if: ${{ steps.verify.outcome == 'success' }}
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -51,3 +70,20 @@ jobs:
           git rm -r .ikant-publish .github/workflows/pr2-materialize.yml
           git commit -m 'remove PR2 materialization bootstrap'
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
+      - name: Publish materializer final receipt
+        if: ${{ always() }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const verify = '${{ steps.verify.outcome }}';
+            const publish = '${{ steps.publish.outcome }}';
+            const ok = verify === 'success' && publish === 'success';
+            const marker = '<!-- ikant-pr2-materializer -->';
+            const body = `${marker}\nPR2_MATERIALIZER: ${ok ? 'PASS' : 'FAIL'}\nVERIFY: ${verify}\nPUBLISH: ${publish}\nEVENT_SHA: ${context.sha}`;
+            const {owner, repo} = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments,{owner,repo,issue_number,per_page:100});
+            const old = comments.find(c => c.body && c.body.includes(marker));
+            if (old) await github.rest.issues.updateComment({owner,repo,comment_id:old.id,body});
+            else await github.rest.issues.createComment({owner,repo,issue_number,body});
+            if (!ok) core.setFailed(`materialization failed verify=${verify} publish=${publish}`);

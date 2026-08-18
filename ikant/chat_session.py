@@ -250,7 +250,8 @@ class ChatController:
         )
         out.setdefault("chat", {})["user_seq"] = user["seq"]
         out["chat"]["shell_prompt"] = "> iKant:"
-        self.dashboard_fn(self.runtime)
+        dash = self.dashboard_fn(self.runtime)
+        out["chat"]["dashboard"] = dash.get("persisted", {})
         return out
 
     def close(self, cycle_id: str, text: str, *, intention_node_id: str | None = None, user_seq: int | None = None) -> dict[str, Any]:

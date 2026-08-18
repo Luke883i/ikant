@@ -31,8 +31,7 @@ def main(argv=None):
         rt=_runtime()
         try:
             controller=ChatController(rt);out=controller.begin(a.intent,engine_label=a.host_engine,limit=a.limit,atoms=atoms,docx_path=a.surface_b_path)
-            dashboard=persist_dashboard(rt)
-            emit({'schema':'ikant-host-turn/v0.4-test','cycle_id':out['cycle']['cycle_id'],'intention_node_id':out.get('intention_node_id'),'chat':out.get('chat',{}),'shell_prompt':'> iKant:','host_binding':rt.runtime.get('host',{}),'interaction_contract':out['interaction_contract'],'surface_a_contract':out['surface_a_contract'],'central_oracle':out['central_oracle'],'central_projection':out['central_projection'],'surface_b_json':out.get('surface_b_json'),'surface_b_docx':out.get('surface_b_docx'),'dashboard':dashboard.get('persisted')})
+            emit({'schema':'ikant-host-turn/v0.4-test','cycle_id':out['cycle']['cycle_id'],'intention_node_id':out.get('intention_node_id'),'chat':out.get('chat',{}),'shell_prompt':'> iKant:','host_binding':rt.runtime.get('host',{}),'interaction_contract':out['interaction_contract'],'surface_a_contract':out['surface_a_contract'],'central_oracle':out['central_oracle'],'central_projection':out['central_projection'],'surface_b_json':out.get('surface_b_json'),'surface_b_docx':out.get('surface_b_docx'),'dashboard':out.get('chat',{}).get('dashboard')})
             return 0
         finally:rt.close()
     if command=='emit-surface-a':

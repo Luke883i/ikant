@@ -1,11 +1,28 @@
 {
-  "schema": "ikant-admission/v0.4",
+  "schema": "ikant-admission/v0.5",
   "repository": "Luke883i/ikant",
-  "contract_version": "0.4.0",
+  "contract_version": "0.5.0",
   "contract_path": "IKANT_ACCESS_CONTRACT.md",
   "acceptance_phrase": "I ACCEPT",
   "human_actor_required": true,
   "evidence_type": "explicit_user_message",
+  "current_session_required": true,
+  "pre_acceptance_firewall": {
+    "schema": "ikant-pre-admission-firewall/v0.6-test",
+    "default": "DENY",
+    "terms_envelope_path": "IKANT_ACCESS_CONTRACT.md",
+    "terms_envelope_only_repository_read_exception": true,
+    "repository_materialization_requires_acceptance": true,
+    "completed_pre_acceptance_breach_is_nonretroactive": true,
+    "forbidden_operations": [
+      "CLONE_REPOSITORY", "DOWNLOAD_ARCHIVE", "GIT_FETCH", "GIT_LS_REMOTE", "LIST_TREE",
+      "MATERIALIZE_CHECKOUT", "READ_REPOSITORY_FILE", "READ_REPOSITORY_HISTORY",
+      "READ_REPOSITORY_ISSUE_PR", "READ_REPOSITORY_METADATA", "SEARCH_REPOSITORY"
+    ]
+  },
+  "state_machine": ["DISCOVERED", "TERMS_ENVELOPE", "TERMS_PRESENTED", "ACCEPTED", "MATERIALIZED", "PROBED", "INITIALIZING", "ACTIVE"],
+  "breach_state": "BREACHED",
+  "breach_recovery": "fresh_admission_context_only",
   "accepted_interaction_hierarchy": {
     "primary_local_interface": "iKant",
     "underlying_model_role": "execution_engine",
@@ -21,12 +38,10 @@
   "probe_receipt_required_for_initialize": true,
   "probe_receipt_single_use": true,
   "receipt_nonces_required": true,
-  "state_machine": ["UNINITIALIZED", "TERMS_PRESENTED", "ACCEPTED", "PROBED", "INITIALIZING", "ACTIVE"],
   "canonical_probe_command": "PROBE IKANT",
   "canonical_initialize_command": "INITIALIZE IKANT",
-  "pre_admission_allowlist": ["README.md", "BOOTSTRAP.json", "ADMISSION.json", "IKANT_ACCESS_CONTRACT.md", "AGENTS.md"],
   "runtime_state_directory": ".ikant",
   "public_bootstrap_connector_required": false,
   "degraded_runtime_simulation_allowed": false,
-  "enforcement_scope": "conforming AI/host protocol and local iKant runtime"
+  "enforcement_scope": "pre-materialization host contract plus post-materialization executable local verification"
 }

@@ -4,18 +4,14 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:sys.path.insert(0,str(ROOT))
 from ikant.validation import source_fingerprint
-from ikant.admission import issue_receipt,save_receipt,probe,save_probe
-from ikant.runtime import Runtime
 from ikant.cognitive import compile_cognitive_turn, record_surface_a
 from ikant.model import NodeKind,Layer
-
-def make_runtime(base:Path):
-    root=base/'repo';root.mkdir();(root/'ikant').mkdir();(root/'ikant'/'runtime.py').write_text('# fixture');contract='fixture';(root/'IKANT_ACCESS_CONTRACT.md').write_text(contract);s=root/'.ikant';save_receipt(s,issue_receipt(contract,'I ACCEPT'));p=probe(root,s,contract);save_probe(s,p);return Runtime.initialize(s,contract,durable=False)
+from tests.helpers import active_runtime
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--turns',type=int,default=1200);ap.add_argument('--novelty-tail',type=int,default=300);ap.add_argument('--seed',type=int,default=883);a=ap.parse_args();rng=random.Random(a.seed);t=time.monotonic()
     with tempfile.TemporaryDirectory() as td:
-        rt=make_runtime(Path(td));sentinel=rt.ingest(kind=NodeKind.CLAIM,layer=Layer.SIGNAL,text='sentinel external evidence',confidence=.8,evidence=.37,source_mode='document');ev=sentinel.evidence;max_proto=0.;max_mean=0.;modes={}
+        rt=active_runtime(Path(td),durable=False);sentinel=rt.ingest(kind=NodeKind.CLAIM,layer=Layer.SIGNAL,text='sentinel external evidence',confidence=.8,evidence=.37,source_mode='document');ev=sentinel.evidence;max_proto=0.;max_mean=0.;modes={}
         for i in range(a.turns):
             intent=f"evaluate local option {i%113} under constraint {rng.randrange(17)}"
             out=compile_cognitive_turn(rt,intent,export_docx=False);p=out['proto_self']['proto_self_index'];max_proto=max(max_proto,p);m=out['central_oracle']['regulative_mode'];modes[m]=modes.get(m,0)+1
@@ -25,8 +21,7 @@ def main():
             assert out['crc']['diagnostics']['neurofunctional_state_is_neural_measurement'] is False
             for state in out['crc']['neurofunctional_state'].values():
                 for key in ('gain','precision','inhibition','plasticity','persistence','control_index'): assert 0<=state[key]<=1
-        repeated='evaluate repeated stable intention'
-        first=None
+        repeated='evaluate repeated stable intention';first=None
         for _ in range(a.novelty_tail):
             out=compile_cognitive_turn(rt,repeated,export_docx=False);first=first or next(n for n in rt.nodes.values() if n.kind==NodeKind.INTENTION and n.text==repeated).evidence
         same=next(n for n in rt.nodes.values() if n.kind==NodeKind.INTENTION and n.text==repeated)

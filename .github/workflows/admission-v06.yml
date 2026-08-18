@@ -1,0 +1,56 @@
+name: iKant v0.6 admission firewall
+on:
+  pull_request:
+  push:
+    branches: [main, 'agent/**']
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+jobs:
+  admission-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -m compileall -q ikant tests scripts
+      - run: python -W error::ResourceWarning -m unittest tests.test_pre_admission_v06 tests.test_admission_policy_v06 tests.test_bootstrap -v
+  admission-saturation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy: {fail-fast: false, matrix: {seed: [1, 17, 97, 883, 2026]}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/pre_admission_session_stress.py --sessions 10000 --tail 10000 --seed ${{ matrix.seed }}
+  mutation-kill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/pre_admission_mutations.py
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -W error::ResourceWarning -m unittest discover -s tests -q
+  report:
+    if: ${{ always() && github.event_name == 'pull_request' }}
+    needs: [admission-unit, admission-saturation, mutation-kill, regression]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const states={unit:'${{ needs.admission-unit.result }}',saturation:'${{ needs.admission-saturation.result }}',mutations:'${{ needs.mutation-kill.result }}',regression:'${{ needs.regression.result }}'};
+            const ok=Object.values(states).every(v=>v==='success');const marker='<!-- ikant-v06-admission-ci-receipt -->';
+            const body=[marker,'## iKant v0.6 admission receipt','',`ADMISSION_V06_CI: ${ok?'PASS':'FAIL'}`,`HEAD_SHA: ${context.sha}`,`unit-policy: ${states.unit}`,`session-saturation[5 x (10k+10k)]: ${states.saturation}`,`mutation-kill: ${states.mutations}`,`regression: ${states.regression}`,'','Pre-admission host contract plus post-materialization executable verification. Public-repository access cannot be cryptographically prevented out of band.'].join('\n');
+            const {owner,repo}=context.repo;const issue_number=context.issue.number;const comments=await github.paginate(github.rest.issues.listComments,{owner,repo,issue_number,per_page:100});const previous=comments.find(c=>c.body&&c.body.includes(marker));if(previous)await github.rest.issues.updateComment({owner,repo,comment_id:previous.id,body});else await github.rest.issues.createComment({owner,repo,issue_number,body});if(!ok)core.setFailed(`v0.6 admission gates failed: ${JSON.stringify(states)}`);

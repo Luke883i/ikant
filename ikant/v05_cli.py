@@ -5,15 +5,14 @@ from . import cli as legacy
 from .admission import state_dir
 from .chat_session import ChatController,ChatLog,sanitize_shell_content
 from .dashboard_v05 import persist_dashboard,render_dashboard_ascii
-from .host import emit_conforming_surface_a
-from .host_v05 import conforming_turn
+from .host_v05 import conforming_turn,emit_incarnate_surface_a
 from .psyche import validate_functional_psyche
 from .runtime import Runtime
 
 def emit(x):print(json.dumps(x,ensure_ascii=False,indent=2,sort_keys=True))
 def _runtime():return Runtime(state_dir(Path.cwd()))
 def _log(rt):return ChatLog(Path(rt.state_dir)/'chat'/'transcript.jsonl',runtime_session_id=rt.runtime.get('session_id'))
-def _controller(rt):return ChatController(rt,turn_fn=conforming_turn,emit_fn=emit_conforming_surface_a,dashboard_fn=persist_dashboard)
+def _controller(rt):return ChatController(rt,turn_fn=conforming_turn,emit_fn=emit_incarnate_surface_a,dashboard_fn=persist_dashboard)
 def _psyche_integrity(rt):
  p=(rt.runtime.get('cognitive') or {}).get('psyche') or {}
  if not p:return {'ok':True,'status':'NOT_YET_MATERIALIZED','errors':[]}

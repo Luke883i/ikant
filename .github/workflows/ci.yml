@@ -2,18 +2,15 @@ name: iKant PR2 bootstrap materializer
 
 on:
   pull_request:
+    types: [labeled]
     branches:
       - main
-  push:
-    branches:
-      - agent/ikant-v0.2-crc-convergence
 
 permissions:
   contents: write
 
 jobs:
   materialize-pr2:
-    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

@@ -1,8 +1,8 @@
-# Runtime Protocol v0.4-test
+# Runtime Protocol v0.5-test
 
-## Public bootstrap
+## Bootstrap
 
-Canonical execution is dependency-free from a Python 3.11+ checkout. Public discovery requires no GitHub connector. Before acceptance read only the bootstrap allowlist, present the access contract, and require exact human `I ACCEPT`.
+Canonical execution remains dependency-free from a Python 3.11+ checkout:
 
 ```bash
 python -m ikant gate
@@ -12,48 +12,32 @@ python -m ikant initialize
 python -m ikant integrity
 ```
 
-The v0.4 contract adds local persistence of visible chat and derived dashboard telemetry. A changed contract digest invalidates prior admission and requires acceptance/probe/initialize again.
+Discovery is not acceptance. No local execution/writable persistence means `BLOCKED`, never simulated ACTIVE state.
 
 ## Local state
 
-`.ikant/` contains admission/probe/runtime receipts, graph/event/cycle/compression state, Surface B artifacts, visible chat transcript and derived dashboard/cache files. `.ikant.writer.lock` remains outside the state directory. `reset` deletes `.ikant/`, including chat/dashboard state.
+`.ikant/` contains admission/probe/runtime receipts, graph, append-only events, cycles, cognitive snapshots, Surface B artifacts, visible chat transcript, dashboard projections and `psyche.json`. A changed access-contract digest requires admission again.
 
-## Canonical cognitive and chat loop
+## v0.5 cognitive compiler
 
-The cognitive compiler/CRC remain v0.2/v0.3 compatible. The canonical **session-chat** host loop is now:
+The canonical host turn executes:
 
-```text
-successful conforming turn -> append visible user record -> generate/validate Surface A
--> emit evidence-zero response -> append one iKant reply -> refresh dashboard
-```
+`semantic slice -> CRC -> proto-self -> functional psyche -> central convergence -> monotone psyche regulation -> post-CRC projection -> workspace retroaction`
 
-The shell renderer wraps visible messages as `> user:` and `> iKant:` without modifying the Surface A payload. A pending Surface A blocks a new canonical input before transcript persistence.
+The functional psyche persists nine faculty projections over the existing rings, functional affect, bounded accumulation/maturation, collapse/emergence ledger and operational self-knowledge. The overlay is causal but non-evidential: central regulation can only preserve or increase caution and workspace changes activation, never evidence.
 
-## Operations
+`python -m ikant turn --intent "..." --host-engine "<engine>"` generates Surface B plus `psyche.json` and returns the Surface A/interaction contracts. `emit-surface-a` validates and closes the single pending cycle.
 
-```bash
-python -m ikant turn --intent "..." --host-engine "<engine>"
-python -m ikant emit-surface-a --cycle-id <cycle> --text "..."
-python -m ikant history
-python -m ikant dashboard
-python -m ikant shell
-python -m ikant integrity
-```
+## Self inspection and dashboard
 
-Legacy lower-level `ingest`, `slice`, `cycle`, `feedback`, `compress`, retraction and corroboration operations remain available for diagnostics/engineering. They do not substitute for the canonical chat wrapper when operating as the end-user session interface.
+`python -m ikant self` reports the operational self-model. `python -m ikant dashboard` renders a humanistic-neuro-proto projection; `python -m ikant shell` combines that projection with the visible hash-chained chat history.
 
-## Transcript
+Self inspection may report identity, host engine, uncertainty, affective-control label, maturation, collapse/emergence and known limits. It must explicitly avoid claims of phenomenal consciousness, felt emotion or one-to-one brain equivalence.
 
-`.ikant/chat/transcript.jsonl` is append-only visible-session telemetry. Each record carries schema, sequence, UTC timestamp, runtime session id, role, visible text, optional cycle/response/intention links, reply target, predecessor SHA-256 and record SHA-256. No private reasoning is required or stored by this mechanism.
+## Evidence and action boundaries
 
-Explicit chat integrity verifies sequence, session binding, roles, reply topology and the complete hash chain. Terminal rendering strips control/spoofing sequences only in the view.
+Internal state, recurrence, summaries, motifs, affect, maturation, collapse/emergence, dashboard and generated DOCX are not independent external evidence. Psychodynamic/archetypal hypotheses remain low-authority. Psyche regulation cannot relax `PRACTICAL_BLOCK`/`HORIZON_BLOCK`. Material action remains subject to human/higher-priority authorization.
 
-## Dashboard and DOCX projection
+## Reset
 
-`.ikant/dashboard.json` is the structured projection and `.ikant/dashboard.txt` is the deterministic ASCII view. Inputs are runtime state, latest Surface B and bounded local DOCX metadata/signals. Missing telemetry yields n.a./WATCH rather than invented values.
-
-DOCX scanning is capped, content-addressed and cached. Only local `word/document.xml` text is parsed; symlinks, oversize packages/XML, malformed ZIP/XML and entity/DTD declarations are rejected. Aggregated category counts are operational telemetry only and cannot corroborate claims.
-
-## Integrity boundary
-
-The canonical `python -m ikant integrity` returns a composite result over core runtime integrity plus visible chat integrity. Dashboard/cache files are derived and can be regenerated; they are not evidence roots.
+`python -m ikant reset` destroys local state and requires admission, probe and initialization again.

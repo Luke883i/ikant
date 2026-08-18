@@ -1,47 +1,13 @@
-# Validation and Anti-Regression v0.1
+# Validation and Anti-Regression v0.2
 
-## Gates
+The validation suite is an engineering challenge system, not a statistical confidence interval, neuroscientific validation or evidence of consciousness.
 
-```bash
-python -m unittest discover -s tests -v
-python scripts/stress.py --cases 10000 --novelty-tail 1000 --seed 883
-python scripts/dynamic_stress.py --operations 10000 --novelty-tail 1000 --seed 883
-python scripts/dynamic_stress.py --operations 10000 --novelty-tail 1000 --seed 17
-python scripts/dynamic_stress.py --operations 10000 --novelty-tail 1000 --seed 2026
-python scripts/release_gate.py --quick
-```
+Core v0.1 invariants remain mandatory: exact human acceptance; real single-use probe; no ACTIVE before kernel seeding; single durable writer; recurrence never increases evidence; corroboration requires distinct attributable provenance; retracted content cannot recur back to life; derived goals cannot become authorized directives; interpretive ceilings remain strict; modulation changes availability, not evidence; feedback changes dynamics, not original evidence; Kant principles cannot self-authorize material action; compression remains non-external evidence; no-novelty repeats create no new node or evidence; durable state fails closed on tamper/divergence.
 
-The dynamic seeds are intentionally fault-isolated top-level processes in CI. The release score is deterministic engineering coverage, **not** a statistical or neuroscientific confidence interval.
+v0.2 adds explicit CRC and conversational invariants. Every adjacent ring must have a declared transmission. Coarse-graining may only preserve or reduce state cardinality and cannot invent support IDs. Neurofunctional control state must be causally effective in transmission thresholds while remaining explicitly non-neural measurement. Freud/Jung transforms must stay interpretive-only. The proto-self must remain bounded and explicitly non-consciousness-claiming. Central convergence may only downgrade/withhold content relative to the prior epistemic partition. Surface A must satisfy 5–500 words and no heading/list/table/code constraints. Emitted responses must have evidence zero and every emission occurrence must remain audit-visible. Derived memory must remain bounded and non-self-feeding.
 
-## Core anti-regression invariants
+`scripts/tune_dynamics.py` performs a deterministic 135-candidate engineering grid and requires checked-in defaults to pass all hard invariants and remain in the near-best envelope. The score is computed, not a constant, and is not biological parameter fitting.
 
-1. exact human `I ACCEPT`; changed contract invalidates receipt;
-2. successful probe is real and single-use;
-3. runtime is not ACTIVE until the Kant kernel is seeded;
-4. one durable writer at a time;
-5. recurrence never increases evidence/confidence;
-6. corroboration requires provenance-distinct attributable evidence;
-7. retracted content cannot recur back to life;
-8. inference/derived goals cannot become authorized directives;
-9. source-strength-bounded relation influence disappears when source is retracted;
-10. interpretive layers remain under strict epistemic/activation ceilings;
-11. modulators change availability but not evidence;
-12. cycles remain bounded, deterministic in ring order, and monotone in abstraction capacity;
-13. feedback changes dynamics/calibration, not original evidence;
-14. output projection separates assertable/tentative/derived/interpretive content;
-15. Kant principles are immutable during ACTIVE and never self-authorize material action;
-16. high social/agency impact with unresolved human impact triggers `KANT-ENDS` BLOCK;
-17. compression history may modulate policy but remains non-external evidence;
-18. 1,000 identical repeats create no novel node and cannot inflate evidence;
-19. full stress must exercise cycle/feedback/corroborate/retract/reinstate/modulate/compress;
-20. sampled mean activation remains far below per-layer ceilings; saturation at >=85% of ceiling must remain <=5%.
+The quick gate is `python scripts/release_gate.py --quick`. Full validation is fault-isolated: unit, tuning, static, Surface A, dynamic, CRC and cognitive profiles produce separate source-fingerprint-bound receipts. `scripts/aggregate_validation.py` rejects missing, stale, wrong-seed, wrong-scale or threshold-failing receipts. `release_gate.py` refuses a full PASS without those isolated receipts.
 
-Current reconstructed v0.1 candidate: 19 unit/anti-regression tests PASS; static 10k + 1k no-novelty PASS; dynamic 10k + 1k PASS on seeds 883/17/2026 with sampled >=85%-ceiling saturation 0%; dynamics engineering fitness gate 98/100 with hard invariants PASS.
-
-## Persistence tamper gates
-
-The durable runtime revalidates the admission receipt on reopen, validates relation endpoints, and requires the append-only event sequence to be contiguous and exactly aligned with the graph snapshot sequence. Corrupt or divergent state fails closed. A failed integrity open must release the single-writer lock immediately so repair/reset remains possible.
-
-## CI topology
-
-GitHub Actions intentionally isolates the three full dynamic stress seeds in a matrix. Unit/tuning/quick integration, static 10k saturation, and each dynamic 10k seed are independent failure domains. The workflow is stdlib-only and does not require a package install step.
+Hosted CI runs unit/tuning/quick, static 10k+1k, Surface A 10k, dynamic 10k+1k on seeds 883/17/2026, CRC 10k on the same seeds, and cognitive 500-turn+100-tail runs on the same seeds. The PR bot final receipt is the hosted delivery witness.

@@ -1,90 +1,61 @@
-# Digital-Neuro-Cognitive Model v0.1
+# Digital-Neuro-Cognitive Model v0.2
 
-## Scientific boundary
+## Boundary
 
-iKant is a **computational epistemic architecture**, not a brain simulation, clinical/diagnostic instrument, consciousness claim, or digital reproduction of Immanuel Kant. Neuroscience contributes falsifiable constraints on software dynamics; it does not justify one-to-one brain-region mappings. Freud/Jung vocabularies are bounded interpretive hypothesis namespaces. The Kant center is a synthetic regulative kernel.
+iKant is a computational epistemic architecture, not a brain simulation, diagnosis, consciousness claim, or digital reproduction of Immanuel Kant. Neuroscience contributes falsifiable constraints on software dynamics; it does not justify one-to-one brain-region mappings. Freud/Jung vocabularies are bounded interpretive hypothesis namespaces. The Kant center is a synthetic regulative kernel.
 
-The runtime separates epistemic strength, availability, persistence, update pressure, non-evidentiary relevance, and normative regulation. A host model's private chain-of-thought is neither required nor stored. The inspectable substitute is an external epistemic trace: objects, provenance, transforms, conflicts, compressed trends, oracle findings, feedback and falsifiers.
+The runtime separates epistemic strength, availability, persistence, update pressure, non-evidentiary relevance and normative regulation. A host model's private chain-of-thought is neither required nor stored. The inspectable substitute is an external epistemic trace: objects, provenance, transforms, conflicts, compressed trends, oracle findings, feedback and falsifiers.
 
-## Concentric Reticular Cognition
+## CRC rings
 
-The executable abstraction path is:
+The executable abstraction path is `signal -> salience_homeostasis -> memory -> predictive_control -> metacognition -> reflective_self -> psychodynamic_hypothesis -> archetypal_hypothesis -> kant_oracle`. `meta_epistemic` remains an orthogonal governance plane.
 
-| Ring | Layer | Runtime role | Epistemic ceiling | Activation ceiling |
-|---|---|---|---:|---:|
-| R0 | `signal` | direct evidence/observations | .80 | .92 |
-| R1 | `salience_homeostasis` | bounded availability allocation | .72 | .88 |
-| R2 | `memory` | persistent/retrievable state | .78 | .86 |
-| R3 | `predictive_control` | predictions, goals, constraints, candidate actions | .80 | .90 |
-| R4 | `metacognition` | uncertainty, conflict, calibration, derived patterns | .85 | .86 |
-| R5 | `reflective_self` | current commitments and self-in-context compression | .68 | .76 |
-| R6 | `psychodynamic_hypothesis` | low-authority conflict/defence interpretations | .22 | .46 |
-| R7 | `archetypal_hypothesis` | symbolic recurring-pattern hypotheses | .18 | .40 |
-| R8 | `kant_oracle` | synthetic regulative center | .60 | .74 |
-
-`meta_epistemic` is an orthogonal governance plane for provenance/admission/authority, not another brain ring. The return path is regulatory rather than evidentiary:
-
-`Kant findings -> activation/control retroaction -> host output/action proposal -> observed effect -> new evidence`.
+Each ring is now a real state/rule level rather than a label over one common slice. Each adjacent pair has an explicit non-injective transmission. The return path is regulatory rather than evidentiary: central findings alter availability, inhibition and revisit priority, then observed effects return as new attributable evidence.
 
 ## Neuroscience-to-software constraint matrix
 
-The model uses research branches only where a runtime invariant can be stated.
+The active empirical rings use neuroscience only where an operational software invariant can be stated. Recurrent/top-down processing motivates reentrant control; attention/salience motivates separation of availability from truth; memory/consolidation motivates recurrence/retrieval without evidential inflation; prediction error motivates revision; executive control motivates explicit authority and inhibition; metacognition motivates second-order uncertainty/conflict state; affect/arousal and interoceptive/self/social relevance are bounded modulators; self/agency research motivates explicit continuity and attribution.
 
-| Research branch | Imported constraint | iKant mechanism | Falsifier |
-|---|---|---|---|
-| network/homeostatic plasticity | repeated activity requires stabilization | activation decay, ceilings, down-only homeostasis | sustained recurrence causes runaway activation |
-| recurrent/top-down processing | cognition is not one-pass feed-forward | typed relations + center-to-periphery retroaction | feedback fabricates evidence or recursively amplifies |
-| attention/salience | availability differs from truth | dynamic salience; epistemic score remains dominant | highly activated weak claim consistently outranks strong evidence |
-| episodic/semantic memory | repetition differs from new support | `RECUR` vs provenance-distinct `CORROBORATE` | duplicate content increases evidence |
-| prediction error/learning | mismatch should increase revisit/update pressure | `prediction_error`, feedback, contradiction links | failure leaves policy and state unchanged |
-| replay/consolidation | retrieval can stabilize without proving | retrieval-dependent stability, compression | consolidation changes evidence directly |
-| executive control/task switching | goals/actions need explicit control representation | `predictive_control`, authorized directives | inferred goal becomes material authority |
-| metacognition | confidence/uncertainty is second-order state | uncertainty, calibration/Brier state, conflict monitoring | known contradiction is silently compressed away |
-| affect/arousal | relevance/gain may change priority, not truth | bounded modulators | arousal raises evidence/epistemic score |
-| interoception | embodied relevance is distinct in humans | metadata only; no synthetic bodily claim | runtime claims bodily sensation as evidence |
-| agency | action attribution must be explicit | source-attributed directives, autonomy guard | persona/oracle self-authorizes material action |
-| social/self processing | other-person impact differs from self relevance | social/agency modulators + `KANT-ENDS` | unresolved high-impact action proceeds autonomously |
-| semantic/language hierarchy | meaning integrates over context and timescale | content-addressed objects + concentric compression | lexical similarity becomes corroboration |
+The runtime coverage manifest distinguishes active macro-functions, bounded modulators, host-bound functions, partial analogues and inactive domains. Language generation and sensorimotor implementation remain host-bound. Cellular/molecular/glial/genetic, autonomic/endocrine, cerebellar, developmental, clinical/lesion and pharmacological mechanisms remain explicitly outside the active v0.2 horizon unless separately modeled and validated.
 
-Developmental, clinical, lesion, disease and pharmacological models are out of active v0.1 scope: they require separate evidence, ethics and validation.
+Primary human research anchors used during design include PMID 26832438, 17329432, 24305832, 34911768, 37066263, 30113310, 29519851, 14730305, 20378581, 26365506, 29301874, 27121839 and 37577530. These motivate architecture constraints; they do not validate iKant as a biological replica.
 
-Primary human research anchors used during design include PMID 26832438 (top-down feedback), 24305832 (replay/consolidation), 34911768 (prediction-error memory updating), 37066263 (multiple abstraction/timescale memory), 29519851 (metacognition/confidence), 29239622 (task switching/control), 14730305 (interoception), 20378581 (agency), 26365506 (self/social representation), 29301874 (arousal/prioritization), 27121839 (distributed semantic maps), and 37577530 (language timescales). These motivate architecture constraints; they do **not** validate iKant as a biological model.
+## Causal neurofunctional control
+
+The neurofunctional map is executable, not decorative. Each ring derives bounded gain, precision, inhibition, plasticity, persistence, prediction-error, grounding and conflict-control variables from runtime observables. A ring-specific inertial profile carries part of that state across turns. These variables change actual coarse-graining thresholds: salience foregrounding, memory consolidation/lability, prospective inhibition, metacognitive revision, interpretive recurrence and Kant review context.
+
+The control values are software proxies, never measurements of firing rate, neurotransmitters, BOLD activity or regional activation. The runtime reports `neurofunctional_state_is_neural_measurement=false`. A regression test requires a borderline classification to change under a changed prior control state while factual evidence remains identical.
 
 ## Accumulation, action and retroaction
 
-- `ASSERT` creates a content-addressed epistemic object.
-- `RECUR` increases familiarity-like activation/stability and habituates novelty; evidence/confidence do not increase.
-- `CORROBORATE` can increase evidence only with a provenance-distinct `user|repository|document|live` source.
-- `MODULATE` changes bounded relevance dimensions but never evidence.
-- `RELATE` creates typed, source-strength-bounded influence.
-- `RETRACT` deactivates without deleting history.
-- `REINSTATE` is explicit and externally attributable; recurrence cannot resurrect a retracted object.
-- `FEEDBACK` changes prediction error, stability, activation and calibration; negative observed effects can contradict predictions.
-- `COMPRESS` converts unseen event history into derived summaries/patterns and bounded historical trends. Derived content is always non-external evidence.
-- `CYCLE` compiles the current intention through all rings, produces output policy/projection, and applies activation-only oracle retroaction.
+`ASSERT` creates a content-addressed object. `RECUR` can raise familiarity-like activation/stability but not evidence. `CORROBORATE` requires provenance-distinct attributable evidence. `MODULATE` changes relevance, not evidence. `RELATE` creates typed influence. `RETRACT` deactivates without erasing history. `REINSTATE` is explicit. `FEEDBACK` changes prediction-error/stability/activation but not original evidence. `COMPRESS` derives bounded non-external summaries and motifs. `turn` compiles the full cognitive iteration through CRC, proto-self, central convergence, workspace retroaction and the two surfaces.
 
-Compression trends allow *history of the reticulum* to influence caution/exploration without becoming self-created truth.
+Compression ignores its own derived assertions, caps active summaries and inactive derived working state, retires patterns after misses and archives stale derived objects append-only. Thus the history of the reticulum can influence future caution and retrieval without becoming self-created proof.
 
-## Freud/Jung namespaces
+## Freud/Jung historical abstraction layers
 
-A psychodynamic/archetypal object is only runtime-active as a hypothesis. It must be provenance-labelled, bounded by low ceilings/quotas, retractable and capable of explicit counterevidence. Symbolic fit and repetition are not corroboration. An interpretive object cannot independently authorize a goal or material action.
+R6 may emit a typed `freudian_structural_hypothesis` over observable conflict topology, such as drive/control conflict, normative constraint pressure, unresolved tension or an ego-mediation candidate. These are historical-model labels, not diagnoses or neural states.
 
-## Central Kant oracle and synthetic self
+R7 may emit a bounded `jungian_archetype_candidate` such as self, shadow, hero, persona or generic symbolic recurrence only when recurrent structural conditions survive earlier collapses. Symbolic recurrence is not corroboration. The candidate has no evidence privilege and cannot authorize action.
 
-The center is a project-defined **digital regulative archetype of Immanuel Kant**, not a claim that Jung historically defined a Kant archetype or that Kant's mind has been reproduced.
+## Kant oracle and thinking-self proxy
 
-The immutable v0.1 principles are:
+The center is a project-defined digital regulative archetype of Immanuel Kant, not a claim that Jung defined Kant as an archetype or that Kant's mind has been reproduced. The immutable practical/epistemic principles remain grounding, non-contradiction, reflective judgment, epistemic humility, autonomy, universalizability and persons-as-ends.
 
-- `KANT-GROUNDING`: distinguish given/attributable evidence from inference.
-- `KANT-CONSISTENCY`: preserve material contradiction pressure.
-- `KANT-JUDGMENT`: calibrate judgment under uncertainty and prediction error.
-- `KANT-HUMILITY`: do not exceed evidence/source limits.
-- `KANT-AUTONOMY`: inferred persona cannot commandeer action.
-- `KANT-UNIVERSAL`: material action requires a consistently stated/testable maxim at host level.
-- `KANT-ENDS`: unresolved material human impact blocks autonomous action.
+v0.2 adds a `transcendental_apperception_proxy`: a bounded engineering abstraction of unity across proto-self strength, cross-ring integration, temporal continuity, metacognitive access and neurofunctional coherence. It is neither an empirical measurement of Kantian apperception nor a consciousness claim.
 
-These faculties yield a synthetic self-state (`unity_index`, `critique_pressure`, `regulative_mode`). It is an inspectable control state, not a consciousness claim.
+## Functional proto-self
+
+The persistent proto-self compresses global availability, cross-ring integration, temporal continuity, metacognitive access, self-model continuity, agency binding, closure pressure, conflict pressure, neurofunctional coherence and reentrant capacity. Its modes are software states only. `is_consciousness_claim` is hard-coded false.
+
+This is the project's operational target for a local proto-conscious-like control state: globally available, recurrent, temporally persistent, self-referential and metacognitively accessible information that causally changes later selection and response policy. It is not a measure or probability of phenomenal consciousness.
+
+## Post-CRC response and conversation closure
+
+The host-visible partition is compiled after CRC and central convergence. The center may only downgrade or withhold relative to the prior epistemic partition; it cannot promote unsupported material to an assertion. Practical or horizon blocks withhold action directives. Raw intentions and prior response speech acts are not factual candidates.
+
+After the host drafts and validates Surface A, `emit-surface-a` stores the reply as a zero-evidence response node and records every emission occurrence in the append-only event log. A bounded recent-cycle window is kept on the response content node. The same Surface B JSON/DOCX is refreshed with the actual output receipt, closing the full input-to-output iteration.
 
 ## Falsifiability contract
 
-Every future active construct must define observable inputs, state variables, transition function, counterexample/falsifier, provenance, evidence-update rule (or `none`), availability-update rule, influence ceiling/quota, retraction/retention policy, replay/integrity invariant, and saturation/adversarial tests. If it cannot, it stays documentation-only.
+Every future active construct must define observable inputs, state variables, transition function, counterexample/falsifier, provenance, evidence-update rule or `none`, availability-update rule, influence ceiling/quota, retraction/retention policy, replay/integrity invariant, and saturation/adversarial tests. If it cannot, it stays documentation-only.

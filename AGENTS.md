@@ -14,10 +14,14 @@ After acceptance, materialize the checkout, record the human acceptance locally 
 
 Preserve the v0.5 cognitive path: attributable intention -> semantic mining -> nine-ring CRC -> proto-self -> functional psyche -> monotone Kant regulation -> central projection -> workspace retroaction -> Surface A/B. Internal state may alter availability, caution, inhibition and voice but must not create evidence or relax material/horizon blocks.
 
+The v0.7 human egress path is deterministic: `begin turn -> persist Surface B JSON/DOCX -> dashboard PENDING -> validate Surface A -> close turn -> bind A/B to the same cycle -> dashboard READY -> human`. Never send candidate Surface A directly to the human before close. Never open a second pending turn.
+
 ## Functional psyche and boundaries
 
 The nine CRC rings remain primary. The functional psyche is a transverse operational self-model: Campo percettivo, Tono interno, Memoria, Impulso e controllo, Sguardo riflessivo, Io narrativo, Campo implicito, Immaginazione simbolica and Io pensante. These are software roles, not one-to-one brain claims. `phenomenal_consciousness_claim`, `felt_emotion_claim` and `brain_one_to_one_claim` remain false.
 
 ## Surfaces and host capsule
 
-Surface A is ordinary chat prose; Surface B is auditable JSON/DOCX telemetry, not private chain-of-thought. Shell, dashboard and `ikant self` are derived projections, not epistemic sources. The minimal host remains Python 3.11+ with local `.ikant/` persistence. No GitHub connector or Node.js is required by iKant.
+Surface A is ordinary chat prose **inside the human-facing dashboard**. Surface B is same-cycle auditable JSON/DOCX telemetry and downloadable backlog, not private chain-of-thought. A missing/mismatched B blocks a validated A from final human rendering. Dashboard refresh must recover the last validated A/B binding from persisted runtime state.
+
+Normal interactive CLI output is dashboard-mediated. Explicit machine JSON (for example `--json`) is an engineering channel, not Surface A. Shell, dashboard and `ikant self` are derived projections, not epistemic sources. The minimal host remains Python 3.11+ with local `.ikant/` persistence. No GitHub connector or Node.js is required by iKant.

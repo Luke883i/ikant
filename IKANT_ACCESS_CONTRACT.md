@@ -1,6 +1,6 @@
 ---
-schema: ikant-access-contract/v0.5
-contract_version: 0.5.0
+schema: ikant-access-contract/v0.7
+contract_version: 0.7.0
 repository: Luke883i/ikant
 acceptance_phrase: I ACCEPT
 pre_acceptance_default: DENY
@@ -12,7 +12,7 @@ probe_command: PROBE IKANT
 initialize_command: INITIALIZE IKANT
 ---
 
-# iKant v0.6-test Access Contract
+# iKant v0.7-test Access Contract
 
 This contract governs conforming AI/host use of iKant. A public repository remains technically public: iKant cannot prevent an unrelated host from reading it out of band. Instead, iKant defines a fail-closed admission boundary. Any host that violates that boundary is not conforming iKant for that admission attempt and may not claim ACTIVE state from a later acceptance.
 
@@ -40,6 +40,16 @@ This contract governs conforming AI/host use of iKant. A public repository remai
 17. No silent publication, deletion, purchase, account change or privilege escalation. Human review remains required where the runtime or higher-priority policy requires it.
 18. Minimum access, minimum data, minimum retention. `ikant reset` destroys local runtime state under `.ikant/` and requires admission again.
 19. AI proposes; sources support; humans decide; systems record.
+
+## Deterministic incarnate egress
+
+20. In conforming interactive ACTIVE mode, the **dashboard is the single human-facing egress**. Assistant prose that constitutes Surface A must be rendered inside the dashboard; a conforming host must not emit a parallel free-standing Surface A outside it.
+21. Every substantive turn must materialize Surface B as both JSON and DOCX before a validated Surface A may be rendered. The dashboard must bind Surface A and Surface B to the same `cycle_id`; missing, stale, unreadable or mismatched Surface B blocks final human egress.
+22. At most one Surface A cycle may be pending per runtime session. A second visible input or a second final emission while a turn is pending/closed must fail closed rather than race, fork or silently overwrite the first turn.
+23. Surface A becomes human-renderable only after interaction validation and `emit-surface-a`/equivalent close succeeds. Before close, the dashboard may show `PENDING`, but must not present a candidate as validated Surface A.
+24. Surface B remains audit telemetry and downloadable backlog, not evidence and not private chain-of-thought. Dashboard rendering, artifact indexing, hashes and download descriptors cannot modify evidence or authorize material action.
+25. Machine JSON and engineering diagnostics may exist only as an **explicit machine-scoped channel** (for example `--json`). They are not Surface A and must not be silently substituted for the dashboard in the normal human-facing interaction path.
+26. A dashboard refresh after close must recover the latest validated Surface A and its same-cycle Surface B from persisted runtime state; it must not degrade a closed turn to an unbound/empty presentation.
 
 ## Fail-closed lifecycle
 

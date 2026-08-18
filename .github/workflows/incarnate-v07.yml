@@ -1,0 +1,101 @@
+name: iKant v0.7 incarnate egress
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - 'agent/**'
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  incarnate-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -m compileall -q ikant tests scripts
+      - run: python -W error::ResourceWarning -m unittest tests.test_incarnate_v07 tests.test_chat_host_v04 tests.test_interaction_v03 -v
+
+  saturation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/incarnate_stress.py --cases 10000 --tail 1000 --seed 883
+
+  session-saturation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/incarnate_session_stress.py --turns 10000 --tail 1000 --session-turns 100 --seed 883
+
+  durable-session:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/incarnate_runtime_stress.py --turns 60
+
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -W error::ResourceWarning -m unittest discover -s tests -q
+
+  report:
+    if: ${{ always() && github.event_name == 'pull_request' }}
+    needs: [incarnate-unit, saturation, session-saturation, durable-session, regression]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Publish v0.7 incarnate receipt
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const states = {
+              unit: '${{ needs.incarnate-unit.result }}',
+              saturation: '${{ needs.saturation.result }}',
+              session_saturation: '${{ needs.session-saturation.result }}',
+              durable: '${{ needs.durable-session.result }}',
+              regression: '${{ needs.regression.result }}'
+            };
+            const ok = Object.values(states).every((v) => v === 'success');
+            const marker = '<!-- ikant-incarnate-v07-ci-receipt -->';
+            const body = [
+              marker,
+              '## iKant v0.7 incarnate egress receipt',
+              '',
+              `INCARNATE_EGRESS_CI: ${ok ? 'PASS' : 'FAIL'}`,
+              `HEAD_SHA: ${context.sha}`,
+              `unit: ${states.unit}`,
+              `saturation[10000+1000 no-novelty]: ${states.saturation}`,
+              `session-saturation[10000+1000]: ${states.session_saturation}`,
+              `durable-runtime[60]: ${states.durable}`,
+              `regression: ${states.regression}`,
+              '',
+              'Human-facing ACTIVE output is gated on same-cycle dashboard Surface A/B binding; --json remains explicit machine scope.'
+            ].join('\n');
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments,{owner,repo,issue_number,per_page:100});
+            const previous = comments.find((c) => c.body && c.body.includes(marker));
+            if (previous) await github.rest.issues.updateComment({owner,repo,comment_id:previous.id,body});
+            else await github.rest.issues.createComment({owner,repo,issue_number,body});
+            if (!ok) core.setFailed(`v0.7 incarnate gates failed: ${JSON.stringify(states)}`);

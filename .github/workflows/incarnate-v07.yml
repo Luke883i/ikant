@@ -32,6 +32,15 @@ jobs:
         with: {python-version: '3.12'}
       - run: python scripts/incarnate_stress.py --cases 10000 --tail 1000 --seed 883
 
+  session-saturation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/incarnate_session_stress.py --turns 10000 --tail 1000 --session-turns 100 --seed 883
+
   durable-session:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -39,7 +48,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
-      - run: python scripts/chat_runtime_stress.py --turns 60
+      - run: python scripts/incarnate_runtime_stress.py --turns 60
 
   regression:
     runs-on: ubuntu-latest
@@ -52,7 +61,7 @@ jobs:
 
   report:
     if: ${{ always() && github.event_name == 'pull_request' }}
-    needs: [incarnate-unit, saturation, durable-session, regression]
+    needs: [incarnate-unit, saturation, session-saturation, durable-session, regression]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -63,6 +72,7 @@ jobs:
             const states = {
               unit: '${{ needs.incarnate-unit.result }}',
               saturation: '${{ needs.saturation.result }}',
+              session_saturation: '${{ needs.session-saturation.result }}',
               durable: '${{ needs.durable-session.result }}',
               regression: '${{ needs.regression.result }}'
             };
@@ -76,7 +86,8 @@ jobs:
               `HEAD_SHA: ${context.sha}`,
               `unit: ${states.unit}`,
               `saturation[10000+1000 no-novelty]: ${states.saturation}`,
-              `durable-session[60]: ${states.durable}`,
+              `session-saturation[10000+1000]: ${states.session_saturation}`,
+              `durable-runtime[60]: ${states.durable}`,
               `regression: ${states.regression}`,
               '',
               'Human-facing ACTIVE output is gated on same-cycle dashboard Surface A/B binding; --json remains explicit machine scope.'

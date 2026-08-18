@@ -1,8 +1,8 @@
-# Runtime Protocol v0.2
+# Runtime Protocol v0.4-test
 
 ## Public bootstrap
 
-Canonical execution is dependency-free from a Python 3.11+ checkout:
+Canonical execution is dependency-free from a Python 3.11+ checkout. Public discovery requires no GitHub connector. Before acceptance read only the bootstrap allowlist, present the access contract, and require exact human `I ACCEPT`.
 
 ```bash
 python -m ikant gate
@@ -12,40 +12,48 @@ python -m ikant initialize
 python -m ikant integrity
 ```
 
-`inizializza iKant <public repository URL>` is discovery intent, **not consent**. A conforming host may fetch a public checkout through ordinary HTTPS/git without a GitHub connector, but before acceptance reads only the `BOOTSTRAP.json` allowlist. No local execution/persistence means `BLOCKED`, never fake ACTIVE state.
+The v0.4 contract adds local persistence of visible chat and derived dashboard telemetry. A changed contract digest invalidates prior admission and requires acceptance/probe/initialize again.
 
-Lifecycle: `UNINITIALIZED -> TERMS_PRESENTED -> ACCEPTED -> PROBED -> INITIALIZING -> ACTIVE`.
+## Local state
 
-## Runtime state
+`.ikant/` contains admission/probe/runtime receipts, graph/event/cycle/compression state, Surface B artifacts, visible chat transcript and derived dashboard/cache files. `.ikant.writer.lock` remains outside the state directory. `reset` deletes `.ikant/`, including chat/dashboard state.
 
-`.ikant/` contains admission/probe/runtime receipts, current graph, append-only event log, cycles and compression receipts. `.ikant.writer.lock` is outside the state directory so reset cannot delete the coordination primitive. ACTIVE durable runtimes perform integrity checks and are single-writer fail-fast.
+## Canonical cognitive and chat loop
+
+The cognitive compiler/CRC remain v0.2/v0.3 compatible. The canonical **session-chat** host loop is now:
+
+```text
+successful conforming turn -> append visible user record -> generate/validate Surface A
+-> emit evidence-zero response -> append one iKant reply -> refresh dashboard
+```
+
+The shell renderer wraps visible messages as `> user:` and `> iKant:` without modifying the Surface A payload. A pending Surface A blocks a new canonical input before transcript persistence.
 
 ## Operations
 
 ```bash
-python -m ikant ingest --kind goal --layer reflective_self --text "Prefer reversible changes" --confidence .9 --evidence .9 --source-mode user
-python -m ikant slice --intent "modify safely"
-python -m ikant cycle --intent "modify safely"
-python -m ikant feedback CYCLE_ID --outcome corrected --prediction-error .9 --target NODE_ID
-python -m ikant compress
+python -m ikant turn --intent "..." --host-engine "<engine>"
+python -m ikant emit-surface-a --cycle-id <cycle> --text "..."
+python -m ikant history
+python -m ikant dashboard
+python -m ikant shell
+python -m ikant integrity
 ```
 
-`cycle` returns `semantic_slice`, ring-by-ring `epistemic_trace`, `kant_oracle`, `output_policy`, `output_projection`, and activation-only `oracle_retroaction`. A host should prioritize assertable nodes, mark tentative nodes, treat derived context as non-external evidence, preserve surfaced conflicts, and obey BLOCK/verification requirements below higher-priority host/system/safety/law/user instructions.
+Legacy lower-level `ingest`, `slice`, `cycle`, `feedback`, `compress`, retraction and corroboration operations remain available for diagnostics/engineering. They do not substitute for the canonical chat wrapper when operating as the end-user session interface.
 
-## Reset
+## Transcript
 
-`python -m ikant reset` deletes local state. Admission, probe and initialization are required again.
+`.ikant/chat/transcript.jsonl` is append-only visible-session telemetry. Each record carries schema, sequence, UTC timestamp, runtime session id, role, visible text, optional cycle/response/intention links, reply target, predecessor SHA-256 and record SHA-256. No private reasoning is required or stored by this mechanism.
 
-## v0.2 cognitive compiler
+Explicit chat integrity verifies sequence, session binding, roles, reply topology and the complete hash chain. Terminal rendering strips control/spoofing sequences only in the view.
 
-`python -m ikant turn --intent "..."` is the canonical post-ACTIVE operation. It records the raw human intention as an attributable speech act, executes the persistent epistemic cycle, performs ROA-aligned ring-to-ring CRC compression, derives the functional proto-self, converges the central Kant oracle, applies activation-only recurrent workspace feedback, persists `.ikant/cognitive/<cycle>.json`, and exports `.ikant/artifacts/CRC_SNAPSHOT_<cycle>.docx` unless disabled.
+## Dashboard and DOCX projection
 
-The returned `surface_a_contract` is binding on a conforming host. The host drafts natural prose, validates it with `python -m ikant validate-surface-a --text "..."`, repairs any violation, and only then shows Surface A. Surface B is audit telemetry and must not be copied into ordinary chat unless the human explicitly asks to inspect it.
+`.ikant/dashboard.json` is the structured projection and `.ikant/dashboard.txt` is the deterministic ASCII view. Inputs are runtime state, latest Surface B and bounded local DOCX metadata/signals. Missing telemetry yields n.a./WATCH rather than invented values.
 
-## Canonical v0.2 host loop
+DOCX scanning is capped, content-addressed and cached. Only local `word/document.xml` text is parsed; symlinks, oversize packages/XML, malformed ZIP/XML and entity/DTD declarations are rejected. Aggregated category counts are operational telemetry only and cannot corroborate claims.
 
-A conforming host preserves the raw utterance as an `intention`, materializes its own semantic mining as provenance-bound atoms, then executes `turn`. The returned content authority is the post-CRC `central_projection`, not the legacy pre-CRC projection. The host drafts only Surface A natural prose, validates it, calls `emit-surface-a`, and only then sends it to the human. `emit-surface-a` persists the actual reply with evidence zero and refreshes the same Surface B cycle snapshot.
+## Integrity boundary
 
-Example mining input can be passed with `--atoms-json atoms.json`. Host-derived `inference`, `runtime_derived`, `cache` and `demo` atoms are capped so they cannot masquerade as external evidence. Psychodynamic/archetypal atoms are capped even further and remain interpretive.
-
-Compression uses bounded derived working memory and an append-only retired-derived archive. Derived summaries and motifs can affect availability and critique but never qualify as independent corroboration.
+The canonical `python -m ikant integrity` returns a composite result over core runtime integrity plus visible chat integrity. Dashboard/cache files are derived and can be regenerated; they are not evidence roots.

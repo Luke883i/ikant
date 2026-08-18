@@ -1,5 +1,5 @@
 from __future__ import annotations
-import hashlib,json,secrets
+import hashlib,json,secrets,math
 from collections import Counter
 from dataclasses import asdict
 from datetime import datetime,timezone
@@ -15,7 +15,7 @@ def toks(s):return {x for x in ''.join(c if c.isalnum() else ' ' for c in s.case
 def avg(xs):return sum(xs)/len(xs) if xs else 0.
 class Runtime:
  def __init__(self,sdir,*,durable=True,params=None,_lock=None):
-  self.state_dir=Path(sdir);self.root=self.state_dir.parent;self.durable=durable;self.lock=_lock or (acquire_writer_lock(self.root/'.ikant.writer.lock') if durable else None);self.runtime_path=self.state_dir/'runtime.json';self.graph_path=self.state_dir/'graph.json';self.events_path=self.state_dir/'events.jsonl';self.cycles_dir=self.state_dir/'cycles';self.runtime=read_json(self.runtime_path);stored=self.runtime.get('dynamics',{}).get('parameters');self.params=DynamicsParameters(**stored) if stored else (params or DEFAULT_DYNAMICS);self.params.validate()
+  self.state_dir=Path(sdir);self.root=self.state_dir.parent;self.durable=durable;self.lock=_lock or (acquire_writer_lock(self.root/'.ikant.writer.lock') if durable else None);self.runtime_path=self.state_dir/'runtime.json';self.graph_path=self.state_dir/'graph.json';self.events_path=self.state_dir/'events.jsonl';self.cycles_dir=self.state_dir/'cycles';self.derived_archive_path=self.state_dir/'derived_archive.jsonl';self.derived_archive_mem=[];self.runtime=read_json(self.runtime_path);stored=self.runtime.get('dynamics',{}).get('parameters');self.params=DynamicsParameters(**stored) if stored else (params or DEFAULT_DYNAMICS);self.params.validate()
   if params and stored and asdict(params)!=stored:self.close();raise ValueError('runtime dynamics parameter mismatch')
   self.graph=read_json(self.graph_path,{'nodes':{},'relations':{},'seq':0});self.nodes={k:node_from_dict(v) for k,v in self.graph['nodes'].items()};self.relations={k:relation_from_dict(v) for k,v in self.graph['relations'].items()};self.incoming={};self.tokens={k:toks(n.text) for k,n in self.nodes.items()};self.events_mem=[];self.cycles={}
   for rid,r in self.relations.items():self.incoming.setdefault(r.target,[]).append(rid)
@@ -88,7 +88,7 @@ class Runtime:
   if not n.active:return 0.
   x=n.confidence*n.evidence
   for rid in self.incoming.get(nid,[]):
-   r=self.relations[rid];v=r.weight*self._strength(r.source);x+=(-.2 if r.kind in {RelationKind.CONTRADICTS,RelationKind.INHIBITS,RelationKind.FALSIFIES} else .15)*v
+   r=self.relations[rid];v=r.weight*self._strength(r.source);x+=(0.0 if r.kind==RelationKind.PRECEDES else (-.2 if r.kind in {RelationKind.CONTRADICTS,RelationKind.INHIBITS,RelationKind.FALSIFIES} else .15))*v
   return min(n.ceiling,clamp01(x))
  def slice(self,intent,*,limit=12):
   q=toks(intent);rows=[]
@@ -108,7 +108,7 @@ class Runtime:
    if n.source_mode in {'user','repository'} and n.kind in {NodeKind.GOAL,NodeKind.CONSTRAINT}:
     st=.78*epi+.22*sa
     if st>=.3:directives.append({'type':n.kind.value,'text':n.text,'strength':round(st,4),'source_mode':n.source_mode})
-  return {'schema':'ikant-semantic-slice/v0.1','intent_sha256':hashlib.sha256(intent.encode()).hexdigest(),'nodes':[{'id':n.id,'kind':n.kind.value,'layer':n.layer.value,'score':round(sa,4),'epistemic_score':round(epi,4),'activation':round(n.activation,4),'stability':round(n.stability,4),'novelty':round(n.novelty,4),'prediction_error':round(n.prediction_error,4),'lexical_overlap':ov,'text':n.text,'source_mode':n.source_mode} for sa,epi,n,ov in chosen],'directives':directives}
+  return {'schema':'ikant-semantic-slice/v0.1','intent_sha256':hashlib.sha256(intent.encode()).hexdigest(),'nodes':[{'id':n.id,'kind':n.kind.value,'layer':n.layer.value,'score':round(sa,4),'epistemic_score':round(epi,4),'activation':round(n.activation,4),'stability':round(n.stability,4),'novelty':round(n.novelty,4),'prediction_error':round(n.prediction_error,4),'modulators':asdict(n.modulators),'lexical_overlap':ov,'text':n.text,'source_mode':n.source_mode} for sa,epi,n,ov in chosen],'directives':directives}
  def _conflicts(self,ids):return [{'source':r.source,'target':r.target,'kind':r.kind.value} for r in self.relations.values() if r.active and r.kind in {RelationKind.CONTRADICTS,RelationKind.FALSIFIES} and r.source in ids and r.target in ids and self._strength(r.source)>0]
  def concentric_cycle(self,intent,*,limit=12):
   idx=self.runtime['cycle_count']+1
@@ -135,11 +135,72 @@ class Runtime:
     for nid in targets:
      if nid in self.nodes and self.nodes[nid].kind in {NodeKind.CLAIM,NodeKind.PREDICTION}:self.relate(obs.id,nid,RelationKind.CONTRADICTS,err or .25)
   self.runtime['feedback_count']+=1;self._event('FEEDBACK',cid,{'outcome':outcome});return {'cycle_id':cid,'outcome':outcome}
+ def _compression_events_since(self,last):
+  rows=[]
+  if self.durable and self.events_path.exists():
+   for line in self.events_path.read_text(encoding='utf-8').splitlines():
+    if not line.strip():continue
+    try:e=json.loads(line)
+    except json.JSONDecodeError:continue
+    if int(e.get('seq',0))>last:rows.append(e)
+  rows.extend(e for e in self.events_mem if int(e.get('seq',0))>last)
+  by={int(e.get('seq',0)):e for e in rows if int(e.get('seq',0))>0}
+  return [by[k] for k in sorted(by)]
+ def _upsert_derived_pattern(self,text,metadata):
+  nid=content_id(NodeKind.PATTERN,Layer.METACOGNITION,text);n=self.nodes.get(nid)
+  if n:
+   if not n.metadata.get('compression_owned'):raise RuntimeError('derived pattern id collides with non-compression node')
+   if not n.active:
+    n.active=True;n.activation=min(n.activation_ceiling,.12);n.novelty=max(.35,n.novelty);op='DERIVED_REINSTATE'
+   else:
+    n.recurrence+=1;recur(n,self.params);op='DERIVED_RECUR'
+   n.metadata.update(metadata);n.metadata['pattern_misses']=0;self._save(n);self._event(op,n.id,{'motif':metadata.get('motif')});return n
+  n=Node(nid,NodeKind.PATTERN,Layer.METACOGNITION,text,.58,.18,'runtime_derived',metadata={**metadata,'compression_owned':True,'derivation_kind':'pattern','not_external_evidence':True,'pattern_misses':0});self._save(n);self._event('DERIVED_ASSERT',n.id,{'motif':metadata.get('motif')});return n
+ def _archive_derived(self,n,reason):
+  record={'at':now(),'reason':reason,'node':node_to_dict(n),'archived_at_seq':self.graph.get('seq',0)};self.derived_archive_mem.append(record)
+  if self.durable:append_jsonl(self.derived_archive_path,record)
+  for rid,r in list(self.relations.items()):
+   if r.source==n.id or r.target==n.id:
+    self.relations.pop(rid,None);self.graph['relations'].pop(rid,None)
+    if r.target in self.incoming:self.incoming[r.target]=[x for x in self.incoming[r.target] if x!=rid]
+  self.nodes.pop(n.id,None);self.tokens.pop(n.id,None);self.graph['nodes'].pop(n.id,None);self._event('DERIVED_ARCHIVE',n.id,{'reason':reason})
+ def _maintain_derived_memory(self,observed_pattern_ids):
+  for n in list(self.nodes.values()):
+   if not n.metadata.get('compression_owned') or n.metadata.get('derivation_kind')!='pattern' or not n.active:continue
+   if n.id in observed_pattern_ids:continue
+   misses=int(n.metadata.get('pattern_misses',0))+1;n.metadata['pattern_misses']=misses
+   if misses>=self.params.pattern_miss_retract_threshold:
+    n.active=False;n.activation=0.;n.metadata['retired_reason']='pattern_not_reobserved';self._save(n);self._event('DERIVED_RETIRE',n.id,{'misses':misses})
+   else:self._save(n)
+  active_summaries=sorted([n for n in self.nodes.values() if n.active and n.metadata.get('compression_owned') and n.metadata.get('derivation_kind')=='summary'],key=lambda n:int(n.metadata.get('covered_seq',[0,0])[-1]))
+  while len(active_summaries)>self.params.max_active_summaries:
+   n=active_summaries.pop(0);n.active=False;n.activation=0.;n.metadata['retired_reason']='summary_working_set_limit';self._save(n);self._event('DERIVED_RETIRE',n.id,{'reason':'summary_working_set_limit'})
+  inactive=sorted([n for n in self.nodes.values() if not n.active and n.metadata.get('compression_owned')],key=lambda n:(int(n.metadata.get('covered_seq',[0,0])[-1]) if n.metadata.get('covered_seq') else int(n.metadata.get('last_seen_seq',0)),n.id))
+  while len(inactive)>self.params.max_inactive_derived_nodes:
+   self._archive_derived(inactive.pop(0),'inactive_derived_working_set_limit')
+  self._persist()
  def compress_history(self):
-  last=self.runtime['compression']['last_seq'];ev=[e for e in self.events_mem if e['seq']>last and e['op']!='COMPRESS']
-  if not ev and self.durable and self.events_path.exists():ev=[json.loads(x) for x in self.events_path.read_text().splitlines() if x.strip() and json.loads(x)['seq']>last and json.loads(x)['op']!='COMPRESS']
-  if not ev:return None
-  ev=ev[:self.params.compression_event_window];ops=Counter(e['op'] for e in ev);rev=ops['RETRACT']+sum(1 for e in ev if e['op']=='FEEDBACK' and e['payload'].get('outcome') in {'failure','corrected'});metrics={'novelty_rate':ops['ASSERT']/max(1,ops['ASSERT']+ops['RECUR']),'revision_pressure':clamp01(rev/max(1,len(ev)//8))};prior=self.runtime['compression']['trend']['metrics'];a=self.params.compression_trend_alpha;trend={k:clamp01(a*v+(1-a)*prior.get(k,0)) for k,v in metrics.items()};start,end=ev[0]['seq'],ev[-1]['seq'];summary=self.ingest(kind=NodeKind.SUMMARY,layer=Layer.MEMORY,text=f'Runtime compression {start}-{end}: '+','.join(f'{k}={v}' for k,v in sorted(ops.items())),confidence=.72,evidence=.55,source_mode='runtime_derived',metadata={'covered_seq':[start,end],'not_external_evidence':True});self.runtime['compression']['count']+=1;self.runtime['compression']['last_seq']=end;self.runtime['compression']['metrics']=metrics;self.runtime['compression']['trend']={'samples':self.runtime['compression']['trend']['samples']+1,'metrics':trend};self._write_runtime();self._event('COMPRESS',f'CMP-{start}-{end}',{});return {'summary_node_id':summary.id,'metrics':metrics,'trend':trend}
+  last=int(self.runtime['compression']['last_seq']);raw=self._compression_events_since(last)
+  if not raw:return None
+  raw=raw[:self.params.compression_event_window];cursor_end=int(raw[-1]['seq'])
+  ev=[e for e in raw if e.get('op')!='COMPRESS' and not str(e.get('op','')).startswith('DERIVED_') and not (e.get('op')=='ASSERT' and e.get('payload',{}).get('source_mode')=='runtime_derived')]
+  self.runtime['compression']['last_seq']=cursor_end
+  if not ev:
+   self._write_runtime();return {'status':'NO_ANALYTIC_EVENTS','covered_seq':[int(raw[0]['seq']),cursor_end]}
+  ops=Counter(e['op'] for e in ev);rev=ops['RETRACT']+sum(1 for e in ev if e['op']=='FEEDBACK' and e.get('payload',{}).get('outcome') in {'failure','corrected'});novelty=ops['ASSERT']/max(1,ops['ASSERT']+ops['RECUR']);revision=clamp01(rev/max(1,len(ev)//8));osc=clamp01((ops['RETRACT']+ops['REINSTATE'])/max(1,len(ev)//10));metrics={'novelty_rate':novelty,'revision_pressure':revision,'oscillation_pressure':osc}
+  motifs=[]
+  if novelty>=.62:motifs.append('exploratory_expansion')
+  if ops['RECUR']>=max(4,ops['ASSERT']):motifs.append('echo_recurrence')
+  if revision>=.45:motifs.append('revision_loop')
+  if osc>=.45:motifs.append('state_oscillation')
+  if ops['CYCLE']>=3 and revision<.2 and novelty<.55:motifs.append('convergent_processing')
+  metrics['emergent_motif_pressure']=clamp01(len(motifs)/3)
+  prior=self.runtime['compression']['trend']['metrics'];a=self.params.compression_trend_alpha;trend={k:clamp01(a*v+(1-a)*prior.get(k,0)) for k,v in metrics.items()};start,end=int(ev[0]['seq']),int(ev[-1]['seq'])
+  summary=self.ingest(kind=NodeKind.SUMMARY,layer=Layer.MEMORY,text=f'Runtime compression {start}-{end}: '+','.join(f'{k}={v}' for k,v in sorted(ops.items())),confidence=.72,evidence=.20,source_mode='runtime_derived',metadata={'covered_seq':[start,end],'compression_owned':True,'derivation_kind':'summary','not_external_evidence':True})
+  observed=set()
+  for motif in motifs:
+   pattern=self._upsert_derived_pattern(f'Runtime process motif: {motif}',{'motif':motif,'last_seen_seq':end,'covered_seq':[start,end]});observed.add(pattern.id)
+  self.runtime['compression']['count']+=1;self.runtime['compression']['metrics']=metrics;self.runtime['compression']['trend']={'samples':self.runtime['compression']['trend']['samples']+1,'metrics':trend};self.runtime['compression']['last_motifs']=motifs;self._write_runtime();self._event('COMPRESS',f'CMP-{start}-{cursor_end}',{'analytic_seq':[start,end],'cursor_end':cursor_end,'motifs':motifs});self._maintain_derived_memory(observed);return {'summary_node_id':summary.id,'pattern_node_ids':sorted(observed),'metrics':metrics,'trend':trend,'motifs':motifs,'covered_seq':[start,cursor_end]}
  def integrity(self,*,raise_on_error=False):
   errs=[];receipt=load_receipt(self.state_dir);probe=load_probe(self.state_dir)
   if self.runtime.get('status')!='ACTIVE':errs.append('runtime not ACTIVE')
@@ -153,6 +214,23 @@ class Runtime:
   if actual!=expected:errs.append('Kant kernel')
   for r in self.relations.values():
    if r.source not in self.nodes or r.target not in self.nodes:errs.append('relation endpoint missing');break
+  for n in self.nodes.values():
+   if n.kind==NodeKind.RESPONSE:
+    if n.evidence!=0:errs.append('response evidence must be zero')
+    if n.source_mode!='runtime_derived' or not n.metadata.get('speech_act_not_evidence'):errs.append('response speech-act binding')
+  cognitive=self.runtime.get('cognitive',{})
+  proto=cognitive.get('proto_self') or {}
+  if proto:
+   if proto.get('is_consciousness_claim') is not False:errs.append('proto-self consciousness boundary')
+   for key in ('global_availability','cross_ring_integration','temporal_continuity','metacognitive_access','self_model_continuity','agency_binding','closure_pressure','unresolved_conflict_pressure','neurofunctional_coherence','reentrant_capacity','proto_self_index'):
+    try:v=float(proto.get(key,0))
+    except (TypeError,ValueError):errs.append('proto-self numeric state');break
+    if not math.isfinite(v) or not 0<=v<=1:errs.append('proto-self numeric state');break
+  for state in (cognitive.get('neurofunctional_state') or {}).values():
+   for key in ('gain','precision','inhibition','plasticity','persistence','control_index'):
+    try:v=float(state.get(key,0))
+    except (TypeError,ValueError):errs.append('neurofunctional numeric state');break
+    if not math.isfinite(v) or not 0<=v<=1:errs.append('neurofunctional numeric state');break
   if self.durable:
    seqs=[]
    try:

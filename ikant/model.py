@@ -8,9 +8,9 @@ class Layer(str, Enum):
     SIGNAL="signal"; SALIENCE_HOMEOSTASIS="salience_homeostasis"; MEMORY="memory"; PREDICTIVE_CONTROL="predictive_control"; METACOGNITION="metacognition"; REFLECTIVE_SELF="reflective_self"; PSYCHODYNAMIC_HYPOTHESIS="psychodynamic_hypothesis"; ARCHETYPAL_HYPOTHESIS="archetypal_hypothesis"; KANT_ORACLE="kant_oracle"; META_EPISTEMIC="meta_epistemic"
 CONCENTRIC_ORDER=(Layer.SIGNAL,Layer.SALIENCE_HOMEOSTASIS,Layer.MEMORY,Layer.PREDICTIVE_CONTROL,Layer.METACOGNITION,Layer.REFLECTIVE_SELF,Layer.PSYCHODYNAMIC_HYPOTHESIS,Layer.ARCHETYPAL_HYPOTHESIS,Layer.KANT_ORACLE)
 class NodeKind(str, Enum):
-    OBSERVATION="observation"; CLAIM="claim"; GOAL="goal"; CONSTRAINT="constraint"; MEMORY="memory"; HYPOTHESIS="hypothesis"; SELF_MODEL="self_model"; ACTION="action"; PREDICTION="prediction"; CONFLICT="conflict"; PRINCIPLE="principle"; SUMMARY="summary"; PATTERN="pattern"
+    OBSERVATION="observation"; INTENTION="intention"; RESPONSE="response"; CLAIM="claim"; GOAL="goal"; CONSTRAINT="constraint"; MEMORY="memory"; HYPOTHESIS="hypothesis"; SELF_MODEL="self_model"; ACTION="action"; PREDICTION="prediction"; CONFLICT="conflict"; PRINCIPLE="principle"; SUMMARY="summary"; PATTERN="pattern"
 class RelationKind(str, Enum):
-    SUPPORTS="supports"; CONTRADICTS="contradicts"; ACTIVATES="activates"; INHIBITS="inhibits"; ABSTRACTS="abstracts"; ASSOCIATES="associates"; RETROACTS="retroacts"; FALSIFIES="falsifies"
+    SUPPORTS="supports"; CONTRADICTS="contradicts"; ACTIVATES="activates"; INHIBITS="inhibits"; ABSTRACTS="abstracts"; ASSOCIATES="associates"; RETROACTS="retroacts"; FALSIFIES="falsifies"; PRECEDES="precedes"
 EPI={Layer.SIGNAL:.80,Layer.SALIENCE_HOMEOSTASIS:.72,Layer.MEMORY:.78,Layer.PREDICTIVE_CONTROL:.80,Layer.METACOGNITION:.85,Layer.REFLECTIVE_SELF:.68,Layer.PSYCHODYNAMIC_HYPOTHESIS:.22,Layer.ARCHETYPAL_HYPOTHESIS:.18,Layer.KANT_ORACLE:.60,Layer.META_EPISTEMIC:.90}
 ACT={Layer.SIGNAL:.92,Layer.SALIENCE_HOMEOSTASIS:.88,Layer.MEMORY:.86,Layer.PREDICTIVE_CONTROL:.90,Layer.METACOGNITION:.86,Layer.REFLECTIVE_SELF:.76,Layer.PSYCHODYNAMIC_HYPOTHESIS:.46,Layer.ARCHETYPAL_HYPOTHESIS:.40,Layer.KANT_ORACLE:.74,Layer.META_EPISTEMIC:.90}
 def finite(v:float)->float:

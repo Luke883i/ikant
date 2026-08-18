@@ -1,6 +1,8 @@
 from __future__ import annotations
-import argparse,json,tempfile,time
+import argparse,json,sys,tempfile,time
 from pathlib import Path
+ROOT=Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:sys.path.insert(0,str(ROOT))
 from ikant.chat_session import ChatController
 from ikant.dashboard_v05 import persist_dashboard
 from ikant.host import emit_conforming_surface_a

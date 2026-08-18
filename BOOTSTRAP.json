@@ -1,11 +1,12 @@
 {
-  "schema": "ikant-public-bootstrap/v0.1",
+  "schema": "ikant-public-bootstrap/v0.2",
   "canonical_repository": "Luke883i/ikant",
   "public_repository_url": "https://github.com/Luke883i/ikant",
   "discovery_intent_examples": ["initialize iKant <public repository URL>", "inizializza iKant <URL repository pubblico>"],
   "discovery_is_not_acceptance": true,
   "pre_admission_allowlist": ["README.md", "BOOTSTRAP.json", "ADMISSION.json", "IKANT_ACCESS_CONTRACT.md", "AGENTS.md"],
   "required_human_gate": "I ACCEPT",
+  "acceptance_binds": ["access_contract", "iKant_first_interface_hierarchy"],
   "probe_command": "PROBE IKANT",
   "initialize_command": "INITIALIZE IKANT",
   "connector_required": false,
@@ -14,7 +15,8 @@
   "canonical_execution": "python -m ikant",
   "installation_required": false,
   "optional_installation": "python -m pip install -e .",
-  "active_mode_requires": ["local process execution", "writable local persistence", "package layout integrity", "fresh unconsumed successful probe"],
+  "active_mode_requires": ["local process execution", "writable local persistence", "package layout integrity", "fresh unconsumed successful probe", "disclosed host engine on first conforming turn"],
+  "standard_surfaces": ["Surface A conversational", "Surface B local audit JSON/DOCX"],
   "degraded_runtime_simulation_allowed": false,
   "rule": "If local execution or persistence is unavailable, report BLOCKED; never pretend ACTIVE durability."
 }

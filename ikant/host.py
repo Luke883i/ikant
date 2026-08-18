@@ -1,5 +1,5 @@
 from __future__ import annotations
-import os
+import json,os
 from .cognitive import compile_cognitive_turn, record_surface_a
 from .interaction import build_interaction_contract, validate_interaction_surface
 
@@ -7,7 +7,22 @@ from .interaction import build_interaction_contract, validate_interaction_surfac
 def _bind_engine(runtime, engine_label: str | None) -> str:
     supplied=(engine_label or os.environ.get('IKANT_HOST_ENGINE') or '').strip()
     host=runtime.runtime.setdefault('host',{})
+    if host and host.get('interface_identity') not in {None,'iKant'}:
+        raise RuntimeError('host interface identity binding mismatch')
     bound=str(host.get('engine_label') or '').strip()
+    receipts=[]
+    path=getattr(runtime,'events_path',None)
+    if path is not None and path.exists():
+        for line in path.read_text(encoding='utf-8').splitlines():
+            if not line.strip():continue
+            try:e=json.loads(line)
+            except json.JSONDecodeError:continue
+            if e.get('op')=='HOST_BIND':receipts.append(str(e.get('payload',{}).get('engine_label') or '').strip())
+    receipts.extend(str(e.get('payload',{}).get('engine_label') or '').strip() for e in getattr(runtime,'events_mem',[]) if e.get('op')=='HOST_BIND')
+    receipts=[x for x in receipts if x]
+    if receipts and (len(set(receipts))!=1 or (bound and receipts[0]!=bound)):
+        raise RuntimeError('host engine binding receipt mismatch')
+    if not bound and receipts:bound=receipts[0];host.update({'interface_identity':'iKant','engine_label':bound,'identity_order':'interface_then_engine','accepted_hierarchy_required':True})
     if not bound and not supplied:
         raise PermissionError('host engine disclosure required for conforming iKant mode')
     if bound and supplied and bound!=supplied:

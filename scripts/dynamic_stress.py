@@ -3,6 +3,7 @@ import argparse,json,random,tempfile,sys
 from pathlib import Path
 if __package__ in {None,''}:sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from tests.helpers import active_runtime
+from ikant.validation import source_fingerprint
 from ikant.model import *
 def run(operations=10000,novelty_tail=1000,seed=883):
  rng=random.Random(seed)
@@ -36,7 +37,10 @@ def run(operations=10000,novelty_tail=1000,seed=883):
   if operations>=1000:
    for k in ('cycle','feedback','corroborate','retract','reinstate','modulate','compress'):
     if counts[k]==0:raise AssertionError('missing coverage '+k)
-  return {'schema':'ikant-dynamic-stress/v0.1','seed':seed,'operations':operations,'novelty_tail':novelty_tail,'nodes':len(rt.nodes),'relations':len(rt.relations),'cycles':len(cycles),'compressions':rt.runtime['compression']['count'],'operation_counts':counts,'max_mean_activation_sampled':round(maxmean,6),'max_mean_activation_ceiling_fraction_sampled':round(maxfrac,6),'max_activation_saturation_share_85_sampled':round(s85,6),'max_activation_saturation_share_95_sampled':round(s95,6),'status':'PASS'}
+  active_summaries=[x for x in rt.nodes.values() if x.active and x.metadata.get('compression_owned') and x.metadata.get('derivation_kind')=='summary']
+  inactive_derived=[x for x in rt.nodes.values() if not x.active and x.metadata.get('compression_owned')]
+  if len(active_summaries)>rt.params.max_active_summaries or len(inactive_derived)>rt.params.max_inactive_derived_nodes:raise AssertionError('derived working set exceeded')
+  return {'source_fingerprint':source_fingerprint(),'schema':'ikant-dynamic-stress/v0.1','seed':seed,'operations':operations,'novelty_tail':novelty_tail,'nodes':len(rt.nodes),'relations':len(rt.relations),'cycles':len(cycles),'compressions':rt.runtime['compression']['count'],'active_derived_summaries':len(active_summaries),'inactive_derived_nodes':len(inactive_derived),'archived_derived_nodes':len(rt.derived_archive_mem),'operation_counts':counts,'max_mean_activation_sampled':round(maxmean,6),'max_mean_activation_ceiling_fraction_sampled':round(maxfrac,6),'max_activation_saturation_share_85_sampled':round(s85,6),'max_activation_saturation_share_95_sampled':round(s95,6),'status':'PASS'}
 def mean(xs):return sum(xs)/len(xs) if xs else 0
 if __name__=='__main__':
  p=argparse.ArgumentParser();p.add_argument('--operations',type=int,default=10000);p.add_argument('--novelty-tail',type=int,default=1000);p.add_argument('--seed',type=int,default=883);a=p.parse_args();print(json.dumps(run(a.operations,a.novelty_tail,a.seed),indent=2,sort_keys=True))

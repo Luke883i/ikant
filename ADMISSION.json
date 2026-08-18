@@ -1,7 +1,7 @@
 {
-  "schema": "ikant-admission/v0.3",
+  "schema": "ikant-admission/v0.4",
   "repository": "Luke883i/ikant",
-  "contract_version": "0.3.0",
+  "contract_version": "0.4.0",
   "contract_path": "IKANT_ACCESS_CONTRACT.md",
   "acceptance_phrase": "I ACCEPT",
   "human_actor_required": true,
@@ -12,7 +12,11 @@
     "identity_order": "interface_then_engine",
     "decline_effect": "ikant_unavailable_locally"
   },
-  "accepted_local_persistence": ["visible_chat_transcript", "derived_runtime_dashboard"],
+  "accepted_local_persistence": ["visible_chat_transcript", "derived_runtime_dashboard", "functional_psyche_operational_self_snapshot"],
+  "operational_self_awareness_definition": "inspect and report typed local runtime state, identity, operations, uncertainty and limits",
+  "phenomenal_consciousness_claim": false,
+  "felt_emotion_claim": false,
+  "brain_one_to_one_claim": false,
   "private_chain_of_thought_persistence_required": false,
   "probe_receipt_required_for_initialize": true,
   "probe_receipt_single_use": true,

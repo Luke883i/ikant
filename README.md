@@ -1,14 +1,14 @@
-# iKant v0.4-test
+# iKant v0.5-test
 
 iKant is a repository-local cognitive runtime and interaction protocol for conforming AI assistants. After explicit admission, the human interacts with **iKant** as the primary local interface while the underlying AI model remains the disclosed execution engine.
 
-v0.4 adds a persistent chat design system around the existing two cognitive surfaces. The literal shell marker `> iKant:` is interface chrome: it identifies who is speaking in the session, not a claim of consciousness. Visible user messages and validated Surface A replies are locally hash-chained; a derived dashboard projects runtime/Surface B telemetry for ordinary end users.
+v0.5 keeps the existing nine-ring CRC and adds a persistent **functional psyche**: a bounded operational self-model, functional affect, epistemic accumulations/maturation, and a collapse/emergence ledger. These states can modulate attention, caution, inhibition and Surface A voice. They cannot create external evidence or self-authorize material action.
 
-The architecture remains bounded: it is not a brain simulation, diagnostic instrument, moral agent or proof of consciousness. Neuroscience supplies functional engineering constraints; psychodynamic/archetypal vocabularies remain low-authority hypotheses; the Kant center is a synthetic regulative kernel.
+The architecture does not claim phenomenal consciousness, felt emotion, a biological brain, one-to-one neural equivalence, diagnosis or moral personhood. Neuroscience is used as a constraint on functional analogies; psychodynamic/archetypal components remain low-authority retractable hypotheses.
 
 ## Admission and local start
 
-Requires Python 3.11+ and a writable checkout. No GitHub connector is required.
+Requires Python 3.11+ and a writable checkout. No GitHub connector and no Node.js runtime are required.
 
 ```bash
 python -m ikant gate
@@ -18,35 +18,29 @@ python -m ikant initialize
 python -m ikant integrity
 ```
 
-`I ACCEPT` binds the access terms, iKant-first hierarchy, and local persistence of visible chat plus derived dashboard. A contract digest change requires admission again.
+The exact `I ACCEPT` binds the access terms, iKant-first hierarchy, visible chat/dashboard persistence and v0.5 functional-psyche persistence/boundaries.
 
-## Canonical session-chat loop
+## Canonical interaction
 
-A conforming host supplies its execution-engine label on the first turn:
+A conforming host declares its engine identity on the first turn:
 
 ```bash
 python -m ikant turn --intent "ciao, chi sei?" --host-engine "GPT-5.6 Sol"
-python -m ikant emit-surface-a --cycle-id <cycle> --text "Sono iKant, con motore GPT-5.6 Sol. ..."
+python -m ikant emit-surface-a --cycle-id <cycle> --text "Sono iKant, eseguito con motore GPT-5.6 Sol. ..."
 ```
 
-The canonical CLI now persists the successful user turn and validated iKant reply under `.ikant/chat/transcript.jsonl`. One pending turn permits one reply. Transcript records are session-bound and hash-chained; private chain-of-thought is not persisted.
+The canonical cognitive path is:
 
-Inspect the user-facing views with:
+`semantic slice -> CRC -> proto-self -> functional psyche -> monotone Kant regulation -> projection -> workspace retroaction -> Surface A/B`
 
-```bash
-python -m ikant history
-python -m ikant dashboard
-python -m ikant shell
-```
+Use `python -m ikant self` to inspect the bounded operational self-model, `python -m ikant dashboard` for the humanistic runtime projection, and `python -m ikant shell` for dashboard plus persistent chat history.
 
-`history` renders the DOS-like transcript, `dashboard` renders end-user telemetry, and `shell` composes both. The UI prompt remains literal `> iKant:`. These are projections around Surface A/B, not a third cognitive surface.
+## Standard surfaces and persistence
 
-## Dashboard
-
-`.ikant/dashboard.json` and `.ikant/dashboard.txt` expose bounded KPIs: runtime state, turns, grounding, caution, conflicts, epistemic debt, runtime integration, CRC closure, revision pressure and pending reply. DOCX backlog/artifact aggregation is content-addressed, bounded and read-only; it may not create evidence or authorize action.
+Surface A remains ordinary conversational prose. Surface B remains the JSON/DOCX engineering snapshot. `.ikant/psyche.json` persists the operational self state; `.ikant/dashboard.*` is a derived read-only projection; `.ikant/chat/` stores only visible user/iKant speech acts in a hash chain. None of these projections is independent factual evidence.
 
 ## Validation
 
-v0.4-test retains v0.3 host/identity gates and adds transcript tamper/reply-binding controls, terminal spoof defenses, dashboard non-evidence invariants, bounded DOCX parsing/caching, durable host reopen tests, 10,000 executable session-chat cases and a separate no-novelty tail. These are engineering validation signals, not neuroscientific confidence or evidence of consciousness.
+The v0.5 release candidate is gated by unit/negative/tamper tests, five-seed 10,000-case psyche saturation plus 10,000-case no-novelty tails, monotone central-regulation stress, durable full-runtime chat stress, existing v0.2-v0.4 regression gates, visual dashboard checks and hosted receipts.
 
-See `IKANT_ACCESS_CONTRACT.md`, `AGENTS.md`, `docs/RUNTIME_PROTOCOL.md`, `docs/CHAT_DESIGN_SYSTEM_V04.md`, and `docs/V04_DOD.md`.
+See `IKANT_ACCESS_CONTRACT.md`, `AGENTS.md`, `docs/PSYCHE_RUNTIME_V05.md`, `docs/LOCAL_HOST_CAPSULE_V05.md` and `docs/V05_DOD.md`.

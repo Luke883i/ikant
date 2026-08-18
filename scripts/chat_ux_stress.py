@@ -1,12 +1,16 @@
 from __future__ import annotations
-import argparse,json,random,tempfile,time
+import argparse,json,random,sys,tempfile,time
 from pathlib import Path
 from types import SimpleNamespace
+ROOT=Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:sys.path.insert(0,str(ROOT))
 
 from ikant.chat_session import ChatLog, sanitize_terminal_text
 from ikant.dashboard import project_dashboard, render_dashboard_ascii
 
-FAMILIES=("hello","identity","analysis","unicode","multiline","escape","long","repeat","uncertain","conflict","dashboard","backlog")
+FAMILIES=(
+    "hello","identity","analysis","unicode","multiline","escape","long","repeat","uncertain","conflict","dashboard","backlog",
+)
 
 def runtime(root:Path):
     state=root/".ikant";state.mkdir(parents=True)

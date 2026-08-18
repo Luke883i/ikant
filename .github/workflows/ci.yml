@@ -1,0 +1,136 @@
+name: iKant CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - 'agent/**'
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: ikant-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  started:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Publish hosted CI running receipt
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- ikant-hosted-ci-receipt -->';
+            const body = [
+              marker,
+              '## iKant hosted CI receipt',
+              '',
+              'HOSTED_CI: RUNNING',
+              `HEAD_SHA: ${context.sha}`,
+              '',
+              'Hosted release gates are executing.'
+            ].join('\n');
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number, per_page: 100
+            });
+            const previous = comments.find((c) => c.body && c.body.includes(marker));
+            if (previous) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: previous.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+
+  unit-and-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile
+        run: python -m compileall -q ikant tests scripts
+      - name: Unit and anti-regression tests
+        run: python -W error::ResourceWarning -m unittest discover -s tests -v
+      - name: Dynamics tuning invariants
+        run: python scripts/tune_dynamics.py
+      - name: Quick release gate
+        run: python scripts/release_gate.py --quick
+
+  static-stress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Static 10k plus no-novelty saturation
+        run: python scripts/stress.py --cases 10000 --novelty-tail 1000 --seed 883
+
+  dynamic-stress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [883, 17, 2026]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Dynamic 10k plus no-novelty saturation
+        run: python scripts/dynamic_stress.py --operations 10000 --novelty-tail 1000 --seed ${{ matrix.seed }}
+
+  report:
+    if: ${{ always() && github.event_name == 'pull_request' }}
+    needs: [started, unit-and-gates, static-stress, dynamic-stress]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Publish hosted CI final receipt to PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const states = {
+              started: '${{ needs.started.result }}',
+              unit_and_gates: '${{ needs.unit-and-gates.result }}',
+              static_stress: '${{ needs.static-stress.result }}',
+              dynamic_stress: '${{ needs.dynamic-stress.result }}'
+            };
+            const ok = Object.values(states).every((v) => v === 'success');
+            const marker = '<!-- ikant-hosted-ci-receipt -->';
+            const body = [
+              marker,
+              '## iKant hosted CI receipt',
+              '',
+              `HOSTED_CI: ${ok ? 'PASS' : 'FAIL'}`,
+              `HEAD_SHA: ${context.sha}`,
+              `started: ${states.started}`,
+              `unit-and-gates: ${states.unit_and_gates}`,
+              `static-stress: ${states.static_stress}`,
+              `dynamic-stress[883,17,2026]: ${states.dynamic_stress}`,
+              '',
+              'This receipt is emitted by `.github/workflows/ci.yml` after all release gates complete.'
+            ].join('\n');
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number, per_page: 100
+            });
+            const previous = comments.find((c) => c.body && c.body.includes(marker));
+            if (previous) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: previous.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+            if (!ok) core.setFailed(`Hosted CI failed: ${JSON.stringify(states)}`);

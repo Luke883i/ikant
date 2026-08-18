@@ -13,27 +13,46 @@ permissions:
   pull-requests: write
 
 jobs:
-  chat-design-system:
+  chat-unit:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
-      - name: Compile
-        run: python -m compileall -q ikant tests scripts
-      - name: Chat UX unit and durable host integration
-        run: python -W error::ResourceWarning -m unittest tests.test_chat_v04 tests.test_chat_host_v04 -v
-      - name: 10k executable session-chat saturation plus no-novelty tail
-        run: python scripts/chat_ux_stress.py --cases 10000 --novelty-tail 2000 --seed 883
-      - name: Durable runtime chat stress
-        run: python scripts/chat_runtime_stress.py --turns 60
-      - name: Existing regression suite
-        run: python -W error::ResourceWarning -m unittest discover -s tests -q
+      - run: python -m compileall -q ikant tests scripts
+      - run: python -W error::ResourceWarning -m unittest tests.test_chat_v04 tests.test_chat_host_v04 -v
+
+  ux-saturation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/chat_ux_stress.py --cases 10000 --novelty-tail 2000 --seed 883
+
+  runtime-stress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/chat_runtime_stress.py --turns 60
+
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -W error::ResourceWarning -m unittest discover -s tests -q
 
   report:
     if: ${{ always() && github.event_name == 'pull_request' }}
-    needs: [chat-design-system]
+    needs: [chat-unit, ux-saturation, runtime-stress, regression]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -41,8 +60,13 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const state = '${{ needs.chat-design-system.result }}';
-            const ok = state === 'success';
+            const states = {
+              chat_unit: '${{ needs.chat-unit.result }}',
+              ux_saturation: '${{ needs.ux-saturation.result }}',
+              runtime_stress: '${{ needs.runtime-stress.result }}',
+              regression: '${{ needs.regression.result }}'
+            };
+            const ok = Object.values(states).every((v) => v === 'success');
             const marker = '<!-- ikant-chat-ux-ci-receipt -->';
             const body = [
               marker,
@@ -50,9 +74,12 @@ jobs:
               '',
               `CHAT_UX_CI: ${ok ? 'PASS' : 'FAIL'}`,
               `HEAD_SHA: ${context.sha}`,
-              `chat-design-system: ${state}`,
+              `chat-unit: ${states.chat_unit}`,
+              `ux-saturation[10000+2000]: ${states.ux_saturation}`,
+              `runtime-stress[60]: ${states.runtime_stress}`,
+              `regression: ${states.regression}`,
               '',
-              'Includes v0.4 unit/integration tests, 10k+2k session-chat saturation, durable runtime chat stress and the existing regression suite.'
+              'The receipt is emitted after all v0.4 chat-design-system gates finish.'
             ].join('\n');
             const { owner, repo } = context.repo;
             const issue_number = context.issue.number;
@@ -60,4 +87,4 @@ jobs:
             const previous = comments.find((c) => c.body && c.body.includes(marker));
             if (previous) await github.rest.issues.updateComment({owner,repo,comment_id:previous.id,body});
             else await github.rest.issues.createComment({owner,repo,issue_number,body});
-            if (!ok) core.setFailed(`v0.4 chat UX gate failed: ${state}`);
+            if (!ok) core.setFailed(`v0.4 chat UX gates failed: ${JSON.stringify(states)}`);

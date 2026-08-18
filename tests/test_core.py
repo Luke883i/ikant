@@ -53,7 +53,7 @@ class Persistence(unittest.TestCase):
  def test_event_graph_divergence_fails_closed(self):
   with tempfile.TemporaryDirectory() as td:
    rt=active_runtime(Path(td),durable=True);p=rt.state_dir;rt.close()
-   with (p/'events.jsonl').open('a',encoding='utf-8') as h:h.write('{"seq":999,"op":"TAMPER"}\n')
+   with (p/'events.jsonl').open('a',encoding='utf-8') as h:h.write('{\"seq\":999,\"op\":\"TAMPER\"}\n')
    self.assertRaises(RuntimeError,Runtime,p);lock=acquire_writer_lock(p.parent/'.ikant.writer.lock');lock.release()
  def test_receipt_tamper_fails_closed(self):
   with tempfile.TemporaryDirectory() as td:

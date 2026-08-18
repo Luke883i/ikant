@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ikant"
-version = "0.1.0"
-description = "Governed concentric epistemic runtime for conforming AI assistants"
+version = "0.2.0"
+description = "ROA-aligned compact reticular cognitive runtime for conforming AI assistants"
 readme = "README.md"
 requires-python = ">=3.11"
 

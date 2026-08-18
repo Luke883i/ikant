@@ -1,14 +1,23 @@
-# Digital-Neuro-Cognitive Model v0.1
+# Digital-Neuro-Cognitive Model v0.2
 
-## Scientific boundary
+## Boundary
 
-iKant is a **computational epistemic architecture**, not a brain simulation, clinical/diagnostic instrument, consciousness claim, or digital reproduction of Immanuel Kant. Neuroscience contributes falsifiable constraints on software dynamics; it does not justify one-to-one brain-region mappings. Freud/Jung vocabularies are bounded interpretive hypothesis namespaces. The Kant center is a synthetic regulative kernel.
+iKant is a **computational epistemic architecture**, not a brain simulation, diagnosis, consciousness claim, or digital reproduction of Immanuel Kant. Neuroscience contributes falsifiable *constraints on software dynamics*; it does not justify one-to-one brain-region mappings. Freud/Jung vocabularies are bounded interpretive hypothesis namespaces. The Kant center is a synthetic regulative kernel.
 
-The runtime separates epistemic strength, availability, persistence, update pressure, non-evidentiary relevance, and normative regulation. A host model's private chain-of-thought is neither required nor stored. The inspectable substitute is an external epistemic trace: objects, provenance, transforms, conflicts, compressed trends, oracle findings, feedback and falsifiers.
+The runtime deliberately separates:
 
-## Concentric Reticular Cognition
+- **epistemic strength**: confidence, independent evidence, provenance and typed support/conflict;
+- **availability**: activation and current retrieval salience;
+- **persistence**: stability/consolidation under decay;
+- **update pressure**: novelty and prediction error;
+- **non-evidentiary relevance**: valence, arousal, interoceptive, self, social, agency and temporal relevance;
+- **normative regulation**: Kant-oracle findings that may filter/block action but never become factual evidence.
 
-The executable abstraction path is:
+A host model's private chain-of-thought is neither required nor stored. The inspectable substitute is an external epistemic trace: objects, provenance, transforms, conflicts, compressed trends, oracle findings, feedback and falsifiers.
+
+## CRC rings
+
+`CRC` means **Concentric Reticular Cognition**. The executable abstraction path is:
 
 | Ring | Layer | Runtime role | Epistemic ceiling | Activation ceiling |
 |---|---|---|---:|---:|
@@ -22,7 +31,9 @@ The executable abstraction path is:
 | R7 | `archetypal_hypothesis` | symbolic recurring-pattern hypotheses | .18 | .40 |
 | R8 | `kant_oracle` | synthetic regulative center | .60 | .74 |
 
-`meta_epistemic` is an orthogonal governance plane for provenance/admission/authority, not another brain ring. The return path is regulatory rather than evidentiary:
+`meta_epistemic` is an orthogonal governance plane for provenance/admission/authority, not another brain ring.
+
+The return path is regulatory rather than evidentiary:
 
 `Kant findings -> activation/control retroaction -> host output/action proposal -> observed effect -> new evidence`.
 
@@ -60,7 +71,7 @@ Primary human research anchors used during design include PMID 26832438 (top-dow
 - `RETRACT` deactivates without deleting history.
 - `REINSTATE` is explicit and externally attributable; recurrence cannot resurrect a retracted object.
 - `FEEDBACK` changes prediction error, stability, activation and calibration; negative observed effects can contradict predictions.
-- `COMPRESS` converts unseen event history into derived summaries/patterns and bounded historical trends. Derived content is always non-external evidence.
+- `COMPRESS` converts unseen event history into derived summaries/patterns and EWMA trend metrics. Derived content is always marked as non-external evidence.
 - `CYCLE` compiles the current intention through all rings, produces output policy/projection, and applies activation-only oracle retroaction.
 
 Compression trends allow *history of the reticulum* to influence caution/exploration without becoming self-created truth.
@@ -69,7 +80,7 @@ Compression trends allow *history of the reticulum* to influence caution/explora
 
 A psychodynamic/archetypal object is only runtime-active as a hypothesis. It must be provenance-labelled, bounded by low ceilings/quotas, retractable and capable of explicit counterevidence. Symbolic fit and repetition are not corroboration. An interpretive object cannot independently authorize a goal or material action.
 
-## Central Kant oracle and synthetic self
+## Kant oracle
 
 The center is a project-defined **digital regulative archetype of Immanuel Kant**, not a claim that Jung historically defined a Kant archetype or that Kant's mind has been reproduced.
 
@@ -87,4 +98,20 @@ These faculties yield a synthetic self-state (`unity_index`, `critique_pressure`
 
 ## Falsifiability contract
 
-Every future active construct must define observable inputs, state variables, transition function, counterexample/falsifier, provenance, evidence-update rule (or `none`), availability-update rule, influence ceiling/quota, retraction/retention policy, replay/integrity invariant, and saturation/adversarial tests. If it cannot, it stays documentation-only.
+Every future active construct must define: observable inputs, state variables, transition function, counterexample/falsifier, provenance, evidence-update rule (or `none`), availability-update rule, influence ceiling/quota, retraction/retention policy, replay/integrity invariant, and saturation/adversarial tests. If it cannot, it stays documentation-only.
+
+## v0.2 executable convergence
+
+The original v0.1 rings are retained but no longer serve only as labels on one common semantic slice. `ikant.crc` now declares each ring as a state/rule level, runs an explicit non-injective transmission to the next ring, preserves provenance support IDs, and measures finite-set information collapse. `ikant.neurofunctional` declares distributed macro-functional analogues and explicit bottom-up/reentrant couplings. `ikant.proto_self` carries bounded cross-cycle integration state. `ikant.central` recomputes the Kant regulative mode from both the original normative findings and CRC closure/debt/proto-self diagnostics. `ikant.cognitive` makes that converged state causally effective through activation-only workspace retroaction and Surface A constraints.
+
+The functional analogy is intentionally many-to-many rather than one software ring per anatomical region. Empirical anchors constrain operations; they do not establish anatomical identity. See `docs/CRC_CONVERGENCE_V02.md` for the current operational definition and boundaries.
+
+### v0.2 causal neurofunctional control
+
+Each active empirical ring now derives a bounded functional control state (`gain`, `precision`, `inhibition`, `plasticity`, `persistence`) from local runtime observables. Those states causally modulate the target-specific CRC coarse-graining rules and persist with bounded inertia across turns. A regression test requires a borderline salience state to change classification under a changed prior functional-control state while factual evidence remains identical. These values are software control proxies, never neural measurements.
+
+## v0.2 whole-model closure boundary
+
+The active CRC is a deliberately compressed functional analogue, not a claim to reproduce all branches of neuroscience. The coverage manifest distinguishes active macro-functions, bounded modulators, host-bound functions, partial analogues and inactive domains. This prevents omitted biology from being silently treated as simulated.
+
+Derived process memory is bounded and non-self-evidentiary. The final host-visible projection is compiled after central convergence and can only demote or withhold relative to the epistemic input partition. The actual Surface A utterance is stored as a zero-evidence response speech act so temporal continuity is available to the next turn without converting self-generated text into proof.

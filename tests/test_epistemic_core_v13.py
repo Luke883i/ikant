@@ -24,6 +24,16 @@ class EpistemicCoreV13Tests(unittest.TestCase):
                 self.assertTrue((Path(rt.state_dir)/'provenance.json').exists())
             finally: rt.close()
 
+    def test_same_actor_binding_does_not_inflate_independent_provenance(self):
+        with tempfile.TemporaryDirectory() as td:
+            rt=active_runtime(Path(td))
+            try:
+                n=rt.ingest(kind=NodeKind.CLAIM,layer=Layer.SIGNAL,text='A user supplied constraint',confidence=.8,evidence=.7,source_mode='user')
+                bind_node_source(rt,n.id,source_mode='user',provenance_key='user:current-session',acquisition='human_bound',independent=False)
+                out=materialize_provenance(rt);claim=out['graph']['claims'][n.id]
+                self.assertEqual(len(claim['source_ids']),1);self.assertLessEqual(provenance_quality(rt,n.id),.55)
+            finally: rt.close()
+
     def test_calibration_is_feedback_bound_and_monotone_caution(self):
         with tempfile.TemporaryDirectory() as td:
             rt=active_runtime(Path(td),durable=True)

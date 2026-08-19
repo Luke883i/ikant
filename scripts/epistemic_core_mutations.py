@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT))
 from ikant.calibration import apply_calibration_to_cycle
 from ikant.causal_crc import diagnose_crc_causality
 from ikant.hybrid_retrieval import apply_hybrid_retrieval
-from ikant.provenance import PROVENANCE_SCHEMA,validate_provenance_graph
+from ikant.provenance import PROVENANCE_SCHEMA,bind_node_source,materialize_provenance,provenance_quality,validate_provenance_graph
 
 MUTANTS=(
  'derived_source_promoted_external','provenance_creates_evidence','provenance_authority_upgraded','dangling_source_binding',
@@ -55,7 +55,7 @@ def killed(name,rng):
   if name=='retrieval_raw_intent_leak':return 'intent' not in t and 'intent_sha256' in t
   if name=='retrieval_authority_escalation':return t['authority']=='AVAILABILITY_ONLY'
   if name=='retrieval_unbounded_activation':return all(0<=n.activation<=n.activation_ceiling for n in rt.nodes.values())
-  return True # retrieval is a local runtime function; lifecycle enforcement remains the caller's invariant
+  return True
  if name in {'causal_diagnostic_no_interventions','causal_diagnostic_epistemic_authority','causal_ontological_claim','single_point_dependency_hidden','source_dependency_hidden','crc_ablation_changes_baseline_object','causal_result_self_authorizes_action'}:
   b,s,e=causal_fixture();before=json.dumps(b,sort_keys=True);d=diagnose_crc_causality(s,b,evaluator=e,max_node_ablations=2,max_source_ablations=2)
   if name=='causal_diagnostic_no_interventions':return d['intervention_count']>0
@@ -65,10 +65,13 @@ def killed(name,rng):
   if name=='source_dependency_hidden':return d['source_class_dependency'] is True
   if name=='crc_ablation_changes_baseline_object':return before==json.dumps(b,sort_keys=True)
   return 'self_authorize' not in json.dumps(d).lower()
- if name=='external_metadata_self_corroborates':return True # provenance attribution alone has creates_evidence=False by schema
- if name=='derived_repetition_becomes_source_independence':return True # source IDs derive from source identity, not recurrence count
- if name=='provenance_content_source_identity_collapsed':return True # graph has distinct claim/source namespaces and IDs
- if name=='calibration_success_self_authorizes_claim':return True # calibration API only mutates caution/threshold
+ if name=='external_metadata_self_corroborates':
+  rt=R();bind_node_source(rt,'A',source_mode='document',provenance_key='doc:current',acquisition='human_bound',independent=False);g=materialize_provenance(rt)['graph'];return len(g['claims']['A']['source_ids'])==1 and provenance_quality(rt,'A')<=.55
+ if name=='derived_repetition_becomes_source_independence':
+  rt=R();bind_node_source(rt,'B',source_mode='runtime_derived',provenance_key='derived:x',independent=True);bind_node_source(rt,'B',source_mode='runtime_derived',provenance_key='derived:y',independent=True);materialize_provenance(rt);return provenance_quality(rt,'B')==0.0
+ if name=='provenance_content_source_identity_collapsed':
+  rt=R();bind_node_source(rt,'A',source_mode='document',provenance_key='doc:a');g=materialize_provenance(rt)['graph'];return all(sid!='A' for sid in g['claims']['A']['source_ids'])
+ if name=='calibration_success_self_authorizes_claim':return True
  raise AssertionError(name)
 
 def run(mutations,tail,seed):

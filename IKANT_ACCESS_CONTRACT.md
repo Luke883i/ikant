@@ -62,8 +62,8 @@ This contract governs conforming AI/host use of iKant. The repository is public,
 24. Successful `INITIALIZE` activates a persistent session-bound state `DASHBOARD_LOCKED`. From that point until release, the **entire human-visible assistant message must be exactly one canonical iKant dashboard frame**. No greeting, explanation, markdown fence, citation block, tool summary, status sentence or other token may appear outside that frame.
 25. Surface A, when present, is rendered only inside the dashboard. Same-cycle Surface B JSON and DOCX must exist before a validated Surface A can appear in a READY frame.
 26. The host may use internal machine/tool channels, including structured JSON, only if those bytes are not surfaced as the assistant's human-visible message. Machine output never substitutes for the dashboard on the human channel.
-27. Before human emission the host seals the canonical dashboard frame and validates the candidate visible message byte-for-byte against it. Prefix, suffix, wrapper, stale frame or altered bytes enter `EGRESS_BREACHED` for the current egress epoch.
-28. At most one substantive Surface A turn may be pending. Race/fork/duplicate final emissions fail closed.
+27. Before human emission the host seals the canonical dashboard frame and enters `FRAME_PENDING`. No second frame may be sealed while one is pending. The candidate visible message must byte-match the sealed frame; exact validation returns to `DASHBOARD_LOCKED`. Prefix, suffix, wrapper, stale frame or altered bytes enter `EGRESS_BREACHED` for the current egress epoch.
+28. At most one substantive Surface A turn and one human frame may be pending. Race/fork/duplicate final emissions fail closed.
 29. The exact command `EXIT IKANT` requests release. iKant emits one final dashboard frame describing release; after that exact sealed frame is acknowledged, state becomes `RELEASED` and subsequent conversation belongs to the local host assistant rather than iKant.
 30. Strings that merely contain, quote, case-fold or whitespace-modify `EXIT IKANT` are ordinary user intentions and do not release the lock.
 31. Outside iKant, exact `RESUME IKANT` may start a new dashboard egress epoch only if the persisted runtime remains ACTIVE and passes integrity. Otherwise normal admission/probe/initialize is required.
@@ -75,7 +75,11 @@ This contract governs conforming AI/host use of iKant. The repository is public,
 
 `AWAITING_ACCEPTANCE -> DECLINED -> (re-present cached terms) -> AWAITING_ACCEPTANCE` is allowed without new repository acquisition.
 
-`DASHBOARD_LOCKED -> RELEASE_PENDING -> RELEASED` is the canonical exit path. `EGRESS_BREACHED` ends the current egress epoch; resume requires runtime integrity.
+Normal human frame: `DASHBOARD_LOCKED -> FRAME_PENDING -> DASHBOARD_LOCKED`.
+
+Exit: `DASHBOARD_LOCKED -> RELEASE_PENDING -> RELEASED`.
+
+`EGRESS_BREACHED` ends the current egress epoch; resume requires runtime integrity.
 
 After human acceptance and materialization, the canonical host records the already-observed acceptance with:
 

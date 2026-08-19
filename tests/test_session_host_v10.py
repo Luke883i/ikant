@@ -1,20 +1,18 @@
 import tempfile,unittest
 from pathlib import Path
-from types import SimpleNamespace
 from ikant.session_egress import DashboardEgressGuard,EgressState,EgressViolation
 from ikant.session_host import prepare_text_frame,acknowledge_prepared_frame,recover_prepared_frame
-
 FRAME='+--+\n| dashboard |\n+--+'
 class R:
- def __init__(self,p):self.state_dir=Path(p);self.runtime={'status':'ACTIVE','session_id':'SES-X'}
+ def __init__(self,p):self.state_dir=Path(p);self.runtime={'status':'ACTIVE','session_id':'SES-X'};self.events=[];DashboardEgressGuard.create(self.state_dir/'egress.json',runtime_session_id='SES-X')
  def require_active(self):
   if self.runtime['status']!='ACTIVE':raise PermissionError
-
+ def _write_runtime(self):pass
+ def _event(self,*a):self.events.append(a)
 class HostV10(unittest.TestCase):
  def test_prepare_does_not_ack(self):
   with tempfile.TemporaryDirectory() as td:
-   rt=R(td);p=prepare_text_frame(rt,FRAME,kind='TURN');g=DashboardEgressGuard(Path(td)/'egress.json',runtime_session_id='SES-X');self.assertEqual(g.state,EgressState.FRAME_PENDING);self.assertFalse(p['acknowledged'])
-   p2=acknowledge_prepared_frame(rt,p,FRAME);self.assertTrue(p2['acknowledged']);self.assertEqual(p2['delivery_state'],EgressState.LOCKED.value)
+   rt=R(td);p=prepare_text_frame(rt,FRAME,kind='TURN');g=DashboardEgressGuard(Path(td)/'egress.json',runtime_session_id='SES-X');self.assertEqual(g.state,EgressState.FRAME_PENDING);self.assertFalse(p['acknowledged']);p2=acknowledge_prepared_frame(rt,p,FRAME);self.assertTrue(p2['acknowledged']);self.assertEqual(p2['delivery_state'],EgressState.LOCKED.value)
  def test_write_failure_can_recover(self):
   with tempfile.TemporaryDirectory() as td:
    rt=R(td);p=prepare_text_frame(rt,FRAME,kind='TURN');rec=recover_prepared_frame(rt);self.assertEqual(rec['text'],FRAME);self.assertTrue(rec['recovery']);acknowledge_prepared_frame(rt,rec,FRAME)

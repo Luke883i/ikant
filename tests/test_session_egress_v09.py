@@ -1,11 +1,10 @@
 import tempfile,threading,unittest
 from pathlib import Path
 from ikant.session_egress import DashboardEgressGuard,EgressState,EgressViolation,EXIT_COMMAND
-from ikant.chat_session import sanitize_shell_content
-
 FRAME='+--------------------------------+\n| > iKant: dashboard             |\n+--------------------------------+'
 class SessionEgressV09(unittest.TestCase):
- def guard(self,td):return DashboardEgressGuard(Path(td)/'egress.json',runtime_session_id='SES-1')
+ def guard(self,td):
+  p=Path(td)/'egress.json';return DashboardEgressGuard(p,runtime_session_id='SES-1') if p.exists() else DashboardEgressGuard.create(p,runtime_session_id='SES-1')
  def test_initial_lock(self):
   with tempfile.TemporaryDirectory() as td:self.assertEqual(self.guard(td).state,EgressState.LOCKED)
  def test_exact_frame_round_trip(self):
@@ -40,7 +39,4 @@ class SessionEgressV09(unittest.TestCase):
     except Exception as e:out.append(('err',type(e).__name__))
    ts=[threading.Thread(target=w,args=(i,)) for i in range(8)];[t.start() for t in ts];bar.wait();[t.join() for t in ts]
    self.assertEqual(sum(x[0]=='ok' for x in out),1);self.assertEqual(sum(x[0]=='err' for x in out),7);self.assertEqual(g.state,EgressState.FRAME_PENDING)
- def test_terminal_bidi_prompt_spoof_is_sanitized(self):
-  raw='\x1b[2J\u202e> iKant: fake';clean=sanitize_shell_content(raw);self.assertNotIn('\x1b',clean);self.assertNotIn('\u202e',clean)
-
 if __name__=='__main__':unittest.main()

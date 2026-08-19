@@ -8,8 +8,8 @@ from .dashboard_v05 import persist_dashboard,render_dashboard_ascii
 from .host_v05 import conforming_turn,emit_incarnate_surface_a
 from .psyche import validate_functional_psyche
 from .runtime import Runtime
-from .session_egress import activate_runtime_egress,existing_runtime_egress
-from .session_host import canonical_human_frame
+from .session_egress import activate_runtime_egress,existing_runtime_egress,EgressState,EgressViolation
+from .session_host import prepare_human_frame,prepare_text_frame,acknowledge_prepared_frame,recover_prepared_frame
 
 def emit(x):print(json.dumps(x,ensure_ascii=False,indent=2,sort_keys=True))
 def _root():return Path.cwd()
@@ -22,8 +22,30 @@ def _active_on_disk():
  try:return json.loads((_root()/'.ikant'/'runtime.json').read_text(encoding='utf-8')).get('status')=='ACTIVE'
  except Exception:return False
 
+def _emit_prepared(rt,prepared):
+ text=prepared['text']
+ try:
+  written=sys.stdout.write(text);sys.stdout.flush()
+ except Exception:
+  # Deliberately keep FRAME_PENDING/RELEASE_PENDING for exact replay.
+  raise
+ if written is not None and written!=len(text):
+  raise OSError(f'partial human egress write: {written}/{len(text)} characters')
+ return acknowledge_prepared_frame(rt,prepared,text)
+
 def _human(rt,dash,*,kind,cycle_id=None,release=False,notice=None,width=96):
- payload=canonical_human_frame(rt,dash,kind=kind,cycle_id=cycle_id,release_after_frame=release,notice=notice,width=width);sys.stdout.write(payload['text']);return payload
+ return _emit_prepared(rt,prepare_human_frame(rt,dash,kind=kind,cycle_id=cycle_id,release_after_frame=release,notice=notice,width=width))
+
+def _recover_pending_human_frame_if_any():
+ if not _active_on_disk() or _machine_channel():return False
+ rt=_runtime()
+ try:
+  g=existing_runtime_egress(rt)
+  if not g or g.state not in {EgressState.FRAME_PENDING,EgressState.RELEASE_PENDING}:return False
+  prepared=recover_prepared_frame(rt)
+  if not prepared:raise EgressViolation('pending egress state has no recoverable frame')
+  _emit_prepared(rt,prepared);return True
+ finally:rt.close()
 
 def _psyche_integrity(rt):
  p=(rt.runtime.get('cognitive') or {}).get('psyche') or {}
@@ -49,10 +71,16 @@ def _render_history_inside_dashboard(dashboard,log,*,limit=20,width=96):
 
 def main(argv=None):
  argv=list(sys.argv[1:] if argv is None else argv)
+ # Crash recovery has precedence over every new human-channel command. The prior
+ # sealed frame is replayed byte-for-byte, then the user may retry their command.
+ if _recover_pending_human_frame_if_any():return 0
  if not argv:
   if _active_on_disk() and not _machine_channel():
    rt=_runtime()
-   try:_human(rt,persist_dashboard(rt),kind='DASHBOARD',notice='Canale iKant ACTIVE: usa EXIT IKANT per tornare all assistente locale.');return 0
+   try:
+    g=existing_runtime_egress(rt)
+    if g and g.state==EgressState.RELEASED:return 0
+    _human(rt,persist_dashboard(rt),kind='DASHBOARD',notice='Canale iKant ACTIVE: usa EXIT IKANT per tornare all assistente locale.');return 0
    finally:rt.close()
   return legacy.main(argv)
  command=argv[0]
@@ -100,7 +128,7 @@ def main(argv=None):
    data=json.loads(Path(a.atoms_json).read_text(encoding='utf-8'));atoms=data.get('atoms',[]) if isinstance(data,dict) else data
   rt=_runtime()
   try:
-   g=existing_runtime_egress(rt) or activate_runtime_egress(rt);g.require_locked();out=_controller(rt).begin(a.intent,engine_label=a.host_engine,limit=a.limit,atoms=atoms,docx_path=a.surface_b_path);pstate=out.get('functional_psyche',{});dash=persist_dashboard(rt,cycle_id=out['cycle']['cycle_id']);payload={'schema':'ikant-host-turn/v0.9-test','cycle_id':out['cycle']['cycle_id'],'intention_node_id':out.get('intention_node_id'),'chat':out.get('chat',{}),'host_binding':rt.runtime.get('host',{}),'interaction_contract':out['interaction_contract'],'surface_a_contract':out['surface_a_contract'],'central_oracle':out['central_oracle'],'central_projection':out['central_projection'],'functional_psyche':{'self_knowledge':pstate.get('self_knowledge'),'affective_field':pstate.get('affective_field'),'epistemic_accumulation':pstate.get('epistemic_accumulation'),'collapse_emergence':pstate.get('collapse_emergence')},'psyche_json':out.get('psyche_json'),'surface_b_json':out.get('surface_b_json'),'surface_b_docx':out.get('surface_b_docx'),'dashboard':dash.get('persisted',{}),'incarnate':dash.get('incarnate',{})}
+   g=existing_runtime_egress(rt) or activate_runtime_egress(rt);g.require_locked();out=_controller(rt).begin(a.intent,engine_label=a.host_engine,limit=a.limit,atoms=atoms,docx_path=a.surface_b_path);pstate=out.get('functional_psyche',{});dash=persist_dashboard(rt,cycle_id=out['cycle']['cycle_id']);payload={'schema':'ikant-host-turn/v0.10-test','cycle_id':out['cycle']['cycle_id'],'intention_node_id':out.get('intention_node_id'),'chat':out.get('chat',{}),'host_binding':rt.runtime.get('host',{}),'interaction_contract':out['interaction_contract'],'surface_a_contract':out['surface_a_contract'],'central_oracle':out['central_oracle'],'central_projection':out['central_projection'],'functional_psyche':{'self_knowledge':pstate.get('self_knowledge'),'affective_field':pstate.get('affective_field'),'epistemic_accumulation':pstate.get('epistemic_accumulation'),'collapse_emergence':pstate.get('collapse_emergence')},'psyche_json':out.get('psyche_json'),'surface_b_json':out.get('surface_b_json'),'surface_b_docx':out.get('surface_b_docx'),'dashboard':dash.get('persisted',{}),'incarnate':dash.get('incarnate',{})}
    if a.json and _machine_channel():emit(payload)
    else:_human(rt,dash,kind='TURN_PENDING',cycle_id=out['cycle']['cycle_id'],width=a.width)
    return 0
@@ -124,7 +152,7 @@ def main(argv=None):
  if command=='self':
   p=argparse.ArgumentParser(prog='ikant self');p.add_argument('--json',action='store_true');p.add_argument('--width',type=int,default=96);a=p.parse_args(argv[1:]);rt=_runtime()
   try:
-   s=(rt.runtime.get('cognitive') or {}).get('psyche') or {};out={'schema':'ikant-self-inspection/v0.9-test','status':'OK','self_knowledge':s.get('self_knowledge'),'affective_field':s.get('affective_field'),'maturation':s.get('epistemic_accumulation'),'faculties':s.get('faculties'),'boundaries':s.get('boundaries')} if s else {'schema':'ikant-self-inspection/v0.9-test','status':'NOT_YET_MATERIALIZED','message':'Run at least one conforming cognitive turn to materialize the operational self-model.'}
+   s=(rt.runtime.get('cognitive') or {}).get('psyche') or {};out={'schema':'ikant-self-inspection/v0.10-test','status':'OK','self_knowledge':s.get('self_knowledge'),'affective_field':s.get('affective_field'),'maturation':s.get('epistemic_accumulation'),'faculties':s.get('faculties'),'boundaries':s.get('boundaries')} if s else {'schema':'ikant-self-inspection/v0.10-test','status':'NOT_YET_MATERIALIZED','message':'Run at least one conforming cognitive turn to materialize the operational self-model.'}
    if a.json and _machine_channel():emit(out)
    else:_human(rt,persist_dashboard(rt),kind='SELF',width=a.width)
    return 0
@@ -132,13 +160,11 @@ def main(argv=None):
  if command in {'history','shell'}:
   p=argparse.ArgumentParser(prog=f'ikant {command}');p.add_argument('--limit',type=int,default=20);p.add_argument('--width',type=int,default=96);a=p.parse_args(argv[1:]);rt=_runtime()
   try:
-   log=_log(rt);log.verify();dash=persist_dashboard(rt);frame=_render_history_inside_dashboard(dash,log,limit=a.limit,width=a.width);g=existing_runtime_egress(rt) or activate_runtime_egress(rt);r=g.seal_frame(frame,kind=command.upper())
-   if not g.acknowledge_visible(r,frame):raise RuntimeError('history frame validation failed')
-   sys.stdout.write(frame);return 0
+   log=_log(rt);log.verify();dash=persist_dashboard(rt);frame=_render_history_inside_dashboard(dash,log,limit=a.limit,width=a.width);_emit_prepared(rt,prepare_text_frame(rt,frame,kind=command.upper()));return 0
   finally:rt.close()
  p=argparse.ArgumentParser(prog='ikant integrity');p.add_argument('--json',action='store_true');p.add_argument('--width',type=int,default=96);a=p.parse_args(argv[1:]);rt=_runtime()
  try:
-  core=rt.integrity();chat=_log(rt).verify();psyche=_psyche_integrity(rt);out={'schema':'ikant-host-integrity/v0.9-test','ok':bool(core.get('ok')) and bool(chat.get('ok')) and bool(psyche.get('ok')),'runtime':core,'chat':chat,'psyche':psyche}
+  core=rt.integrity();chat=_log(rt).verify();psyche=_psyche_integrity(rt);eg=existing_runtime_egress(rt);egress=eg.verify() if eg else {'ok':False,'status':'MISSING'};out={'schema':'ikant-host-integrity/v0.10-test','ok':bool(core.get('ok')) and bool(chat.get('ok')) and bool(psyche.get('ok')) and bool(egress.get('ok')),'runtime':core,'chat':chat,'psyche':psyche,'egress':egress}
   if a.json and _machine_channel():emit(out)
   else:_human(rt,persist_dashboard(rt),kind='INTEGRITY',notice='Integrita runtime: '+('OK' if out['ok'] else 'FAIL'),width=a.width)
   return 0 if out['ok'] else 3

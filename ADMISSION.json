@@ -1,28 +1,41 @@
 {
-  "schema": "ikant-admission/v0.5",
+  "schema": "ikant-admission/v0.8",
   "repository": "Luke883i/ikant",
-  "contract_version": "0.5.0",
+  "contract_version": "0.8.0",
   "contract_path": "IKANT_ACCESS_CONTRACT.md",
   "acceptance_phrase": "I ACCEPT",
   "human_actor_required": true,
   "evidence_type": "explicit_user_message",
   "current_session_required": true,
   "pre_acceptance_firewall": {
-    "schema": "ikant-pre-admission-firewall/v0.6-test",
+    "schema": "ikant-pre-admission-firewall/v0.8-test",
     "default": "DENY",
-    "terms_envelope_path": "IKANT_ACCESS_CONTRACT.md",
-    "terms_envelope_only_repository_read_exception": true,
+    "orientation_capsule": {
+      "paths": ["README.md", "IKANT_ACCESS_CONTRACT.md", "BOOTSTRAP.json", "ADMISSION.json", "AGENTS.md"],
+      "metadata_fields": ["repository_full_name", "visibility", "default_branch", "description", "license", "topics", "archived"],
+      "max_file_reads": 5,
+      "max_total_bytes": 262144,
+      "max_metadata_reads": 1,
+      "single_fetch_per_path": true,
+      "tree_search_history_source_allowed": false
+    },
+    "freeze_after_terms_presentation": true,
+    "cached_orientation_use_purposes": ["ACCESS_DENIAL", "BOOTSTRAP_EXPLANATION", "TERMS_EXPLANATION"],
     "repository_materialization_requires_acceptance": true,
-    "completed_pre_acceptance_breach_is_nonretroactive": true,
+    "completed_forbidden_access_is_nonretroactive": true,
+    "incidental_unexposed_overfetch_is_quarantined": true,
     "forbidden_operations": [
       "CLONE_REPOSITORY", "DOWNLOAD_ARCHIVE", "GIT_FETCH", "GIT_LS_REMOTE", "LIST_TREE",
       "MATERIALIZE_CHECKOUT", "READ_REPOSITORY_FILE", "READ_REPOSITORY_HISTORY",
       "READ_REPOSITORY_ISSUE_PR", "READ_REPOSITORY_METADATA", "SEARCH_REPOSITORY"
     ]
   },
-  "state_machine": ["DISCOVERED", "TERMS_ENVELOPE", "TERMS_PRESENTED", "ACCEPTED", "MATERIALIZED", "PROBED", "INITIALIZING", "ACTIVE"],
+  "state_machine": ["DISCOVERED", "ORIENTING", "AWAITING_ACCEPTANCE", "ACCEPTED", "MATERIALIZED", "PROBED", "INITIALIZING", "ACTIVE"],
+  "decline_state": "DECLINED",
+  "decline_recovery": "re-present_cached_terms",
   "breach_state": "BREACHED",
   "breach_recovery": "fresh_admission_context_only",
+  "denial_receipt_schema": "ikant-access-denial/v0.8",
   "accepted_interaction_hierarchy": {
     "primary_local_interface": "iKant",
     "underlying_model_role": "execution_engine",
@@ -43,5 +56,5 @@
   "runtime_state_directory": ".ikant",
   "public_bootstrap_connector_required": false,
   "degraded_runtime_simulation_allowed": false,
-  "enforcement_scope": "pre-materialization host contract plus post-materialization executable local verification"
+  "enforcement_scope": "bounded pre-admission host orientation plus post-materialization executable local verification"
 }

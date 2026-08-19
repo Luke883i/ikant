@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ikant"
-version = "0.7.0a1"
-description = "ROA-aligned reticular cognitive runtime with fail-closed pre-admission and deterministic incarnate dashboard egress"
+version = "0.8.0a1"
+description = "ROA-aligned reticular cognitive runtime with bounded consent-gated admission and deterministic incarnate dashboard egress"
 readme = "README.md"
 requires-python = ">=3.11"
 

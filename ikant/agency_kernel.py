@@ -98,10 +98,11 @@ class AgencyKernel:
     def _persist_projection(self):
         if self.durable:atomic_json_write(self.projection_path,self.projection())
     def verify(self)->dict[str,Any]:self.journal.verify();self.state();return {**self.projection(),'ok':True}
+    def _append_unlocked(self,typ:str,payload:dict[str,Any],*,at:float|None=None):
+        row=self.journal.append(typ,payload,at=at);self._persist_projection();return row
     def _append(self,typ:str,payload:dict[str,Any],*,at:float|None=None):
         lock=self._locked()
-        try:
-            row=self.journal.append(typ,payload,at=at);self._persist_projection();return row
+        try:return self._append_unlocked(typ,payload,at=at)
         finally:lock.release()
     def issue_grant(self,frame:dict[str,Any],receipt:dict[str,Any],*,now:float|None=None)->dict[str,Any]:
         ok,fe=validate_human_frame(frame)
@@ -110,25 +111,33 @@ class AgencyKernel:
         if not ok:raise AgencyAuthorityError('invalid grant interaction: '+'; '.join(re))
         if frame.get('purpose')!='CAPABILITY_GRANT' or receipt.get('decision')!='APPROVE':raise AgencyAuthorityError('explicit capability grant approval required')
         if frame.get('session_id')!=self.session_id:raise AgencyAuthorityError('grant session mismatch')
-        gid=_grant_id(frame,receipt);st=self.state()
-        if gid in st.grants:return dict(st.grants[gid])
-        expires=frame.get('expires_at');t=_now(now)
+        gid=_grant_id(frame,receipt);expires=frame.get('expires_at');t=_now(now)
         if expires is not None and float(expires)<=t:raise AgencyAuthorityError('grant already expired')
         ents=normalize_entitlements(frame.get('requested_entitlements',[]) or [])
         grant={'schema':CAPABILITY_GRANT_SCHEMA,'grant_id':gid,'session_id':self.session_id,'actor_binding_id':self.binding.binding_id,'frame_sha256':frame['sha256'],'receipt_mac_sha256':receipt['mac_sha256'],'entitlements':[{'capability':c,'resource':r} for c,r in ents],'max_uses':int(frame.get('max_uses',1)),'expires_at':None if expires is None else float(expires),'grant_epoch':0,'status':'ACTIVE','issued_at':t,'human_identity_proven':False,'channel_authenticated':True,'epistemic_authority':0.0,'execution_authority':0.0,'grant_is_not_execution':True}
-        grant['sha256']=_digest(grant);self._append('GRANT_ISSUED',grant,at=t);return grant
+        grant['sha256']=_digest(grant)
+        lock=self._locked()
+        try:
+            st=self.state()
+            if gid in st.grants:return dict(st.grants[gid])
+            self._append_unlocked('GRANT_ISSUED',grant,at=t);return grant
+        finally:lock.release()
     def revoke_grant(self,grant_id:str,frame:dict[str,Any],receipt:dict[str,Any],*,now:float|None=None)->dict[str,Any]:
-        gid=str(grant_id);st=self.state();grant=st.grants.get(gid)
-        if not grant:raise AgencyAuthorityError('grant not found')
-        if grant.get('status')=='REVOKED':return dict(grant)
+        gid=str(grant_id)
         ok,fe=validate_human_frame(frame)
         if not ok:raise AgencyAuthorityError('invalid revoke frame: '+'; '.join(fe))
         ok,re=validate_interaction_receipt(frame,receipt,binding=self.binding,secret=self.secret)
         if not ok:raise AgencyAuthorityError('invalid revoke interaction: '+'; '.join(re))
         if frame.get('purpose')!='CAPABILITY_REVOKE' or frame.get('subject_id')!=gid or receipt.get('decision')!='REVOKE':raise AgencyAuthorityError('explicit grant-bound revocation required')
-        t=_now(now);epoch=int(grant.get('grant_epoch',0))+1
-        self._append('GRANT_REVOKED',{'grant_id':gid,'grant_epoch':epoch,'revoked_at':t,'frame_sha256':frame['sha256'],'receipt_mac_sha256':receipt['mac_sha256']},at=t)
-        return dict(self.state().grants[gid])
+        t=_now(now);lock=self._locked()
+        try:
+            st=self.state();grant=st.grants.get(gid)
+            if not grant:raise AgencyAuthorityError('grant not found')
+            if grant.get('status')=='REVOKED':return dict(grant)
+            epoch=int(grant.get('grant_epoch',0))+1
+            self._append_unlocked('GRANT_REVOKED',{'grant_id':gid,'grant_epoch':epoch,'revoked_at':t,'frame_sha256':frame['sha256'],'receipt_mac_sha256':receipt['mac_sha256']},at=t)
+            return dict(self.state().grants[gid])
+        finally:lock.release()
     def _grant_available(self,grant:dict[str,Any],st:AgencyState,now:float)->bool:
         if grant.get('status')!='ACTIVE':return False
         exp=grant.get('expires_at')
@@ -148,25 +157,28 @@ class AgencyKernel:
         if not ents or ent_caps!=required_caps:raise AgencyAuthorityError('lease entitlements must exactly cover handoff required capabilities')
         binding={k:envelope.get(k) for k in ('session_id','cycle_id','intent_sha256','handoff_id','idempotency_key','action_fingerprint','action_ledger_sha256','plan_ledger_sha256','plan_id','step_id')}
         if any(v in {None,''} for v in binding.values()):raise AgencyAuthorityError('handoff exact binding incomplete')
-        t=_now(now);st=self.state();chosen=[]
-        for entitlement in ents:
-            matches=[]
-            for gid,grant in st.grants.items():
-                granted={(x.get('capability'),x.get('resource')) for x in grant.get('entitlements',[]) or []}
-                if entitlement in granted and self._grant_available(grant,st,t):matches.append(grant)
-            if not matches:raise AgencyAuthorityError('missing active grant for entitlement:'+entitlement[0]+'@'+entitlement[1])
-            chosen.append(sorted(matches,key=lambda g:g['grant_id'])[0])
-        refs=[]
-        for g in sorted({g['grant_id']:g for g in chosen}.values(),key=lambda g:g['grant_id']):refs.append({'grant_id':g['grant_id'],'grant_epoch':int(g.get('grant_epoch',0)),'grant_sha256':g.get('sha256')})
-        lid=_lease_id(binding,refs,ents);existing=st.leases.get(lid)
-        if existing:
-            if existing.get('status')=='PENDING' and self.validate_lease(existing,envelope,now=t)[0]:return dict(existing)
-            raise AgencyAuthorityError('lease replay after terminal or invalid state')
-        effective_exp=expires_at;grant_exps=[float(g['expires_at']) for g in chosen if g.get('expires_at') is not None]
-        if grant_exps:effective_exp=min(float(effective_exp),min(grant_exps)) if effective_exp is not None else min(grant_exps)
-        if effective_exp is not None and float(effective_exp)<=t:raise AgencyAuthorityError('lease already expired')
-        lease={'schema':EXECUTION_LEASE_SCHEMA,'lease_id':lid,**binding,'entitlements':[{'capability':c,'resource':r} for c,r in ents],'grant_refs':refs,'issued_at':t,'expires_at':None if effective_exp is None else float(effective_exp),'status':'PENDING','one_shot':True,'outbox_state':'PENDING','epistemic_authority':0.0,'execution_authority':0.0,'lease_is_precondition_not_execution':True,'runtime_executes_action':False}
-        lease['sha256']=_digest(lease);self._append('LEASE_ISSUED',lease,at=t);return lease
+        t=_now(now);lock=self._locked()
+        try:
+            st=self.state();chosen=[]
+            for entitlement in ents:
+                matches=[]
+                for gid,grant in st.grants.items():
+                    granted={(x.get('capability'),x.get('resource')) for x in grant.get('entitlements',[]) or []}
+                    if entitlement in granted and self._grant_available(grant,st,t):matches.append(grant)
+                if not matches:raise AgencyAuthorityError('missing active grant for entitlement:'+entitlement[0]+'@'+entitlement[1])
+                chosen.append(sorted(matches,key=lambda g:g['grant_id'])[0])
+            refs=[]
+            for g in sorted({g['grant_id']:g for g in chosen}.values(),key=lambda g:g['grant_id']):refs.append({'grant_id':g['grant_id'],'grant_epoch':int(g.get('grant_epoch',0)),'grant_sha256':g.get('sha256')})
+            lid=_lease_id(binding,refs,ents);existing=st.leases.get(lid)
+            if existing:
+                if existing.get('status')=='PENDING' and self.validate_lease(existing,envelope,now=t)[0]:return dict(existing)
+                raise AgencyAuthorityError('lease replay after terminal or invalid state')
+            effective_exp=expires_at;grant_exps=[float(g['expires_at']) for g in chosen if g.get('expires_at') is not None]
+            if grant_exps:effective_exp=min(float(effective_exp),min(grant_exps)) if effective_exp is not None else min(grant_exps)
+            if effective_exp is not None and float(effective_exp)<=t:raise AgencyAuthorityError('lease already expired')
+            lease={'schema':EXECUTION_LEASE_SCHEMA,'lease_id':lid,**binding,'entitlements':[{'capability':c,'resource':r} for c,r in ents],'grant_refs':refs,'issued_at':t,'expires_at':None if effective_exp is None else float(effective_exp),'status':'PENDING','one_shot':True,'outbox_state':'PENDING','epistemic_authority':0.0,'execution_authority':0.0,'lease_is_precondition_not_execution':True,'runtime_executes_action':False}
+            lease['sha256']=_digest(lease);self._append_unlocked('LEASE_ISSUED',lease,at=t);return lease
+        finally:lock.release()
     def validate_lease(self,lease:dict[str,Any],envelope:dict[str,Any],*,now:float|None=None)->tuple[bool,list[str]]:
         t=_now(now);raw=dict(lease or {});e=[];st=self.state()
         if raw.get('schema')!=EXECUTION_LEASE_SCHEMA:e.append('lease schema')
@@ -191,17 +203,23 @@ class AgencyKernel:
         if actual!=_digest(material):e.append('lease digest')
         return not e,e
     def consume_lease(self,lease_id:str,*,now:float|None=None,reason:str='external terminal receipt recorded')->dict[str,Any]:
-        st=self.state();lease=st.leases.get(str(lease_id))
-        if not lease:raise AgencyAuthorityError('lease not found')
-        if lease.get('status')=='CONSUMED':return dict(lease)
-        if lease.get('status')!='PENDING':raise AgencyAuthorityError('lease is not consumable')
-        t=_now(now);self._append('LEASE_CONSUMED',{'lease_id':lease['lease_id'],'at':t,'reason':str(reason)},at=t);return dict(self.state().leases[lease['lease_id']])
+        t=_now(now);lock=self._locked()
+        try:
+            st=self.state();lease=st.leases.get(str(lease_id))
+            if not lease:raise AgencyAuthorityError('lease not found')
+            if lease.get('status')=='CONSUMED':return dict(lease)
+            if lease.get('status')!='PENDING':raise AgencyAuthorityError('lease is not consumable')
+            self._append_unlocked('LEASE_CONSUMED',{'lease_id':lease['lease_id'],'at':t,'reason':str(reason)},at=t);return dict(self.state().leases[lease['lease_id']])
+        finally:lock.release()
     def cancel_lease(self,lease_id:str,*,now:float|None=None,reason:str='cancelled before material execution')->dict[str,Any]:
-        st=self.state();lease=st.leases.get(str(lease_id))
-        if not lease:raise AgencyAuthorityError('lease not found')
-        if lease.get('status')=='CANCELLED':return dict(lease)
-        if lease.get('status')!='PENDING':raise AgencyAuthorityError('terminal lease cannot be cancelled')
-        t=_now(now);self._append('LEASE_CANCELLED',{'lease_id':lease['lease_id'],'at':t,'reason':str(reason)},at=t);return dict(self.state().leases[lease['lease_id']])
+        t=_now(now);lock=self._locked()
+        try:
+            st=self.state();lease=st.leases.get(str(lease_id))
+            if not lease:raise AgencyAuthorityError('lease not found')
+            if lease.get('status')=='CANCELLED':return dict(lease)
+            if lease.get('status')!='PENDING':raise AgencyAuthorityError('terminal lease cannot be cancelled')
+            self._append_unlocked('LEASE_CANCELLED',{'lease_id':lease['lease_id'],'at':t,'reason':str(reason)},at=t);return dict(self.state().leases[lease['lease_id']])
+        finally:lock.release()
     def pending_outbox(self,*,now:float|None=None)->list[dict[str,Any]]:
         t=_now(now);st=self.state();out=[]
         for lease in st.leases.values():

@@ -52,6 +52,16 @@ class AgencyKernelTests(unittest.TestCase):
         self.grant(max_uses=1);self.k.issue_lease(envelope(),[('browser.read','https:example.test/page')],now=11)
         e2=envelope(handoff_id='H2',idempotency_key='K2',step_id='ST2')
         with self.assertRaises(AgencyAuthorityError):self.k.issue_lease(e2,[('browser.read','https:example.test/page')],now=12)
+    def test_concurrent_last_use_cannot_oversubscribe(self):
+        from concurrent.futures import ThreadPoolExecutor
+        self.grant(max_uses=1)
+        e1=envelope(handoff_id='H1',idempotency_key='K1',step_id='ST1');e2=envelope(handoff_id='H2',idempotency_key='K2',step_id='ST2')
+        def attempt(e):
+            k=AgencyKernel(self.root,session_id='S',binding=self.binding,interaction_secret=SECRET)
+            try:return ('OK',k.issue_lease(e,[('browser.read','https:example.test/page')],now=11)['lease_id'])
+            except (AgencyAuthorityError,RuntimeError) as exc:return ('BLOCK',str(exc))
+        with ThreadPoolExecutor(max_workers=2) as ex:r=list(ex.map(attempt,(e1,e2)))
+        self.assertEqual([x[0] for x in r].count('OK'),1,r);self.assertEqual([x[0] for x in r].count('BLOCK'),1,r)
     def test_cancel_releases_reservation(self):
         self.grant(max_uses=1);l=self.k.issue_lease(envelope(),[('browser.read','https:example.test/page')],now=11);self.k.cancel_lease(l['lease_id'],now=12)
         e2=envelope(handoff_id='H2',idempotency_key='K2',step_id='ST2');l2=self.k.issue_lease(e2,[('browser.read','https:example.test/page')],now=13);self.assertEqual(l2['status'],'PENDING')

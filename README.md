@@ -1,37 +1,11 @@
-# iKant v0.10-test
+# iKant v0.11-test
 
-iKant is a repository-local cognitive runtime and interaction protocol for conforming AI session-chat hosts. v0.10 hardens the exclusive dashboard channel without changing the cognitive lattice: delivery becomes two-phase, pending frames are crash-recoverable, and egress transitions are hash-journaled.
+iKant is a repository-local reticular cognitive runtime for conforming AI session-chat hosts. v0.11 is a consolidation release: it does not add a new cognitive faculty; it closes the holistic audit by hardening transport/egress integrity and reducing version archaeology in the canonical runtime path.
 
-## Canonical admission
+After digest-bound `I ACCEPT`, `PROBE` and `INITIALIZE`, the human channel remains dashboard-only. The egress guard is now non-recreatable after activation: deletion/loss fails closed. Recovery from `EGRESS_BREACHED` requires runtime integrity plus a host/transport attestation. ACTIVE machine JSON is file-only and may not use stdout/stderr.
 
-The v0.9 bounded orientation firewall remains unchanged. Present the digest-bound T&C, receive exact current-session `I ACCEPT`, then materialize and run:
+Canonical execution is `python -m ikant`; the entrypoint is `ikant.app_cli:main`. Current cognitive, host and human-dashboard orchestration use version-neutral modules. Historical version modules remain thin compatibility shims so old tests/imports continue to work without retaining duplicate runtime logic.
 
-```bash
-python -m ikant accept "I ACCEPT" --presented-terms-sha256 <presented-contract-sha256>
-python -m ikant probe
-python -m ikant initialize
-```
+The invariant registry lives in `ikant/invariants.py`. Release validation uses repository-wide CI plus one reticular boundary workflow. The v0.11 DoD requires M=100,000 behavioral scenarios plus M+10,000 no-novelty on independent seeds, and an exhaustive N=32,768 architecture-compression lattice plus N+10,000 no-better-compression tail.
 
-The v0.10 contract changes the accepted runtime persistence/egress semantics, so an older receipt does not silently authorize the new contract.
-
-## Crash-recoverable exclusive dashboard
-
-After initialize, the human channel is dashboard-only. Normal delivery is:
-
-`DASHBOARD_LOCKED -> seal/persist -> FRAME_PENDING -> transport write+flush -> exact acknowledgement -> DASHBOARD_LOCKED`
-
-Exit is:
-
-`DASHBOARD_LOCKED -> RELEASE_PENDING -> transport -> acknowledgement -> RELEASED`
-
-A frame is not considered delivered merely because it was rendered. If the process or transport fails before acknowledgement, the exact sealed bytes are recovered from `.ikant/egress-frames/` and replayed before any new human turn. `.ikant/egress-events.jsonl` is append-only/hash-chained and must agree with `.ikant/egress.json`.
-
-`EXIT IKANT` remains exact. `RESUME IKANT` opens a new epoch only after runtime integrity. Legacy v0.9 pending states migrate fail-closed because v0.9 did not persist the sealed frame bytes needed for deterministic replay.
-
-## Boundaries
-
-Dashboard/transcript/egress journals and Surface B are control/audit projections, not evidence. The nine-ring CRC, proto-self, functional psyche, Kant regulation and evidence model are unchanged by this hardening.
-
-No connector or Node.js runtime is required after materialization. Python 3.11+ and writable local `.ikant/` persistence are sufficient.
-
-See `IKANT_ACCESS_CONTRACT.md`, `AGENTS.md`, `docs/DASHBOARD_EGRESS_V10.md` and `docs/V10_DOD.md`.
+See `IKANT_ACCESS_CONTRACT.md` and `docs/RETICULAR_CONSOLIDATION_V11.md`.

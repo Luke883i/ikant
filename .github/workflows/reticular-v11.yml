@@ -1,0 +1,103 @@
+name: iKant v0.11 reticular consolidation
+on:
+  pull_request:
+  push:
+    branches: [main, 'agent/**']
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+jobs:
+  registry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -m compileall -q ikant tests scripts
+      - run: python scripts/check_invariant_registry_v11.py
+  full-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -W error::ResourceWarning -m unittest discover -s tests -q
+  behavioral-m:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: {seed: [1, 17, 97, 883, 2026]}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/reticular_v11_stress.py --cases 100000 --tail 10000 --seed ${{ matrix.seed }}
+  compression-n:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/architecture_compression_v11.py --tail 10000 --seed 883
+      - run: python scripts/reticular_v11_mutations.py
+  interaction-chat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -W error::ResourceWarning -m unittest tests.test_interaction_v03 tests.test_host_v03 tests.test_chat_v04 tests.test_chat_host_v04 -v
+  psyche:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -W error::ResourceWarning -m unittest tests.test_psyche_v05 tests.test_runtime_psyche_v05 -v
+  incarnate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -W error::ResourceWarning -m unittest tests.test_incarnate_v07 tests.test_incarnate_concurrency_v07 -v
+  admission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -W error::ResourceWarning -m unittest tests.test_pre_admission_v08 tests.test_admission_policy_v08 tests.test_admission_v09 -v
+  egress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -W error::ResourceWarning -m unittest tests.test_session_egress_v09 tests.test_session_egress_v10 tests.test_session_host_v10 tests.test_reticular_v11 -v
+      - run: python scripts/egress_v10_durable.py --frames 2000
+      - run: python scripts/egress_v10_mutations.py
+  report:
+    if: ${{ always() && github.event_name == 'pull_request' }}
+    needs: [registry, full-unit, behavioral-m, compression-n, interaction-chat, psyche, incarnate, admission, egress]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const states={registry:'${{ needs.registry.result }}',unit:'${{ needs.full-unit.result }}',M:'${{ needs.behavioral-m.result }}',N:'${{ needs.compression-n.result }}',interaction_chat:'${{ needs.interaction-chat.result }}',psyche:'${{ needs.psyche.result }}',incarnate:'${{ needs.incarnate.result }}',admission:'${{ needs.admission.result }}',egress:'${{ needs.egress.result }}'};
+            const ok=Object.values(states).every(v=>v==='success');
+            const marker='<!-- ikant-v11-reticular-ci-receipt -->';
+            const body=[marker,'## iKant v0.11 reticular consolidation receipt','',`RETICULAR_V11_CI: ${ok?'PASS':'FAIL'}`,`HEAD_SHA: ${context.sha}`,`registry: ${states.registry}`,`full-unit: ${states.unit}`,`M[5 x (100000+10000)]: ${states.M}`,`N[32768+10000]: ${states.N}`,`interaction/chat: ${states.interaction_chat}`,`psyche: ${states.psyche}`,`incarnate: ${states.incarnate}`,`admission: ${states.admission}`,`egress: ${states.egress}`,'','Canonical path is version-neutral; required egress is non-recreatable; breach recovery is transport-attested; ACTIVE machine output is file-only.'].join('\n');
+            const {owner,repo}=context.repo;const issue_number=context.issue.number;const comments=await github.paginate(github.rest.issues.listComments,{owner,repo,issue_number,per_page:100});const previous=comments.find(c=>c.body&&c.body.includes(marker));if(previous)await github.rest.issues.updateComment({owner,repo,comment_id:previous.id,body});else await github.rest.issues.createComment({owner,repo,issue_number,body});if(!ok)core.setFailed(`v0.11 gates failed: ${JSON.stringify(states)}`);

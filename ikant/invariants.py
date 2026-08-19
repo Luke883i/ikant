@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, asdict
 from typing import Any
-PRODUCT_VERSION = "0.14.0a1"
+PRODUCT_VERSION = "0.15.0a1"
 CONTRACT_VERSION = "0.12.0"
 CONTRACT_SCHEMA = "ikant-access-contract/v0.12"
 ADMISSION_POLICY_SCHEMA = "ikant-pre-admission-firewall/v0.9-test"
@@ -12,7 +12,7 @@ FRAME_SCHEMA = "ikant-dashboard-frame/v0.11-test"
 JOURNAL_SCHEMA = "ikant-dashboard-egress-journal/v0.11-test"
 LEGACY_JOURNAL_SCHEMA = "ikant-dashboard-egress-journal/v0.10-test"
 TRANSPORT_ATTESTATION_SCHEMA = "ikant-host-transport-attestation/v0.11-test"
-INVARIANT_REGISTRY_SCHEMA = "ikant-invariant-registry/v0.14-test"
+INVARIANT_REGISTRY_SCHEMA = "ikant-invariant-registry/v0.15-test"
 MAX_FRAME_BYTES = 128 * 1024
 EXIT_COMMAND = "EXIT IKANT"
 RESUME_COMMAND = "RESUME IKANT"
@@ -37,6 +37,11 @@ _INVARIANTS = (
     Invariant("COM-001","commitment","Commitment succession is explicit, acyclic per transition and fail-closed; an old commitment cannot remain current after supersession or retraction.","CRITICAL","tests.test_temporal_epistemics_v14"),
     Invariant("INV-001","provenance","Source revocation suppresses a claim only when no independent unrevoked external support remains and propagates only into dependent derived runtime state.","CRITICAL","tests.test_temporal_epistemics_v14"),
     Invariant("RPL-001","persistence","Temporal state is deterministically replayable from journal events; replay divergence blocks temporal-core finalization.","CRITICAL","tests.test_temporal_epistemics_v14"),
+    Invariant("ACT-001","action","Epistemic score, evidence, provenance, public visibility and rights/conformance state never create material-action authority.","CRITICAL","tests.test_practical_reason_v15"),
+    Invariant("ACT-002","action","Material actions require explicitly linked current user/repository commitments and exact required capabilities; wildcard, prefix, derived or stale authority is invalid.","CRITICAL","tests.test_practical_reason_v15"),
+    Invariant("ACT-003","action","Material action approval is current-turn, user-attributed and action-fingerprint-bound; approval never grants missing capabilities and a derived proposal requires a separately targeted user approval constraint.","CRITICAL","tests.test_practical_reason_v15"),
+    Invariant("ACT-004","action","Unresolved human impact, unknown reversibility, missing rollback or missing declared effects/failure modes prevents host execution eligibility; irreversible or high-impact actions remain human-execution-only.","CRITICAL","tests.test_practical_reason_v15"),
+    Invariant("ACT-005","action","The Action Ledger is a zero-epistemic-authority control projection. HOST_EXECUTION_ELIGIBLE is not execution; v0.15 performs no material action and the host must recheck higher-priority system, safety, law and tool capability.","CRITICAL","tests.test_practical_reason_v15"),
     Invariant("CRC-001","epistemic","CRC causal diagnostics are executable node/source ablations with explicit intervention sensitivity and must never be presented as ontological causality, consciousness or proof of closure.","CRITICAL","tests.test_epistemic_core_v13"),
     Invariant("PSY-001","psyche","Functional psyche may preserve or increase caution but cannot relax a practical/horizon block.","CRITICAL","tests.test_psyche_v05"),
     Invariant("SUR-001","surface","Validated Surface A and Surface B must be same-session/same-cycle and Surface B DOCX is mandatory for substantive human turns.","CRITICAL","tests.test_incarnate_v07"),
@@ -47,7 +52,7 @@ _INVARIANTS = (
     Invariant("TRN-001","transport","Human and machine outputs use distinct explicit sinks; ACTIVE machine JSON is file-only and never stdout/stderr.","CRITICAL","tests.test_reticular_v11"),
     Invariant("CLI-001","host","ACTIVE pre-admission commands cannot bypass dashboard egress.","CRITICAL","tests.test_reticular_v11"),
     Invariant("ARC-001","architecture","Canonical runtime entrypoints and imports are version-neutral; historical version modules are compatibility shims only.","HIGH","scripts.architecture_compression_v11"),
-    Invariant("CI-001","validation","One version-neutral reticular boundary workflow owns historical and current boundary regressions; release workflows do not accrete per version.","HIGH","scripts.temporal_epistemics_mutations"),
+    Invariant("CI-001","validation","One version-neutral reticular boundary workflow owns historical and current boundary regressions; release workflows do not accrete per version.","HIGH","scripts.practical_reason_mutations"),
 )
 def invariants() -> tuple[Invariant, ...]: return _INVARIANTS
 def critical_ids() -> tuple[str, ...]: return tuple(x.id for x in _INVARIANTS if x.severity == "CRITICAL")

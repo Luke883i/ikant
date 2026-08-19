@@ -1,13 +1,13 @@
-# iKant v0.13-test
+# iKant v0.14-test
 
-iKant is a repository-local epistemic control runtime for conforming AI session-chat hosts. v0.13 keeps the v0.12 rights-aware admission and v0.11 hardened exclusive transport, then makes the cognitive runtime materially stronger in four places: **first-class provenance**, **feedback-bound calibrated uncertainty**, **hybrid memory retrieval**, and **intervention-based CRC diagnostics**.
+iKant is a repository-local epistemic control runtime for conforming AI session-chat hosts. v0.14 keeps the v0.13 Epistemic Core and adds **temporal epistemics**: typed memory classes, explicit commitment continuity, dependency-aware source invalidation, and deterministic replay of temporal control state.
 
-The Epistemic Core separates content identity from source identity. `provenance.json` can attach multiple independent source observations to the same content node without allowing provenance metadata to become factual evidence. Hybrid retrieval combines lexical overlap, a bounded semantic proxy or host adapter, provenance quality, temporal stability, graph neighbourhood and conflict relevance; it may change activation/availability but never evidence.
+The runtime distinguishes **episodic**, **semantic**, **commitment**, **interpretive**, and **kernel** memory. Classification and lifecycle metadata have zero epistemic authority: they may change availability and currentness, never factual evidence. Supersession is explicit rather than inferred; an old goal or constraint becomes non-current only through a typed transition such as `supersedes_node_id`, retraction, forgetting, source revocation, or dependency invalidation.
 
-Calibration is derived from recorded `FEEDBACK` outcomes and prior cycle confidence. It is deliberately one-way: poor or sparse calibration may increase caution and claim thresholds, while good calibration never upgrades evidence or relaxes a block. CRC v0.13 adds executable node/source ablations and reports counterfactual dependency, single-point dependency and source-class dependency. These are runtime intervention diagnostics, not claims of ontological closure, consciousness or real-world causality.
+Source invalidation is provenance-aware. Revoking one source does not suppress a claim while another independent unrevoked external source remains. When the last external support is revoked, the directly affected node becomes unavailable and invalidation propagates only into dependent derived runtime state, not into unrelated external claims.
 
-The repository still separates **human manual review**, **materialization for conformance**, **substantive AI-assisted study**, **model training**, and **external legal bases**. `RIGHTS.json` remains the machine-readable owner policy and `RIGHTS.md` the human notice. The v0.12 contract is unchanged: v0.13 changes the runtime product, not the accepted rights hierarchy.
+Temporal transitions are recorded in a dedicated `.ikant/temporal-events.jsonl` hash-chained journal. This control journal is intentionally separate from the cognitive event stream so memory bookkeeping cannot dilute compression/revision metrics or lower epistemic caution. A divergence between temporal metadata and deterministic replay fails closed before a new cognitive turn is acquired.
 
-Canonical execution remains `python -m ikant`. Human egress remains dashboard-only after ACTIVE, machine telemetry remains file-only, and derived runtime state retains zero independent epistemic authority.
+The v0.12 rights/access contract remains unchanged. v0.14 evolves the admitted runtime product; it does not silently broaden owner authorization or turn memory/control state into evidence. Human egress remains dashboard-only after ACTIVE, machine telemetry remains file-only, and the v0.11 transport invariants remain intact.
 
-See `docs/EPISTEMIC_CORE_V13.md`, `IKANT_ACCESS_CONTRACT.md`, `RIGHTS.md`, and `docs/SEMANTIC_ACCESS_AUDIT_V12.md`.
+Canonical execution remains `python -m ikant`. See `docs/TEMPORAL_EPISTEMICS_V14.md`, `docs/EPISTEMIC_CORE_V13.md`, `IKANT_ACCESS_CONTRACT.md`, and `RIGHTS.md`.

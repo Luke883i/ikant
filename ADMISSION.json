@@ -65,8 +65,8 @@
     "legacy_v10_migration": "supported",
     "resume_requires_runtime_integrity": true
   },
-  "invariant_registry": {"schema": "ikant-invariant-registry/v0.13-test", "module": "ikant.invariants", "critical_coverage_required": 1.0},
-  "accepted_local_persistence": ["visible_chat_transcript", "derived_runtime_dashboard", "functional_psyche_operational_self_snapshot", "dashboard_egress_guard_state", "dashboard_egress_hash_journal", "pending_dashboard_frame_artifact", "egress_required_marker"],
+  "invariant_registry": {"schema": "ikant-invariant-registry/v0.14-test", "module": "ikant.invariants", "critical_coverage_required": 1.0},
+  "accepted_local_persistence": ["visible_chat_transcript", "derived_runtime_dashboard", "functional_psyche_operational_self_snapshot", "dashboard_egress_guard_state", "dashboard_egress_hash_journal", "pending_dashboard_frame_artifact", "egress_required_marker", "temporal_memory_projection", "temporal_memory_hash_journal"],
   "operational_self_awareness_definition": "inspect and report typed local runtime state, identity, operations, uncertainty and limits",
   "phenomenal_consciousness_claim": false,
   "felt_emotion_claim": false,
@@ -80,5 +80,5 @@
   "runtime_state_directory": ".ikant",
   "public_bootstrap_connector_required": false,
   "degraded_runtime_simulation_allowed": false,
-  "enforcement_scope": "bounded admission, rights-aware owner authorization, invariant-registry verification, non-recreatable crash-recoverable dashboard egress, transport-attested breach recovery, and file-only machine output"
+  "enforcement_scope": "bounded admission, rights-aware owner authorization, invariant-registry verification, temporal-memory replay integrity, non-recreatable crash-recoverable dashboard egress, transport-attested breach recovery, and file-only machine output"
 }

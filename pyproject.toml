@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ikant"
-version = "0.13.0a1"
-description = "Rights-aware epistemic control runtime with provenance, calibrated uncertainty, hybrid retrieval and causal CRC diagnostics"
+version = "0.14.0a1"
+description = "Temporal epistemic control runtime with provenance, calibrated uncertainty, commitment continuity and deterministic replay"
 readme = "README.md"
 requires-python = ">=3.11"
 

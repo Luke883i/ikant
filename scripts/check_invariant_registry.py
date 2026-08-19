@@ -29,4 +29,6 @@ for inv in registry_manifest()['invariants']:
  if inv['severity']=='CRITICAL' and not ((ROOT/(target+'.py')).exists() or inv['machine_test'].startswith('scripts.')):fail('missing critical machine test '+inv['id'])
 for path in ('ikant/provenance.py','ikant/calibration.py','ikant/hybrid_retrieval.py','ikant/causal_crc.py','ikant/epistemic_core.py'):
  if not (ROOT/path).is_file():fail('missing epistemic core module '+path)
-print(json.dumps({'schema':'ikant-invariant-registry-check/v0.13-test','ok':True,'critical_count':len([x for x in registry_manifest()['invariants'] if x['severity']=='CRITICAL']),'rights_policy':RIGHTS_SCHEMA,'epistemic_core':'ikant-epistemic-core/v0.13-test'},indent=2))
+for path in ('ikant/temporal_memory.py','ikant/commitments.py','ikant/dependency_invalidation.py','ikant/temporal_replay.py','ikant/temporal_core.py'):
+ if not (ROOT/path).is_file():fail('missing temporal epistemics module '+path)
+print(json.dumps({'schema':'ikant-invariant-registry-check/v0.14-test','ok':True,'critical_count':len([x for x in registry_manifest()['invariants'] if x['severity']=='CRITICAL']),'rights_policy':RIGHTS_SCHEMA,'epistemic_core':'ikant-epistemic-core/v0.13-test','temporal_epistemics':'ikant-temporal-epistemics/v0.14-test'},indent=2))

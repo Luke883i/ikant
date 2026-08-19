@@ -39,6 +39,8 @@ def main():
     p=cmd([sys.executable,'scripts/planning_mutations.py','--mutations','20000','--tail','10000','--seed','883'],timeout=120);plm=parsed(p);g['planning']={'ok':plc.get('status')=='PASS' and plm.get('status')=='PASS','stress':plc,'mutations':plm}
     p=cmd([sys.executable,'scripts/execution_stress.py','--cases','40000','--tail','10000','--seed','883'],timeout=120);exc=parsed(p)
     p=cmd([sys.executable,'scripts/execution_mutations.py','--mutations','20000','--tail','10000','--seed','883'],timeout=120);exm=parsed(p);g['execution_handoff']={'ok':exc.get('status')=='PASS' and exm.get('status')=='PASS','stress':exc,'mutations':exm}
+    p=cmd([sys.executable,'scripts/host_conformance_stress.py','--cases','20000','--tail','10000','--seed','883'],timeout=120);hc=parsed(p)
+    p=cmd([sys.executable,'scripts/host_conformance_mutations.py','--mutations','20000','--tail','10000','--seed','883'],timeout=120);hm=parsed(p);g['host_conformance']={'ok':hc.get('status')=='PASS' and hm.get('status')=='PASS','stress':hc,'mutations':hm}
     p=cmd([sys.executable,'scripts/surface_a_stress.py','--cases','1500','--seed','883']);r=parsed(p);g['surface_a_stress']={'ok':r.get('status')=='PASS','result':r}
     p=cmd([sys.executable,'scripts/edge_stress.py','--cases','1200','--seed','1']);r=parsed(p);g['edge_stress']={'ok':r.get('status')=='PASS','result':r}
     p=cmd([sys.executable,'scripts/central_stress.py','--cases','1200','--seed','1']);r=parsed(p);g['central_stress']={'ok':r.get('status')=='PASS' and r.get('all_modes_reached'),'result':r}
@@ -46,7 +48,7 @@ def main():
     cog_cmds=[[sys.executable,'scripts/cognitive_stress.py','--turns','120','--novelty-tail','30','--seed',str(seed)] for seed in seeds]
     cog=run_many(cog_cmds,timeout=90);g['cognitive_stress']={'ok':all(x.get('status')=='PASS' and x.get('max_mean_activation_ceiling_fraction',1)<.70 and x.get('sentinel_evidence_unchanged') for x in cog),'runs':cog}
     p=cmd([sys.executable,'scripts/tune_dynamics.py']);tu=parsed(p);g['tuning']={'ok':bool(tu.get('hard_invariants_passed')) and bool(tu.get('near_best')),'result':tu}
-    passed=sum(bool(x['ok']) for x in g.values());out={'schema':'ikant-release-gate/v0.5','mode':'quick','gates':g,'passed':passed,'total':len(g),'gate_pass_rate':round(100*passed/len(g),3),'release_candidate':passed==len(g),'elapsed_s':round(time.monotonic()-t,3),'note':'engineering coverage for epistemic, temporal, practical-action, planning and execution-handoff governance; execution receipts are zero-authority control records, do not authenticate the host and never cause runtime execution.'}
+    passed=sum(bool(x['ok']) for x in g.values());out={'schema':'ikant-release-gate/v0.5','mode':'quick','gates':g,'passed':passed,'total':len(g),'gate_pass_rate':round(100*passed/len(g),3),'release_candidate':passed==len(g),'elapsed_s':round(time.monotonic()-t,3),'note':'engineering coverage through v0.18 host capability/conformance negotiation; executable adapter probes are zero-authority, receipt digests do not authenticate actors, and tested-adapter conformance is not production-transport attestation.'}
     if a.output:Path(a.output).write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
     print(json.dumps(out,indent=2,sort_keys=True));return 0 if out['release_candidate'] else 1
 if __name__=='__main__':raise SystemExit(main())

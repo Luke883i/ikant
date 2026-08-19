@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, asdict
 from typing import Any
-PRODUCT_VERSION = "0.17.0a1"
+PRODUCT_VERSION = "0.18.0a1"
 CONTRACT_VERSION = "0.12.0"
 CONTRACT_SCHEMA = "ikant-access-contract/v0.12"
 ADMISSION_POLICY_SCHEMA = "ikant-pre-admission-firewall/v0.9-test"
@@ -12,7 +12,7 @@ FRAME_SCHEMA = "ikant-dashboard-frame/v0.11-test"
 JOURNAL_SCHEMA = "ikant-dashboard-egress-journal/v0.11-test"
 LEGACY_JOURNAL_SCHEMA = "ikant-dashboard-egress-journal/v0.10-test"
 TRANSPORT_ATTESTATION_SCHEMA = "ikant-host-transport-attestation/v0.11-test"
-INVARIANT_REGISTRY_SCHEMA = "ikant-invariant-registry/v0.17-test"
+INVARIANT_REGISTRY_SCHEMA = "ikant-invariant-registry/v0.18-test"
 MAX_FRAME_BYTES = 128 * 1024
 EXIT_COMMAND = "EXIT IKANT"
 RESUME_COMMAND = "RESUME IKANT"
@@ -54,6 +54,12 @@ _INVARIANTS = (
     Invariant("EXE-004","execution","Execution receipts never cause runtime execution or grant runtime authority. Host EXECUTED/FAILED receipts require a valid exact revalidation receipt; human-execution receipts remain actor-bound.","CRITICAL","tests.test_execution_v17"),
     Invariant("EXE-005","execution","Receipt acceptance is replay-safe at the control layer: identical same-key replay is idempotent, conflicting same-key terminal receipts fail closed, and terminal receipt state remains zero-authority.","CRITICAL","tests.test_execution_v17"),
     Invariant("EXE-006","execution","Outcome reconciliation uses only explicit reported predicates and explicit negation, treats execution references and host reports as non-independent control observations, creates no evidence, verifies no world truth and never auto-advances a successor step.","CRITICAL","tests.test_execution_v17"),
+    Invariant("HST-001","host","A HostCapabilityManifest is declaration-only. Declared capabilities, adapter identity or manifest digest alone never establish executable host conformance.","CRITICAL","tests.test_host_conformance_v18"),
+    Invariant("HST-002","host","Host conformance requires the complete executable vector set and is exactly bound to adapter id, adapter version, configuration fingerprint and manifest digest; drift or vector tampering fails closed.","CRITICAL","tests.test_host_conformance_v18"),
+    Invariant("HST-003","host","Host profile negotiation requires exact declared capabilities and PASS results for every profile-required vector. Wildcard, unknown, missing or untested capabilities never satisfy a profile.","CRITICAL","tests.test_host_conformance_v18"),
+    Invariant("HST-004","host","The reference CLI adapter probes real iKant write/flush, file-only machine-output, v0.17 revalidation-binding and legacy-attestation code paths; a declared capability cannot mask a failed executable probe.","CRITICAL","tests.test_host_conformance_v18"),
+    Invariant("HST-005","host","Host conformance, negotiation and SDK bindings have zero epistemic and execution authority. Receipt digests are integrity checks only and never authenticate an actor or attest the production transport beyond the tested adapter/configuration.","CRITICAL","tests.test_host_conformance_v18"),
+    Invariant("HST-006","host","HostRuntimeBinding gates legacy breach-resume attestation and v0.17 execution revalidation behind the corresponding conforming profile and never performs a material action.","CRITICAL","tests.test_host_conformance_v18"),
     Invariant("CRC-001","epistemic","CRC causal diagnostics are executable node/source ablations with explicit intervention sensitivity and must never be presented as ontological causality, consciousness or proof of closure.","CRITICAL","tests.test_epistemic_core_v13"),
     Invariant("PSY-001","psyche","Functional psyche may preserve or increase caution but cannot relax a practical/horizon block.","CRITICAL","tests.test_psyche_v05"),
     Invariant("SUR-001","surface","Validated Surface A and Surface B must be same-session/same-cycle and Surface B DOCX is mandatory for substantive human turns.","CRITICAL","tests.test_incarnate_v07"),
@@ -64,7 +70,7 @@ _INVARIANTS = (
     Invariant("TRN-001","transport","Human and machine outputs use distinct explicit sinks; ACTIVE machine JSON is file-only and never stdout/stderr.","CRITICAL","tests.test_reticular_v11"),
     Invariant("CLI-001","host","ACTIVE pre-admission commands cannot bypass dashboard egress.","CRITICAL","tests.test_reticular_v11"),
     Invariant("ARC-001","architecture","Canonical runtime entrypoints and imports are version-neutral; historical version modules are compatibility shims only.","HIGH","scripts.architecture_compression_v11"),
-    Invariant("CI-001","validation","One version-neutral reticular boundary workflow owns historical and current boundary regressions; release workflows do not accrete per version.","HIGH","scripts.execution_mutations"),
+    Invariant("CI-001","validation","One version-neutral reticular boundary workflow owns historical and current boundary regressions; release workflows do not accrete per version.","HIGH","scripts.host_conformance_mutations"),
 )
 def invariants() -> tuple[Invariant, ...]: return _INVARIANTS
 def critical_ids() -> tuple[str, ...]: return tuple(x.id for x in _INVARIANTS if x.severity == "CRITICAL")

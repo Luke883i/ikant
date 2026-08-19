@@ -6,7 +6,7 @@ ROOT=Path(__file__).resolve().parents[1]
 class AdmissionPolicyCompatibility(unittest.TestCase):
  def fixture(self,tmp):
   root=Path(tmp)/'repo';root.mkdir();(root/'ikant').mkdir();(root/'ikant'/'runtime.py').write_text('# fixture')
-  for name in ['IKANT_ACCESS_CONTRACT.md','BOOTSTRAP.json','ADMISSION.json']:(root/name).write_text((ROOT/name).read_text())
+  for name in ['IKANT_ACCESS_CONTRACT.md','BOOTSTRAP.json','ADMISSION.json','RIGHTS.json','RIGHTS.md']:(root/name).write_text((ROOT/name).read_text())
   return root
  def receipt(self,contract):return issue_receipt(contract,'I ACCEPT',presented_terms_sha256=digest(contract))
  def test_policy_consistency(self):

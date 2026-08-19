@@ -4,10 +4,10 @@ from ikant.runtime import Runtime
 from ikant.dynamics import DynamicsParameters
 
 SOURCE_ROOT=Path(__file__).resolve().parents[1]
-_ADMISSION_FIXTURE_FILES=('IKANT_ACCESS_CONTRACT.md','BOOTSTRAP.json','ADMISSION.json')
+_ADMISSION_FIXTURE_FILES=('IKANT_ACCESS_CONTRACT.md','BOOTSTRAP.json','ADMISSION.json','RIGHTS.json','RIGHTS.md')
 
 def materialized_fixture_root(tmp:Path)->Path:
-    """Build a post-acceptance synthetic checkout that obeys the current admission policy."""
+    """Build a post-acceptance synthetic checkout that obeys the current admission and rights policy."""
     root=tmp/'repo';root.mkdir();(root/'ikant').mkdir();(root/'ikant'/'runtime.py').write_text('# fixture',encoding='utf-8')
     for name in _ADMISSION_FIXTURE_FILES:
         (root/name).write_text((SOURCE_ROOT/name).read_text(encoding='utf-8'),encoding='utf-8')

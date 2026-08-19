@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ikant"
-version = "0.9.0a1"
-description = "ROA-aligned reticular cognitive runtime with digest-bound admission and exclusive dashboard human egress"
+version = "0.10.0a1"
+description = "ROA-aligned reticular cognitive runtime with digest-bound admission and crash-recoverable exclusive dashboard egress"
 readme = "README.md"
 requires-python = ">=3.11"
 

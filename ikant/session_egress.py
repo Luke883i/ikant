@@ -5,7 +5,7 @@ from enum import Enum
 import hashlib, json, os, threading
 from pathlib import Path
 from typing import Any
-from .invariants import EGRESS_SCHEMA, LEGACY_EGRESS_SCHEMA, FRAME_SCHEMA, JOURNAL_SCHEMA, LEGACY_JOURNAL_SCHEMA, EXIT_COMMAND, RESUME_COMMAND, MAX_FRAME_BYTES
+from .invariants import EGRESS_SCHEMA, LEGACY_EGRESS_SCHEMA, V09_EGRESS_SCHEMA, FRAME_SCHEMA, JOURNAL_SCHEMA, LEGACY_JOURNAL_SCHEMA, EXIT_COMMAND, RESUME_COMMAND, MAX_FRAME_BYTES
 from .store import atomic_json_write, append_jsonl
 from .transport import TransportAttestation, validate_transport_attestation
 _BIDI={chr(x) for x in list(range(8234,8239))+list(range(8294,8298))}
@@ -39,16 +39,23 @@ class DashboardEgressGuard:
     def _write(self,rec): atomic_json_write(self.path,asdict(rec))
     def _journal(self,rec,event,payload=None):
         seq=rec.journal_seq+1; body={'schema':JOURNAL_SCHEMA,'seq':seq,'at':_now(),'runtime_session_id':self.runtime_session_id,'event':str(event),'state':rec.state,'epoch':rec.epoch,'frame_seq':rec.frame_seq,'payload':dict(payload or {}),'prev_sha256':rec.last_journal_sha256}; body['sha256']=_sha_payload(body); append_jsonl(self.journal_path,body); return replace(rec,journal_seq=seq,last_journal_sha256=body['sha256'],updated_at=body['at'])
-    def _migrate(self,raw):
+    def _migrate_v10(self,raw):
         state=str(raw.get('state') or '')
-        if state not in {x.value for x in EgressState}: raise EgressViolation('legacy egress state invalid')
+        if state not in {x.value for x in EgressState}: raise EgressViolation('legacy v0.10 egress state invalid')
         rec=EgressRecord(EGRESS_SCHEMA,self.runtime_session_id,state,max(1,int(raw.get('epoch',1))),max(0,int(raw.get('frame_seq',0))),raw.get('last_frame_sha256'),raw.get('last_cycle_id'),raw.get('last_kind'),_now(),breach_reason=raw.get('breach_reason'),journal_seq=max(0,int(raw.get('journal_seq',0))),last_journal_sha256=str(raw.get('last_journal_sha256') or '0'*64),pending_frame_path=raw.get('pending_frame_path'))
         rec=self._journal(rec,'MIGRATE_V10',{'legacy_state':state,'pending_preserved':state in {EgressState.FRAME_PENDING.value,EgressState.RELEASE_PENDING.value}}); self._write(rec); return rec
+    def _migrate_v09(self,raw):
+        state=str(raw.get('state') or '')
+        if state not in {x.value for x in EgressState}: raise EgressViolation('legacy v0.9 egress state invalid')
+        unsafe=state in {EgressState.FRAME_PENDING.value,EgressState.RELEASE_PENDING.value}
+        rec=EgressRecord(EGRESS_SCHEMA,self.runtime_session_id,EgressState.BREACHED.value if unsafe else state,max(1,int(raw.get('epoch',1))),max(0,int(raw.get('frame_seq',0))),raw.get('last_frame_sha256'),raw.get('last_cycle_id'),raw.get('last_kind'),_now(),breach_reason='legacy v0.9 pending frame is not crash-recoverable' if unsafe else raw.get('breach_reason'))
+        rec=self._journal(rec,'MIGRATE_V09',{'legacy_state':state,'unsafe_pending':unsafe}); self._write(rec); return rec
     def _load(self):
         if not self.path.exists(): raise EgressViolation('required egress state missing')
         try: raw=json.loads(self.path.read_text(encoding='utf-8'))
         except (OSError,json.JSONDecodeError) as exc: raise EgressViolation('egress state unreadable') from exc
-        if raw.get('schema')==LEGACY_EGRESS_SCHEMA: return self._migrate(raw)
+        if raw.get('schema')==LEGACY_EGRESS_SCHEMA: return self._migrate_v10(raw)
+        if raw.get('schema')==V09_EGRESS_SCHEMA: return self._migrate_v09(raw)
         try: rec=EgressRecord(**raw)
         except (TypeError,ValueError) as exc: raise EgressViolation('egress state shape invalid') from exc
         if rec.schema!=EGRESS_SCHEMA: raise EgressViolation('egress schema mismatch')

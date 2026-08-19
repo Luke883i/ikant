@@ -8,6 +8,7 @@ CONTRACT_SCHEMA = "ikant-access-contract/v0.11"
 ADMISSION_POLICY_SCHEMA = "ikant-pre-admission-firewall/v0.9-test"
 EGRESS_SCHEMA = "ikant-dashboard-session-egress/v0.11-test"
 LEGACY_EGRESS_SCHEMA = "ikant-dashboard-session-egress/v0.10-test"
+V09_EGRESS_SCHEMA = "ikant-dashboard-session-egress/v0.9-test"
 FRAME_SCHEMA = "ikant-dashboard-frame/v0.11-test"
 JOURNAL_SCHEMA = "ikant-dashboard-egress-journal/v0.11-test"
 LEGACY_JOURNAL_SCHEMA = "ikant-dashboard-egress-journal/v0.10-test"
@@ -41,22 +42,7 @@ _INVARIANTS = (
     Invariant("CI-001","validation","One reticular workflow owns historical boundary regressions; version-specific workflow duplication is not a release dependency.","HIGH","scripts.architecture_compression_v11"),
 )
 
-def invariants() -> tuple[Invariant, ...]:
-    return _INVARIANTS
-
-def critical_ids() -> tuple[str, ...]:
-    return tuple(x.id for x in _INVARIANTS if x.severity == "CRITICAL")
-
+def invariants() -> tuple[Invariant, ...]: return _INVARIANTS
+def critical_ids() -> tuple[str, ...]: return tuple(x.id for x in _INVARIANTS if x.severity == "CRITICAL")
 def registry_manifest() -> dict[str, Any]:
-    return {
-        "schema": INVARIANT_REGISTRY_SCHEMA,
-        "product_version": PRODUCT_VERSION,
-        "contract_version": CONTRACT_VERSION,
-        "contract_schema": CONTRACT_SCHEMA,
-        "admission_policy_schema": ADMISSION_POLICY_SCHEMA,
-        "egress_schema": EGRESS_SCHEMA,
-        "max_frame_bytes": MAX_FRAME_BYTES,
-        "exit_command": EXIT_COMMAND,
-        "resume_command": RESUME_COMMAND,
-        "invariants": [asdict(x) for x in _INVARIANTS],
-    }
+    return {"schema":INVARIANT_REGISTRY_SCHEMA,"product_version":PRODUCT_VERSION,"contract_version":CONTRACT_VERSION,"contract_schema":CONTRACT_SCHEMA,"admission_policy_schema":ADMISSION_POLICY_SCHEMA,"egress_schema":EGRESS_SCHEMA,"max_frame_bytes":MAX_FRAME_BYTES,"exit_command":EXIT_COMMAND,"resume_command":RESUME_COMMAND,"invariants":[asdict(x) for x in _INVARIANTS]}

@@ -1,7 +1,7 @@
 {
-  "schema": "ikant-admission/v0.10",
+  "schema": "ikant-admission/v0.11",
   "repository": "Luke883i/ikant",
-  "contract_version": "0.10.0",
+  "contract_version": "0.11.0",
   "contract_path": "IKANT_ACCESS_CONTRACT.md",
   "acceptance_phrase": "I ACCEPT",
   "human_actor_required": true,
@@ -28,23 +28,27 @@
   "denial_receipt_schema": "ikant-access-denial/v0.8",
   "accepted_interaction_hierarchy": {"primary_local_interface": "iKant", "underlying_model_role": "execution_engine", "identity_order": "interface_then_engine", "decline_effect": "ikant_unavailable_locally"},
   "active_human_egress": {
-    "schema": "ikant-dashboard-session-egress/v0.10-test",
+    "schema": "ikant-dashboard-session-egress/v0.11-test",
     "initial_state": "DASHBOARD_LOCKED",
     "exclusive_human_output": true,
     "canonical_frame_only": true,
     "delivery_ack_after_emit_required": true,
     "pending_frame_durable": true,
     "journal_hash_chain": true,
+    "guard_recreation_forbidden": true,
+    "breach_resume_requires_transport_attestation": true,
+    "machine_output_file_only": true,
     "max_frame_bytes": 131072,
     "exit_command": "EXIT IKANT",
     "resume_command": "RESUME IKANT",
     "normal_path": ["DASHBOARD_LOCKED", "FRAME_PENDING", "DASHBOARD_LOCKED"],
     "release_path": ["DASHBOARD_LOCKED", "RELEASE_PENDING", "RELEASED"],
     "breach_state": "EGRESS_BREACHED",
-    "legacy_v09_pending_migration": "EGRESS_BREACHED",
+    "legacy_v10_migration": "supported",
     "resume_requires_runtime_integrity": true
   },
-  "accepted_local_persistence": ["visible_chat_transcript", "derived_runtime_dashboard", "functional_psyche_operational_self_snapshot", "dashboard_egress_guard_state", "dashboard_egress_hash_journal", "pending_dashboard_frame_artifact"],
+  "invariant_registry": {"schema": "ikant-invariant-registry/v0.11-test", "module": "ikant.invariants", "critical_coverage_required": 1.0},
+  "accepted_local_persistence": ["visible_chat_transcript", "derived_runtime_dashboard", "functional_psyche_operational_self_snapshot", "dashboard_egress_guard_state", "dashboard_egress_hash_journal", "pending_dashboard_frame_artifact", "egress_required_marker"],
   "operational_self_awareness_definition": "inspect and report typed local runtime state, identity, operations, uncertainty and limits",
   "phenomenal_consciousness_claim": false,
   "felt_emotion_claim": false,
@@ -58,5 +62,5 @@
   "runtime_state_directory": ".ikant",
   "public_bootstrap_connector_required": false,
   "degraded_runtime_simulation_allowed": false,
-  "enforcement_scope": "bounded pre-admission host orientation, presented-digest handoff, post-materialization verification, and crash-recoverable two-phase dashboard-only human egress"
+  "enforcement_scope": "bounded admission, invariant-registry verification, non-recreatable crash-recoverable dashboard egress, transport-attested breach recovery, and file-only machine output"
 }

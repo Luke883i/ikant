@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Any
 
 from .action_governance import ACTION_GOVERNANCE_SCHEMA, build_action_ledger
+from .planning import finalize_planning
 
 PRACTICAL_REASON_SCHEMA = "ikant-practical-reason/v0.15-test"
 
@@ -38,6 +39,9 @@ def finalize_practical_reason(
             "runtime_execution_performed": False,
         },
     }
+    planning = finalize_planning(runtime, cycle, core, central=central)
+    core["planning"] = planning
+    core["planning_status"] = planning.get("overall_status", "NONE")
     state = getattr(runtime, "runtime", {}).setdefault("practical_reason", {})
     state["last"] = {
         "schema": PRACTICAL_REASON_SCHEMA,
@@ -46,6 +50,8 @@ def finalize_practical_reason(
         "candidate_count": ledger.get("candidate_count", 0),
         "host_execution_eligible_count": ledger.get("host_execution_eligible_count", 0),
         "material_action": ledger.get("material_action", "NONE"),
+        "planning_status": planning.get("overall_status", "NONE"),
+        "plan_ledger_sha256": (planning.get("plan_ledger") or {}).get("sha256"),
         "epistemic_authority": 0.0,
     }
     if hasattr(runtime, "_write_runtime"):

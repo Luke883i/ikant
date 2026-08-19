@@ -18,6 +18,8 @@ for name in ('ADMISSION.json','BOOTSTRAP.json'):
  if (m.get('active_human_egress') or {}).get('schema')!=EGRESS_SCHEMA:fail(f'{name} egress drift')
  if (m.get('invariant_registry') or {}).get('schema')!=registry_manifest()['schema']:fail(f'{name} registry schema drift')
  if (m.get('practical_reason') or {}).get('schema')!='ikant-practical-reason/v0.15-test':fail(f'{name} practical reason drift')
+ if (m.get('planning') or {}).get('schema')!='ikant-planning/v0.16-test':fail(f'{name} planning drift')
+ if float((m.get('planning') or {}).get('epistemic_authority',1))!=0.0:fail(f'{name} planning epistemic authority drift')
 rights_ok,rights_errors=validate_repository_rights(ROOT,contract)
 if not rights_ok:fail('rights policy drift: '+'; '.join(rights_errors))
 if f'version = "{PRODUCT_VERSION}"' not in (ROOT/'pyproject.toml').read_text():fail('package version drift')
@@ -34,4 +36,6 @@ for path in ('ikant/temporal_memory.py','ikant/commitments.py','ikant/dependency
  if not (ROOT/path).is_file():fail('missing temporal epistemics module '+path)
 for path in ('ikant/authority.py','ikant/approvals.py','ikant/action_governance.py','ikant/practical_reason.py'):
  if not (ROOT/path).is_file():fail('missing practical reason module '+path)
-print(json.dumps({'schema':'ikant-invariant-registry-check/v0.15-test','ok':True,'critical_count':len([x for x in registry_manifest()['invariants'] if x['severity']=='CRITICAL']),'rights_policy':RIGHTS_SCHEMA,'epistemic_core':'ikant-epistemic-core/v0.13-test','temporal_epistemics':'ikant-temporal-epistemics/v0.14-test','practical_reason':'ikant-practical-reason/v0.15-test'},indent=2))
+for path in ('ikant/plan_graph.py','ikant/world_model.py','ikant/decision_lattice.py','ikant/planning.py'):
+ if not (ROOT/path).is_file():fail('missing planning module '+path)
+print(json.dumps({'schema':'ikant-invariant-registry-check/v0.16-test','ok':True,'critical_count':len([x for x in registry_manifest()['invariants'] if x['severity']=='CRITICAL']),'rights_policy':RIGHTS_SCHEMA,'epistemic_core':'ikant-epistemic-core/v0.13-test','temporal_epistemics':'ikant-temporal-epistemics/v0.14-test','practical_reason':'ikant-practical-reason/v0.15-test','planning':'ikant-planning/v0.16-test'},indent=2))

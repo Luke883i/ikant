@@ -146,7 +146,7 @@ def activate_runtime_egress(runtime,*,initialization=False):
 def existing_runtime_egress(runtime):
     path=egress_path(runtime); marker=_marker(runtime)
     if not path.exists():
-        if marker.get('required') or (isinstance(getattr(runtime,'runtime',None),dict) and runtime.runtime.get('status')=='ACTIVE'): raise EgressViolation('required egress state missing; fail closed')
+        if marker.get('required'): raise EgressViolation('required egress state missing; fail closed')
         return None
     guard=DashboardEgressGuard(path,runtime_session_id=str(runtime.runtime.get('session_id') or ''))
     if not marker.get('required'): _mark_required(runtime,adopted=True)

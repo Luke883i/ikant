@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ikant"
-version = "0.17.0a1"
-description = "Execution-handoff runtime with exact revalidation bindings, replay-safe receipts and zero-authority outcome reconciliation"
+version = "0.18.0a1"
+description = "Host capability and transport conformance SDK with executable vectors, exact profile negotiation and zero-authority host bindings"
 readme = "README.md"
 requires-python = ">=3.11"
 

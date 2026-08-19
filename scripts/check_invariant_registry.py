@@ -25,6 +25,13 @@ for name in ('ADMISSION.json','BOOTSTRAP.json'):
  if float(exe.get('epistemic_authority',1))!=0.0 or float(exe.get('execution_authority',1))!=0.0:fail(f'{name} execution authority drift')
  if exe.get('runtime_executes_actions') is not False:fail(f'{name} execution runtime drift')
  if exe.get('receipt_digest_authenticates_actor') is not False or exe.get('host_transport_authentication_external') is not True:fail(f'{name} receipt authentication boundary drift')
+ host=m.get('host_conformance') or {}
+ if host.get('schema')!='ikant-host-conformance-receipt/v0.18-test':fail(f'{name} host conformance drift')
+ if host.get('manifest_schema')!='ikant-host-capability-manifest/v0.18-test' or host.get('sdk_schema')!='ikant-host-sdk/v0.18-test':fail(f'{name} host schema drift')
+ if host.get('executable_vectors_required') is not True or host.get('profile_negotiation_exact') is not True:fail(f'{name} host executable conformance drift')
+ if host.get('wildcard_capabilities_allowed') is not False:fail(f'{name} host wildcard drift')
+ if float(host.get('epistemic_authority',1))!=0.0 or float(host.get('execution_authority',1))!=0.0:fail(f'{name} host authority drift')
+ if host.get('receipt_digest_authenticates_actor') is not False or host.get('production_transport_attested') is not False or host.get('tested_adapter_only') is not True:fail(f'{name} host authentication/scope boundary drift')
 rights_ok,rights_errors=validate_repository_rights(ROOT,contract)
 if not rights_ok:fail('rights policy drift: '+'; '.join(rights_errors))
 if f'version = "{PRODUCT_VERSION}"' not in (ROOT/'pyproject.toml').read_text():fail('package version drift')
@@ -45,4 +52,6 @@ for path in ('ikant/plan_graph.py','ikant/world_model.py','ikant/decision_lattic
  if not (ROOT/path).is_file():fail('missing planning module '+path)
 for path in ('ikant/execution_handoff.py','ikant/execution_receipts.py','ikant/outcome_reconciliation.py','ikant/execution_protocol.py'):
  if not (ROOT/path).is_file():fail('missing execution protocol module '+path)
-print(json.dumps({'schema':'ikant-invariant-registry-check/v0.17-test','ok':True,'critical_count':len([x for x in registry_manifest()['invariants'] if x['severity']=='CRITICAL']),'rights_policy':RIGHTS_SCHEMA,'epistemic_core':'ikant-epistemic-core/v0.13-test','temporal_epistemics':'ikant-temporal-epistemics/v0.14-test','practical_reason':'ikant-practical-reason/v0.15-test','planning':'ikant-planning/v0.16-test','execution_protocol':'ikant-execution-protocol/v0.17-test'},indent=2))
+for path in ('ikant/host_capabilities.py','ikant/host_adapter.py','ikant/host_conformance.py','ikant/host_negotiation.py','ikant/host_sdk.py'):
+ if not (ROOT/path).is_file():fail('missing host conformance module '+path)
+print(json.dumps({'schema':'ikant-invariant-registry-check/v0.18-test','ok':True,'critical_count':len([x for x in registry_manifest()['invariants'] if x['severity']=='CRITICAL']),'rights_policy':RIGHTS_SCHEMA,'epistemic_core':'ikant-epistemic-core/v0.13-test','temporal_epistemics':'ikant-temporal-epistemics/v0.14-test','practical_reason':'ikant-practical-reason/v0.15-test','planning':'ikant-planning/v0.16-test','execution_protocol':'ikant-execution-protocol/v0.17-test','host_conformance':'ikant-host-conformance-receipt/v0.18-test'},indent=2))

@@ -1,11 +1,13 @@
-# iKant v0.11-test
+# iKant v0.12-test
 
-iKant is a repository-local reticular cognitive runtime for conforming AI session-chat hosts. v0.11 is a consolidation release: it does not add a new cognitive faculty; it closes the holistic audit by hardening transport/egress integrity and reducing version archaeology in the canonical runtime path.
+iKant is a repository-local reticular cognitive runtime for conforming AI session-chat hosts. v0.12 makes the product rights-aware without turning the runtime into a legal decision-maker.
 
-After digest-bound `I ACCEPT`, `PROBE` and `INITIALIZE`, the human channel remains dashboard-only. The egress guard is now non-recreatable after activation: deletion/loss fails closed. Recovery from `EGRESS_BREACHED` requires runtime integrity plus a host/transport attestation. ACTIVE machine JSON is file-only and may not use stdout/stderr.
+The repository now separates **human manual review**, **materialization for conformance**, **substantive AI-assisted study**, **model training**, and **external legal bases**. `RIGHTS.json` is the machine-readable owner policy and `RIGHTS.md` is the human notice. The owner expressly reserves TDM rights to the extent available under applicable law. Public visibility is not treated as the owner's general AI authorization; direct platform grants and mandatory legal exceptions remain outside iKant's adjudication.
 
-Canonical execution is `python -m ikant`; the entrypoint is `ikant.app_cli:main`. Current cognitive, host and human-dashboard orchestration use version-neutral modules. Historical version modules remain thin compatibility shims so old tests/imports continue to work without retaining duplicate runtime logic.
+After digest-bound `I ACCEPT`, source materialization is authorized only to establish or verify conformance. Substantive AI-assisted repository study is owner-authorized through iKant only when acceptance, clean admission and host/runtime/transport conformance all hold. Model training and dataset construction remain separately licensed.
 
-The invariant registry lives in `ikant/invariants.py`. Release validation uses repository-wide CI plus one reticular boundary workflow. The v0.11 DoD requires M=100,000 behavioral scenarios plus M+10,000 no-novelty on independent seeds, and an exhaustive N=32,768 architecture-compression lattice plus N+10,000 no-better-compression tail.
+The v0.11 transport hardening remains unchanged: dashboard-only human egress, non-recreatable guard, transport-attested breach recovery and file-only ACTIVE machine JSON. Canonical execution remains `python -m ikant`; current orchestration remains version-neutral.
 
-See `IKANT_ACCESS_CONTRACT.md` and `docs/RETICULAR_CONSOLIDATION_V11.md`.
+Release validation now combines the inherited v0.11 reticular boundary saturation with a rights-aware semantic-access gate: 100,000 semantic mutation instances per seed, no-novelty tails, contract/rights drift checks and the full historical unit suite.
+
+See `IKANT_ACCESS_CONTRACT.md`, `RIGHTS.md`, `RIGHTS.json` and `docs/SEMANTIC_ACCESS_AUDIT_V12.md`.

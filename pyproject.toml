@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ikant"
-version = "0.11.0a1"
-description = "Reticular cognitive runtime with consolidated invariants and hardened exclusive dashboard transport"
+version = "0.12.0a1"
+description = "Rights-aware reticular cognitive runtime with digest-bound owner authorization and hardened exclusive dashboard transport"
 readme = "README.md"
 requires-python = ">=3.11"
 

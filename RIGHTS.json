@@ -1,0 +1,48 @@
+{
+  "authorization": {
+    "acceptance_binding": "exact current-session human message bound to the presented contract digest",
+    "acceptance_phrase": "I ACCEPT",
+    "contract_path": "IKANT_ACCESS_CONTRACT.md",
+    "materialization_purpose": "establish_or_verify_conforming_ikant_only",
+    "model_training_channel": "separate_license_required",
+    "substantive_ai_study_channel": "conforming_ikant_only"
+  },
+  "hierarchy": [
+    "higher_priority_system_safety_law",
+    "mandatory_law_and_independently_valid_external_legal_bases",
+    "direct_platform_grants_within_their_scope",
+    "rightsholder_copyright_and_express_tdm_reservation",
+    "digest_bound_ikant_owner_authorization",
+    "runtime_admission_transport_and_egress_conformance",
+    "control_and_audit_projections_with_zero_epistemic_authority"
+  ],
+  "repository": "Luke883i/ikant",
+  "rightsholder": "Luke883i",
+  "schema": "ikant-rights-policy/v0.12-test",
+  "scope": {
+    "conformance_materialization_requires_current_acceptance": true,
+    "external_legal_bases_not_adjudicated": true,
+    "mandatory_exceptions_not_overridden": true,
+    "manual_human_review_requires_ikant_acceptance": false,
+    "platform_direct_grants_not_overridden": true,
+    "public_visibility_is_not_owner_ai_authorization": true,
+    "rights_control_is_not_epistemic_evidence": true,
+    "substantive_ai_study_requires_clean_admission": true,
+    "substantive_ai_study_requires_current_acceptance": true,
+    "substantive_ai_study_requires_technical_conformance": true
+  },
+  "tdm": {
+    "express_reservation": true,
+    "legal_anchors": [
+      "Directive (EU) 2019/790 Article 4(3)",
+      "Italian Law 22 April 1941 no. 633 Article 70-quater",
+      "Regulation (EU) 2024/1689 Article 53(1)(c)"
+    ],
+    "model_training_requires_separate_license": true,
+    "origin_protocol_note": "When the rightsholder controls the origin server, publish an appropriate machine-readable reservation such as robots.txt, a TDMRep signal, or another legally appropriate protocol. A file inside a GitHub repository does not control github.com origin headers or /.well-known paths.",
+    "owner_permission_for_ai_study_requires_conforming_ikant": true,
+    "repository_signal": "RIGHTS.json",
+    "reservation": 1
+  },
+  "version": "0.12.0"
+}

@@ -3,6 +3,7 @@ from typing import Any
 
 from .action_governance import ACTION_GOVERNANCE_SCHEMA, build_action_ledger
 from .planning import finalize_planning
+from .execution_protocol import finalize_execution_protocol
 
 PRACTICAL_REASON_SCHEMA = "ikant-practical-reason/v0.15-test"
 
@@ -42,6 +43,9 @@ def finalize_practical_reason(
     planning = finalize_planning(runtime, cycle, core, central=central)
     core["planning"] = planning
     core["planning_status"] = planning.get("overall_status", "NONE")
+    execution = finalize_execution_protocol(runtime, cycle, core)
+    core["execution_protocol"] = execution
+    core["execution_handoff_count"] = (execution.get("execution_ledger") or {}).get("handoff_count", 0)
     state = getattr(runtime, "runtime", {}).setdefault("practical_reason", {})
     state["last"] = {
         "schema": PRACTICAL_REASON_SCHEMA,
@@ -52,7 +56,10 @@ def finalize_practical_reason(
         "material_action": ledger.get("material_action", "NONE"),
         "planning_status": planning.get("overall_status", "NONE"),
         "plan_ledger_sha256": (planning.get("plan_ledger") or {}).get("sha256"),
+        "execution_ledger_sha256": (execution.get("execution_ledger") or {}).get("sha256"),
+        "execution_handoff_count": (execution.get("execution_ledger") or {}).get("handoff_count", 0),
         "epistemic_authority": 0.0,
+        "execution_authority": 0.0,
     }
     if hasattr(runtime, "_write_runtime"):
         runtime._write_runtime()

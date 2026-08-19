@@ -20,6 +20,11 @@ for name in ('ADMISSION.json','BOOTSTRAP.json'):
  if (m.get('practical_reason') or {}).get('schema')!='ikant-practical-reason/v0.15-test':fail(f'{name} practical reason drift')
  if (m.get('planning') or {}).get('schema')!='ikant-planning/v0.16-test':fail(f'{name} planning drift')
  if float((m.get('planning') or {}).get('epistemic_authority',1))!=0.0:fail(f'{name} planning epistemic authority drift')
+ exe=m.get('execution_protocol') or {}
+ if exe.get('schema')!='ikant-execution-protocol/v0.17-test':fail(f'{name} execution protocol drift')
+ if float(exe.get('epistemic_authority',1))!=0.0 or float(exe.get('execution_authority',1))!=0.0:fail(f'{name} execution authority drift')
+ if exe.get('runtime_executes_actions') is not False:fail(f'{name} execution runtime drift')
+ if exe.get('receipt_digest_authenticates_actor') is not False or exe.get('host_transport_authentication_external') is not True:fail(f'{name} receipt authentication boundary drift')
 rights_ok,rights_errors=validate_repository_rights(ROOT,contract)
 if not rights_ok:fail('rights policy drift: '+'; '.join(rights_errors))
 if f'version = "{PRODUCT_VERSION}"' not in (ROOT/'pyproject.toml').read_text():fail('package version drift')
@@ -38,4 +43,6 @@ for path in ('ikant/authority.py','ikant/approvals.py','ikant/action_governance.
  if not (ROOT/path).is_file():fail('missing practical reason module '+path)
 for path in ('ikant/plan_graph.py','ikant/world_model.py','ikant/decision_lattice.py','ikant/planning.py'):
  if not (ROOT/path).is_file():fail('missing planning module '+path)
-print(json.dumps({'schema':'ikant-invariant-registry-check/v0.16-test','ok':True,'critical_count':len([x for x in registry_manifest()['invariants'] if x['severity']=='CRITICAL']),'rights_policy':RIGHTS_SCHEMA,'epistemic_core':'ikant-epistemic-core/v0.13-test','temporal_epistemics':'ikant-temporal-epistemics/v0.14-test','practical_reason':'ikant-practical-reason/v0.15-test','planning':'ikant-planning/v0.16-test'},indent=2))
+for path in ('ikant/execution_handoff.py','ikant/execution_receipts.py','ikant/outcome_reconciliation.py','ikant/execution_protocol.py'):
+ if not (ROOT/path).is_file():fail('missing execution protocol module '+path)
+print(json.dumps({'schema':'ikant-invariant-registry-check/v0.17-test','ok':True,'critical_count':len([x for x in registry_manifest()['invariants'] if x['severity']=='CRITICAL']),'rights_policy':RIGHTS_SCHEMA,'epistemic_core':'ikant-epistemic-core/v0.13-test','temporal_epistemics':'ikant-temporal-epistemics/v0.14-test','practical_reason':'ikant-practical-reason/v0.15-test','planning':'ikant-planning/v0.16-test','execution_protocol':'ikant-execution-protocol/v0.17-test'},indent=2))

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ikant"
-version = "0.16.0a1"
-description = "Practical planning runtime with explicit plan DAGs, symbolic world-state, rollback graphs and Pareto decision lattices"
+version = "0.17.0a1"
+description = "Execution-handoff runtime with exact revalidation bindings, replay-safe receipts and zero-authority outcome reconciliation"
 readme = "README.md"
 requires-python = ">=3.11"
 

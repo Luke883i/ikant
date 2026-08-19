@@ -16,7 +16,7 @@ for name in ('ADMISSION.json','BOOTSTRAP.json'):
  m=json.loads((ROOT/name).read_text(encoding='utf-8'))
  if m.get('contract_version')!=CONTRACT_VERSION:fail(f'{name} contract drift')
  if (m.get('active_human_egress') or {}).get('schema')!=EGRESS_SCHEMA:fail(f'{name} egress drift')
-if json.loads((ROOT/'ADMISSION.json').read_text())['invariant_registry']['schema']!=registry_manifest()['schema']:fail('registry schema drift')
+ if (m.get('invariant_registry') or {}).get('schema')!=registry_manifest()['schema']:fail(f'{name} registry schema drift')
 rights_ok,rights_errors=validate_repository_rights(ROOT,contract)
 if not rights_ok:fail('rights policy drift: '+'; '.join(rights_errors))
 if f'version = "{PRODUCT_VERSION}"' not in (ROOT/'pyproject.toml').read_text():fail('package version drift')
@@ -27,4 +27,6 @@ for path in ('ikant/__main__.py','ikant/app_cli.py','ikant/session_host.py'):
 for inv in registry_manifest()['invariants']:
  target=inv['machine_test'].replace('.','/')
  if inv['severity']=='CRITICAL' and not ((ROOT/(target+'.py')).exists() or inv['machine_test'].startswith('scripts.')):fail('missing critical machine test '+inv['id'])
-print(json.dumps({'schema':'ikant-invariant-registry-check/v0.12-test','ok':True,'critical_count':len([x for x in registry_manifest()['invariants'] if x['severity']=='CRITICAL']),'rights_policy':RIGHTS_SCHEMA},indent=2))
+for path in ('ikant/provenance.py','ikant/calibration.py','ikant/hybrid_retrieval.py','ikant/causal_crc.py','ikant/epistemic_core.py'):
+ if not (ROOT/path).is_file():fail('missing epistemic core module '+path)
+print(json.dumps({'schema':'ikant-invariant-registry-check/v0.13-test','ok':True,'critical_count':len([x for x in registry_manifest()['invariants'] if x['severity']=='CRITICAL']),'rights_policy':RIGHTS_SCHEMA,'epistemic_core':'ikant-epistemic-core/v0.13-test'},indent=2))

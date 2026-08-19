@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, asdict
 from typing import Any
 
-PRODUCT_VERSION = "0.12.0a1"
+PRODUCT_VERSION = "0.13.0a1"
 CONTRACT_VERSION = "0.12.0"
 CONTRACT_SCHEMA = "ikant-access-contract/v0.12"
 ADMISSION_POLICY_SCHEMA = "ikant-pre-admission-firewall/v0.9-test"
@@ -13,7 +13,7 @@ FRAME_SCHEMA = "ikant-dashboard-frame/v0.11-test"
 JOURNAL_SCHEMA = "ikant-dashboard-egress-journal/v0.11-test"
 LEGACY_JOURNAL_SCHEMA = "ikant-dashboard-egress-journal/v0.10-test"
 TRANSPORT_ATTESTATION_SCHEMA = "ikant-host-transport-attestation/v0.11-test"
-INVARIANT_REGISTRY_SCHEMA = "ikant-invariant-registry/v0.12-test"
+INVARIANT_REGISTRY_SCHEMA = "ikant-invariant-registry/v0.13-test"
 MAX_FRAME_BYTES = 128 * 1024
 EXIT_COMMAND = "EXIT IKANT"
 RESUME_COMMAND = "RESUME IKANT"
@@ -32,6 +32,10 @@ _INVARIANTS = (
     Invariant("RGT-004","rights","The iKant contract does not itself grant owner permission for model training or training-dataset construction; a separate licence or independent external basis is required.","CRITICAL","tests.test_rights_policy_v12"),
     Invariant("EPI-001","epistemic","Runtime-derived, psyche, dashboard and audit telemetry never create external evidence or independent corroboration.","CRITICAL","tests.test_crc_v02"),
     Invariant("EPI-002","epistemic","Rights, admission and conformance control slices have zero epistemic authority and cannot become factual evidence.","CRITICAL","tests.test_rights_policy_v12"),
+    Invariant("EPI-003","epistemic","Content identity and source identity remain separate; provenance may attribute and count independent observations but cannot itself create evidence.","CRITICAL","tests.test_epistemic_core_v13"),
+    Invariant("CAL-001","calibration","Empirical calibration is feedback-bound and may only raise caution or claim thresholds; sparse or poor calibration never upgrades factual authority.","CRITICAL","tests.test_epistemic_core_v13"),
+    Invariant("MEM-001","memory","Hybrid retrieval combines lexical/semantic-proxy, provenance, temporal, graph and conflict relevance while changing availability only, never evidence.","CRITICAL","tests.test_epistemic_core_v13"),
+    Invariant("CRC-001","epistemic","CRC causal diagnostics are executable node/source ablations with explicit intervention sensitivity and must never be presented as ontological causality, consciousness or proof of closure.","CRITICAL","tests.test_epistemic_core_v13"),
     Invariant("PSY-001","psyche","Functional psyche may preserve or increase caution but cannot relax a practical/horizon block.","CRITICAL","tests.test_psyche_v05"),
     Invariant("SUR-001","surface","Validated Surface A and Surface B must be same-session/same-cycle and Surface B DOCX is mandatory for substantive human turns.","CRITICAL","tests.test_incarnate_v07"),
     Invariant("EGR-001","egress","After ACTIVE, the human channel is one canonical dashboard frame only until exact release.","CRITICAL","tests.test_session_egress_v10"),
@@ -41,7 +45,7 @@ _INVARIANTS = (
     Invariant("TRN-001","transport","Human and machine outputs use distinct explicit sinks; ACTIVE machine JSON is file-only and never stdout/stderr.","CRITICAL","tests.test_reticular_v11"),
     Invariant("CLI-001","host","ACTIVE pre-admission commands cannot bypass dashboard egress.","CRITICAL","tests.test_reticular_v11"),
     Invariant("ARC-001","architecture","Canonical runtime entrypoints and imports are version-neutral; historical version modules are compatibility shims only.","HIGH","scripts.architecture_compression_v11"),
-    Invariant("CI-001","validation","One version-neutral reticular boundary workflow owns historical and current boundary regressions; release workflows do not accrete per version.","HIGH","scripts.semantic_access_mutations"),
+    Invariant("CI-001","validation","One version-neutral reticular boundary workflow owns historical and current boundary regressions; release workflows do not accrete per version.","HIGH","scripts.epistemic_core_mutations"),
 )
 
 def invariants() -> tuple[Invariant, ...]: return _INVARIANTS

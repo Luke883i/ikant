@@ -35,7 +35,7 @@
   "standard_surfaces": ["Surface A conversational inside dashboard", "Surface B local audit JSON/DOCX"],
   "interface_projections": ["persistent shell transcript", "exclusive humanistic runtime dashboard", "operational self inspection", "rights/admission control slice with zero epistemic authority"],
   "active_human_egress": {"schema": "ikant-dashboard-session-egress/v0.11-test", "exclusive": true, "two_phase_delivery": true, "pending_frame_durable": true, "journal_hash_chain": true, "guard_recreation_forbidden": true, "breach_resume_requires_transport_attestation": true, "machine_output_file_only": true, "max_frame_bytes": 131072, "exit_command": "EXIT IKANT", "resume_command": "RESUME IKANT", "state_path": ".ikant/egress.json", "journal_path": ".ikant/egress-events.jsonl", "frames_path": ".ikant/egress-frames/"},
-  "invariant_registry": {"schema": "ikant-invariant-registry/v0.12-test", "module": "ikant.invariants"},
+  "invariant_registry": {"schema": "ikant-invariant-registry/v0.13-test", "module": "ikant.invariants"},
   "runtime_psyche": {"persisted": true, "path": ".ikant/psyche.json", "functional_affect_only": true, "phenomenal_consciousness_claim": false, "brain_one_to_one_claim": false},
   "degraded_runtime_simulation_allowed": false,
   "rule": "After acceptance, materialize only to establish conformance; substantive AI study is owner-authorized only in a clean conforming iKant runtime; model training remains separately licensed; external legal bases are not adjudicated."

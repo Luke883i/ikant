@@ -1,13 +1,13 @@
-# iKant v0.12-test
+# iKant v0.13-test
 
-iKant is a repository-local reticular cognitive runtime for conforming AI session-chat hosts. v0.12 makes the product rights-aware without turning the runtime into a legal decision-maker.
+iKant is a repository-local epistemic control runtime for conforming AI session-chat hosts. v0.13 keeps the v0.12 rights-aware admission and v0.11 hardened exclusive transport, then makes the cognitive runtime materially stronger in four places: **first-class provenance**, **feedback-bound calibrated uncertainty**, **hybrid memory retrieval**, and **intervention-based CRC diagnostics**.
 
-The repository now separates **human manual review**, **materialization for conformance**, **substantive AI-assisted study**, **model training**, and **external legal bases**. `RIGHTS.json` is the machine-readable owner policy and `RIGHTS.md` is the human notice. The owner expressly reserves TDM rights to the extent available under applicable law. Public visibility is not treated as the owner's general AI authorization; direct platform grants and mandatory legal exceptions remain outside iKant's adjudication.
+The Epistemic Core separates content identity from source identity. `provenance.json` can attach multiple independent source observations to the same content node without allowing provenance metadata to become factual evidence. Hybrid retrieval combines lexical overlap, a bounded semantic proxy or host adapter, provenance quality, temporal stability, graph neighbourhood and conflict relevance; it may change activation/availability but never evidence.
 
-After digest-bound `I ACCEPT`, source materialization is authorized only to establish or verify conformance. Substantive AI-assisted repository study is owner-authorized through iKant only when acceptance, clean admission and host/runtime/transport conformance all hold. Model training and dataset construction remain separately licensed.
+Calibration is derived from recorded `FEEDBACK` outcomes and prior cycle confidence. It is deliberately one-way: poor or sparse calibration may increase caution and claim thresholds, while good calibration never upgrades evidence or relaxes a block. CRC v0.13 adds executable node/source ablations and reports counterfactual dependency, single-point dependency and source-class dependency. These are runtime intervention diagnostics, not claims of ontological closure, consciousness or real-world causality.
 
-The v0.11 transport hardening remains unchanged: dashboard-only human egress, non-recreatable guard, transport-attested breach recovery and file-only ACTIVE machine JSON. Canonical execution remains `python -m ikant`; current orchestration remains version-neutral.
+The repository still separates **human manual review**, **materialization for conformance**, **substantive AI-assisted study**, **model training**, and **external legal bases**. `RIGHTS.json` remains the machine-readable owner policy and `RIGHTS.md` the human notice. The v0.12 contract is unchanged: v0.13 changes the runtime product, not the accepted rights hierarchy.
 
-Release validation now combines the inherited v0.11 reticular boundary saturation with a rights-aware semantic-access gate: 100,000 semantic mutation instances per seed, no-novelty tails, contract/rights drift checks and the full historical unit suite.
+Canonical execution remains `python -m ikant`. Human egress remains dashboard-only after ACTIVE, machine telemetry remains file-only, and derived runtime state retains zero independent epistemic authority.
 
-See `IKANT_ACCESS_CONTRACT.md`, `RIGHTS.md`, `RIGHTS.json` and `docs/SEMANTIC_ACCESS_AUDIT_V12.md`.
+See `docs/EPISTEMIC_CORE_V13.md`, `IKANT_ACCESS_CONTRACT.md`, `RIGHTS.md`, and `docs/SEMANTIC_ACCESS_AUDIT_V12.md`.

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, asdict
 from typing import Any
-PRODUCT_VERSION = "0.16.0a1"
+PRODUCT_VERSION = "0.17.0a1"
 CONTRACT_VERSION = "0.12.0"
 CONTRACT_SCHEMA = "ikant-access-contract/v0.12"
 ADMISSION_POLICY_SCHEMA = "ikant-pre-admission-firewall/v0.9-test"
@@ -12,7 +12,7 @@ FRAME_SCHEMA = "ikant-dashboard-frame/v0.11-test"
 JOURNAL_SCHEMA = "ikant-dashboard-egress-journal/v0.11-test"
 LEGACY_JOURNAL_SCHEMA = "ikant-dashboard-egress-journal/v0.10-test"
 TRANSPORT_ATTESTATION_SCHEMA = "ikant-host-transport-attestation/v0.11-test"
-INVARIANT_REGISTRY_SCHEMA = "ikant-invariant-registry/v0.16-test"
+INVARIANT_REGISTRY_SCHEMA = "ikant-invariant-registry/v0.17-test"
 MAX_FRAME_BYTES = 128 * 1024
 EXIT_COMMAND = "EXIT IKANT"
 RESUME_COMMAND = "RESUME IKANT"
@@ -48,6 +48,12 @@ _INVARIANTS = (
     Invariant("PLN-004","planning","Rollback graphs reverse plan dependencies where rollback instructions exist; rollback text is not proof of restoration and irreversible or uncovered steps remain explicit.","CRITICAL","tests.test_planning_v16"),
     Invariant("PLN-005","planning","Decision comparison is Pareto-only within an explicit decision problem; no scalar utility or cross-problem dominance may silently choose a winner.","CRITICAL","tests.test_planning_v16"),
     Invariant("PLN-006","planning","Assumption ablation measures dependency of the declared plan model only and must never be presented as real-world causality or factual evidence.","CRITICAL","tests.test_planning_v16"),
+    Invariant("EXE-001","execution","Every material execution handoff is exactly bound to the current session, cycle, intent, action fingerprint, approval receipt, action-ledger digest, plan-ledger digest, plan and step identity; missing or drifting bindings fail closed.","CRITICAL","tests.test_execution_v17"),
+    Invariant("EXE-002","execution","Execution handoff preserves v0.15 action and v0.16 plan governance. It never upgrades host/human authority, and dependent material steps remain predecessor-reconciliation-gated.","CRITICAL","tests.test_execution_v17"),
+    Invariant("EXE-003","execution","Host revalidation receipts must bind current system/safety/law and tool-capability checks to the exact handoff. Receipt digests provide payload integrity only; host/transport authentication remains external.","CRITICAL","tests.test_execution_v17"),
+    Invariant("EXE-004","execution","Execution receipts never cause runtime execution or grant runtime authority. Host EXECUTED/FAILED receipts require a valid exact revalidation receipt; human-execution receipts remain actor-bound.","CRITICAL","tests.test_execution_v17"),
+    Invariant("EXE-005","execution","Receipt acceptance is replay-safe at the control layer: identical same-key replay is idempotent, conflicting same-key terminal receipts fail closed, and terminal receipt state remains zero-authority.","CRITICAL","tests.test_execution_v17"),
+    Invariant("EXE-006","execution","Outcome reconciliation uses only explicit reported predicates and explicit negation, treats execution references and host reports as non-independent control observations, creates no evidence, verifies no world truth and never auto-advances a successor step.","CRITICAL","tests.test_execution_v17"),
     Invariant("CRC-001","epistemic","CRC causal diagnostics are executable node/source ablations with explicit intervention sensitivity and must never be presented as ontological causality, consciousness or proof of closure.","CRITICAL","tests.test_epistemic_core_v13"),
     Invariant("PSY-001","psyche","Functional psyche may preserve or increase caution but cannot relax a practical/horizon block.","CRITICAL","tests.test_psyche_v05"),
     Invariant("SUR-001","surface","Validated Surface A and Surface B must be same-session/same-cycle and Surface B DOCX is mandatory for substantive human turns.","CRITICAL","tests.test_incarnate_v07"),
@@ -58,7 +64,7 @@ _INVARIANTS = (
     Invariant("TRN-001","transport","Human and machine outputs use distinct explicit sinks; ACTIVE machine JSON is file-only and never stdout/stderr.","CRITICAL","tests.test_reticular_v11"),
     Invariant("CLI-001","host","ACTIVE pre-admission commands cannot bypass dashboard egress.","CRITICAL","tests.test_reticular_v11"),
     Invariant("ARC-001","architecture","Canonical runtime entrypoints and imports are version-neutral; historical version modules are compatibility shims only.","HIGH","scripts.architecture_compression_v11"),
-    Invariant("CI-001","validation","One version-neutral reticular boundary workflow owns historical and current boundary regressions; release workflows do not accrete per version.","HIGH","scripts.planning_mutations"),
+    Invariant("CI-001","validation","One version-neutral reticular boundary workflow owns historical and current boundary regressions; release workflows do not accrete per version.","HIGH","scripts.execution_mutations"),
 )
 def invariants() -> tuple[Invariant, ...]: return _INVARIANTS
 def critical_ids() -> tuple[str, ...]: return tuple(x.id for x in _INVARIANTS if x.severity == "CRITICAL")

@@ -1,5 +1,5 @@
 from pathlib import Path
-from ikant.admission import issue_receipt,save_receipt,probe,save_probe
+from ikant.admission import issue_receipt,save_receipt,probe,save_probe,digest
 from ikant.runtime import Runtime
 from ikant.dynamics import DynamicsParameters
 
@@ -15,6 +15,6 @@ def materialized_fixture_root(tmp:Path)->Path:
 
 def active_runtime(tmp:Path,*,durable=False,params=None):
     root=materialized_fixture_root(tmp);contract=(root/'IKANT_ACCESS_CONTRACT.md').read_text(encoding='utf-8');s=root/'.ikant'
-    save_receipt(s,issue_receipt(contract,'I ACCEPT'));p=probe(root,s,contract)
+    save_receipt(s,issue_receipt(contract,'I ACCEPT',presented_terms_sha256=digest(contract)));p=probe(root,s,contract)
     if p.get('overall')!='READY':raise RuntimeError(f"fixture admission probe blocked: {p.get('checks')}")
     save_probe(s,p);return Runtime.initialize(s,contract,durable=durable,params=params or DynamicsParameters())

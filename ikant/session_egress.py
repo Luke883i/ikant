@@ -25,6 +25,7 @@ def _sha(text: str) -> str:
 
 class EgressState(str, Enum):
     LOCKED = "DASHBOARD_LOCKED"
+    FRAME_PENDING = "FRAME_PENDING"
     RELEASE_PENDING = "RELEASE_PENDING"
     RELEASED = "RELEASED"
     BREACHED = "EGRESS_BREACHED"
@@ -98,13 +99,13 @@ class DashboardEgressGuard:
         return "INTENT"
 
     def attach_projection(self, dashboard: dict[str, Any], *, notice: str | None = None) -> dict[str, Any]:
-        out = dict(dashboard);out["session_egress"]={"schema":EGRESS_SCHEMA,"state":self.record.state,"epoch":self.record.epoch,"frame_seq":self.record.frame_seq,"exclusive_human_output":self.state in {EgressState.LOCKED,EgressState.RELEASE_PENDING},"exit_command":EXIT_COMMAND,"resume_command":RESUME_COMMAND,"notice":notice};return out
+        out = dict(dashboard);out["session_egress"]={"schema":EGRESS_SCHEMA,"state":self.record.state,"epoch":self.record.epoch,"frame_seq":self.record.frame_seq,"exclusive_human_output":self.state in {EgressState.LOCKED,EgressState.FRAME_PENDING,EgressState.RELEASE_PENDING},"exit_command":EXIT_COMMAND,"resume_command":RESUME_COMMAND,"notice":notice};return out
 
     def seal_frame(self, frame_text: str, *, kind: str, cycle_id: str | None = None, release_after_frame: bool = False) -> FrameReceipt:
         with self._lock:
             self.require_locked();text=str(frame_text)
             if not text.strip():raise EgressViolation("dashboard frame must not be empty")
-            seq=self.record.frame_seq+1;dg=_sha(text);next_state=EgressState.RELEASE_PENDING.value if release_after_frame else EgressState.LOCKED.value
+            seq=self.record.frame_seq+1;dg=_sha(text);next_state=EgressState.RELEASE_PENDING.value if release_after_frame else EgressState.FRAME_PENDING.value
             rec=replace(self.record,state=next_state,frame_seq=seq,last_frame_sha256=dg,last_cycle_id=cycle_id,last_kind=str(kind),updated_at=_now(),breach_reason=None);self._write(rec);self.record=rec
             return FrameReceipt(schema=FRAME_SCHEMA,runtime_session_id=self.runtime_session_id,epoch=rec.epoch,frame_seq=seq,kind=str(kind),cycle_id=cycle_id,frame_sha256=dg,release_after_frame=bool(release_after_frame))
 
@@ -115,6 +116,8 @@ class DashboardEgressGuard:
                 rec=replace(self.record,state=EgressState.BREACHED.value,updated_at=_now(),breach_reason="human-visible output differed from sealed dashboard frame");self._write(rec);self.record=rec;return False
             if self.state==EgressState.RELEASE_PENDING and receipt.release_after_frame:
                 rec=replace(self.record,state=EgressState.RELEASED.value,updated_at=_now());self._write(rec);self.record=rec
+            elif self.state==EgressState.FRAME_PENDING and not receipt.release_after_frame:
+                rec=replace(self.record,state=EgressState.LOCKED.value,updated_at=_now());self._write(rec);self.record=rec
             return True
 
     def resume(self, *, runtime_integrity_ok: bool) -> None:

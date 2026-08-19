@@ -1,0 +1,68 @@
+name: iKant v0.9 dashboard egress
+on:
+  pull_request:
+  push:
+    branches: [main, 'agent/**']
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+jobs:
+  egress-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -m compileall -q ikant tests scripts
+      - run: python -W error::ResourceWarning -m unittest tests.test_session_egress_v09 -v
+  egress-saturation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: {seed: [1, 883, 2026]}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/session_egress_v09_stress.py --scenarios 100000 --tail 10000 --seed ${{ matrix.seed }}
+  egress-durable:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/session_egress_v09_durable.py --frames 2000
+  mutation-kill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/session_egress_v09_mutations.py
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -W error::ResourceWarning -m unittest discover -s tests -q
+  report:
+    if: ${{ always() && github.event_name == 'pull_request' }}
+    needs: [egress-unit, egress-saturation, egress-durable, mutation-kill, regression]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const states={unit:'${{ needs.egress-unit.result }}',saturation:'${{ needs.egress-saturation.result }}',durable:'${{ needs.egress-durable.result }}',mutations:'${{ needs.mutation-kill.result }}',regression:'${{ needs.regression.result }}'};
+            const ok=Object.values(states).every(v=>v==='success');
+            const marker='<!-- ikant-v09-dashboard-egress-ci-receipt -->';
+            const body=[marker,'## iKant v0.9 exclusive dashboard receipt','',`DASHBOARD_V09_CI: ${ok?'PASS':'FAIL'}`,`HEAD_SHA: ${context.sha}`,`unit: ${states.unit}`,`saturation[3 x (100000+10000)]: ${states.saturation}`,`durable[2000+exit]: ${states.durable}`,`mutation-kill[12]: ${states.mutations}`,`regression: ${states.regression}`,'','Human-visible ACTIVE output is exactly one sealed dashboard frame; EXIT IKANT is the exact release command.'].join('\n');
+            const {owner,repo}=context.repo;const issue_number=context.issue.number;const comments=await github.paginate(github.rest.issues.listComments,{owner,repo,issue_number,per_page:100});const previous=comments.find(c=>c.body&&c.body.includes(marker));if(previous)await github.rest.issues.updateComment({owner,repo,comment_id:previous.id,body});else await github.rest.issues.createComment({owner,repo,issue_number,body});if(!ok)core.setFailed(`v0.9 dashboard gates failed: ${JSON.stringify(states)}`);

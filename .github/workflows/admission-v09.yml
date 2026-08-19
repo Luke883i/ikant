@@ -1,0 +1,61 @@
+name: iKant v0.9 admission binding
+on:
+  pull_request:
+  push:
+    branches: [main, 'agent/**']
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+jobs:
+  admission-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -m compileall -q ikant tests scripts
+      - run: python -W error::ResourceWarning -m unittest tests.test_pre_admission_v08 tests.test_admission_policy_v08 tests.test_admission_v09 tests.test_bootstrap -v
+  admission-maturity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: {seed: [1, 17, 97, 883, 2026]}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/pre_admission_v08_stress.py --scenarios 80000 --tail 1000 --seed ${{ matrix.seed }}
+  admission-mutations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/pre_admission_v08_mutations.py
+      - run: python scripts/session_egress_v09_mutations.py
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -W error::ResourceWarning -m unittest discover -s tests -q
+  report:
+    if: ${{ always() && github.event_name == 'pull_request' }}
+    needs: [admission-unit, admission-maturity, admission-mutations, regression]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const states={unit:'${{ needs.admission-unit.result }}',maturity:'${{ needs.admission-maturity.result }}',mutations:'${{ needs.admission-mutations.result }}',regression:'${{ needs.regression.result }}'};
+            const ok=Object.values(states).every(v=>v==='success');
+            const marker='<!-- ikant-v09-admission-ci-receipt -->';
+            const body=[marker,'## iKant v0.9 admission binding receipt','',`ADMISSION_V09_CI: ${ok?'PASS':'FAIL'}`,`HEAD_SHA: ${context.sha}`,`unit/binding: ${states.unit}`,`maturity[5 x (80000+1000)]: ${states.maturity}`,`mutation-kill: ${states.mutations}`,`regression: ${states.regression}`,'','Presented T&C digest is carried across materialization; completed unaccounted orientation acquisition fails closed.'].join('\n');
+            const {owner,repo}=context.repo;const issue_number=context.issue.number;const comments=await github.paginate(github.rest.issues.listComments,{owner,repo,issue_number,per_page:100});const previous=comments.find(c=>c.body&&c.body.includes(marker));if(previous)await github.rest.issues.updateComment({owner,repo,comment_id:previous.id,body});else await github.rest.issues.createComment({owner,repo,issue_number,body});if(!ok)core.setFailed(`v0.9 admission gates failed: ${JSON.stringify(states)}`);

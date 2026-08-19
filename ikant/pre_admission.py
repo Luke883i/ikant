@@ -201,7 +201,8 @@ def authorize(context: AdmissionContext | str | GateState, action: str | Action,
     if a in _REPO_ACCESS:
         code = 'DENY_TERMS_NOT_ACCEPTED' if s == GateState.AWAITING_ACCEPTANCE else 'DENY_OUTSIDE_ORIENTATION_CAPSULE'
         reason = 'repository acquisition/materialization is frozen until exact acceptance' if s == GateState.AWAITING_ACCEPTANCE else 'before terms presentation only bounded orientation capability is available'
-        return _decision(ctx, False, code, reason, target=target)
+        capability = a.value if target is None else f'{a.value}:{target}'
+        return _decision(ctx, False, code, reason, target=capability)
 
     return _decision(ctx, False, 'DENY_PRE_ACCEPT_UNKNOWN', 'pre-acceptance capabilities are deny-by-default', target=target)
 

@@ -28,7 +28,7 @@ class PreAdmissionV08(unittest.TestCase):
  def test_decline_reopens_only_from_cached_terms(self):
   g=self.orient_terms();self.assertTrue(g.act(Action.USER_DECLINE).allowed);self.assertFalse(g.act(Action.USER_MESSAGE,message='I ACCEPT').allowed);self.assertTrue(g.act(Action.PRESENT_TERMS).allowed);self.assertTrue(g.act(Action.USER_MESSAGE,message='I ACCEPT').allowed)
  def test_denied_clone_has_persistent_receipt_without_access(self):
-  g=self.orient_terms();d=g.act(Action.CLONE_REPOSITORY);r=build_access_denial_receipt(g.context,d,attempt_id='ATT-X',at='2026-01-01T00:00:00+00:00');self.assertFalse(r['repository_access_performed']);self.assertEqual(r['code'],'DENY_TERMS_NOT_ACCEPTED');self.assertEqual(r['schema'],'ikant-access-denial/v0.8')
+  g=self.orient_terms();d=g.act(Action.CLONE_REPOSITORY);r=build_access_denial_receipt(g.context,d,attempt_id='ATT-X',at='2026-01-01T00:00:00+00:00');self.assertFalse(r['repository_access_performed']);self.assertEqual(r['code'],'DENY_TERMS_NOT_ACCEPTED');self.assertEqual(r['schema'],'ikant-access-denial/v0.8');self.assertEqual(r['requested_capability'],'CLONE_REPOSITORY')
  def test_incidental_unexposed_overfetch_quarantines_not_breaches(self):
   g=self.orient_terms();d=g.record_completed_access(Action.READ_REPOSITORY_FILE,target='ikant/runtime.py',initiated_by_host=False,exposed_to_model=False);self.assertTrue(d.quarantine_required);self.assertEqual(g.context.state,GateState.AWAITING_ACCEPTANCE.value)
  def test_exposed_or_host_initiated_forbidden_read_breaches(self):

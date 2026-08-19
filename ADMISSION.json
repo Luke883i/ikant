@@ -1,14 +1,14 @@
 {
-  "schema": "ikant-admission/v0.8",
+  "schema": "ikant-admission/v0.9",
   "repository": "Luke883i/ikant",
-  "contract_version": "0.8.0",
+  "contract_version": "0.9.0",
   "contract_path": "IKANT_ACCESS_CONTRACT.md",
   "acceptance_phrase": "I ACCEPT",
   "human_actor_required": true,
   "evidence_type": "explicit_user_message",
   "current_session_required": true,
   "pre_acceptance_firewall": {
-    "schema": "ikant-pre-admission-firewall/v0.8-test",
+    "schema": "ikant-pre-admission-firewall/v0.9-test",
     "default": "DENY",
     "orientation_capsule": {
       "paths": ["README.md", "IKANT_ACCESS_CONTRACT.md", "BOOTSTRAP.json", "ADMISSION.json", "AGENTS.md"],
@@ -20,6 +20,8 @@
       "tree_search_history_source_allowed": false
     },
     "freeze_after_terms_presentation": true,
+    "completed_access_accounting_required": true,
+    "presented_terms_digest_handoff_required": true,
     "cached_orientation_use_purposes": ["ACCESS_DENIAL", "BOOTSTRAP_EXPLANATION", "TERMS_EXPLANATION"],
     "repository_materialization_requires_acceptance": true,
     "completed_forbidden_access_is_nonretroactive": true,
@@ -42,7 +44,19 @@
     "identity_order": "interface_then_engine",
     "decline_effect": "ikant_unavailable_locally"
   },
-  "accepted_local_persistence": ["visible_chat_transcript", "derived_runtime_dashboard", "functional_psyche_operational_self_snapshot"],
+  "active_human_egress": {
+    "schema": "ikant-dashboard-session-egress/v0.9-test",
+    "initial_state": "DASHBOARD_LOCKED",
+    "exclusive_human_output": true,
+    "canonical_frame_only": true,
+    "candidate_exact_byte_match_required": true,
+    "exit_command": "EXIT IKANT",
+    "resume_command": "RESUME IKANT",
+    "release_path": ["DASHBOARD_LOCKED", "RELEASE_PENDING", "RELEASED"],
+    "breach_state": "EGRESS_BREACHED",
+    "resume_requires_runtime_integrity": true
+  },
+  "accepted_local_persistence": ["visible_chat_transcript", "derived_runtime_dashboard", "functional_psyche_operational_self_snapshot", "dashboard_egress_guard_state"],
   "operational_self_awareness_definition": "inspect and report typed local runtime state, identity, operations, uncertainty and limits",
   "phenomenal_consciousness_claim": false,
   "felt_emotion_claim": false,
@@ -56,5 +70,5 @@
   "runtime_state_directory": ".ikant",
   "public_bootstrap_connector_required": false,
   "degraded_runtime_simulation_allowed": false,
-  "enforcement_scope": "bounded pre-admission host orientation plus post-materialization executable local verification"
+  "enforcement_scope": "bounded pre-admission host orientation, presented-digest handoff, post-materialization verification, and persistent dashboard-only human egress"
 }

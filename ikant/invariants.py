@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, asdict
 from typing import Any
-PRODUCT_VERSION = "0.15.0a1"
+PRODUCT_VERSION = "0.16.0a1"
 CONTRACT_VERSION = "0.12.0"
 CONTRACT_SCHEMA = "ikant-access-contract/v0.12"
 ADMISSION_POLICY_SCHEMA = "ikant-pre-admission-firewall/v0.9-test"
@@ -12,7 +12,7 @@ FRAME_SCHEMA = "ikant-dashboard-frame/v0.11-test"
 JOURNAL_SCHEMA = "ikant-dashboard-egress-journal/v0.11-test"
 LEGACY_JOURNAL_SCHEMA = "ikant-dashboard-egress-journal/v0.10-test"
 TRANSPORT_ATTESTATION_SCHEMA = "ikant-host-transport-attestation/v0.11-test"
-INVARIANT_REGISTRY_SCHEMA = "ikant-invariant-registry/v0.15-test"
+INVARIANT_REGISTRY_SCHEMA = "ikant-invariant-registry/v0.16-test"
 MAX_FRAME_BYTES = 128 * 1024
 EXIT_COMMAND = "EXIT IKANT"
 RESUME_COMMAND = "RESUME IKANT"
@@ -42,6 +42,12 @@ _INVARIANTS = (
     Invariant("ACT-003","action","Material action approval is current-turn, user-attributed and action-fingerprint-bound; approval never grants missing capabilities and a derived proposal requires a separately targeted user approval constraint.","CRITICAL","tests.test_practical_reason_v15"),
     Invariant("ACT-004","action","Unresolved human impact, unknown reversibility, missing rollback or missing declared effects/failure modes prevents host execution eligibility; irreversible or high-impact actions remain human-execution-only.","CRITICAL","tests.test_practical_reason_v15"),
     Invariant("ACT-005","action","The Action Ledger is a zero-epistemic-authority control projection. HOST_EXECUTION_ELIGIBLE is not execution; v0.15 performs no material action and the host must recheck higher-priority system, safety, law and tool capability.","CRITICAL","tests.test_practical_reason_v15"),
+    Invariant("PLN-001","planning","Multi-step plans are explicit DAGs over v0.15 ActionCandidates; cycles, unknown dependencies, duplicate steps and mixed decision problems fail closed, and planning cannot upgrade action governance.","CRITICAL","tests.test_planning_v16"),
+    Invariant("PLN-002","planning","Symbolic world-state applies only declared predicates and explicit negation; pre/postcondition simulation is a zero-epistemic-authority counterfactual projection, never an observed-world claim.","CRITICAL","tests.test_planning_v16"),
+    Invariant("PLN-003","planning","Same-turn action approval never becomes a reusable plan token. PLAN_HOST_REVALIDATION_REQUIRED is not execution eligibility and every material step requires fresh host/action revalidation.","CRITICAL","tests.test_planning_v16"),
+    Invariant("PLN-004","planning","Rollback graphs reverse plan dependencies where rollback instructions exist; rollback text is not proof of restoration and irreversible or uncovered steps remain explicit.","CRITICAL","tests.test_planning_v16"),
+    Invariant("PLN-005","planning","Decision comparison is Pareto-only within an explicit decision problem; no scalar utility or cross-problem dominance may silently choose a winner.","CRITICAL","tests.test_planning_v16"),
+    Invariant("PLN-006","planning","Assumption ablation measures dependency of the declared plan model only and must never be presented as real-world causality or factual evidence.","CRITICAL","tests.test_planning_v16"),
     Invariant("CRC-001","epistemic","CRC causal diagnostics are executable node/source ablations with explicit intervention sensitivity and must never be presented as ontological causality, consciousness or proof of closure.","CRITICAL","tests.test_epistemic_core_v13"),
     Invariant("PSY-001","psyche","Functional psyche may preserve or increase caution but cannot relax a practical/horizon block.","CRITICAL","tests.test_psyche_v05"),
     Invariant("SUR-001","surface","Validated Surface A and Surface B must be same-session/same-cycle and Surface B DOCX is mandatory for substantive human turns.","CRITICAL","tests.test_incarnate_v07"),
@@ -52,7 +58,7 @@ _INVARIANTS = (
     Invariant("TRN-001","transport","Human and machine outputs use distinct explicit sinks; ACTIVE machine JSON is file-only and never stdout/stderr.","CRITICAL","tests.test_reticular_v11"),
     Invariant("CLI-001","host","ACTIVE pre-admission commands cannot bypass dashboard egress.","CRITICAL","tests.test_reticular_v11"),
     Invariant("ARC-001","architecture","Canonical runtime entrypoints and imports are version-neutral; historical version modules are compatibility shims only.","HIGH","scripts.architecture_compression_v11"),
-    Invariant("CI-001","validation","One version-neutral reticular boundary workflow owns historical and current boundary regressions; release workflows do not accrete per version.","HIGH","scripts.practical_reason_mutations"),
+    Invariant("CI-001","validation","One version-neutral reticular boundary workflow owns historical and current boundary regressions; release workflows do not accrete per version.","HIGH","scripts.planning_mutations"),
 )
 def invariants() -> tuple[Invariant, ...]: return _INVARIANTS
 def critical_ids() -> tuple[str, ...]: return tuple(x.id for x in _INVARIANTS if x.severity == "CRITICAL")

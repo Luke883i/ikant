@@ -65,9 +65,10 @@
     "legacy_v10_migration": "supported",
     "resume_requires_runtime_integrity": true
   },
-  "invariant_registry": {"schema": "ikant-invariant-registry/v0.15-test", "module": "ikant.invariants", "critical_coverage_required": 1.0},
-  "accepted_local_persistence": ["visible_chat_transcript", "derived_runtime_dashboard", "functional_psyche_operational_self_snapshot", "dashboard_egress_guard_state", "dashboard_egress_hash_journal", "pending_dashboard_frame_artifact", "egress_required_marker", "temporal_memory_projection", "temporal_memory_hash_journal", "action_governance_projection"],
+  "invariant_registry": {"schema": "ikant-invariant-registry/v0.16-test", "module": "ikant.invariants", "critical_coverage_required": 1.0},
+  "accepted_local_persistence": ["visible_chat_transcript", "derived_runtime_dashboard", "functional_psyche_operational_self_snapshot", "dashboard_egress_guard_state", "dashboard_egress_hash_journal", "pending_dashboard_frame_artifact", "egress_required_marker", "temporal_memory_projection", "temporal_memory_hash_journal", "action_governance_projection", "planning_projection"],
   "practical_reason": {"schema": "ikant-practical-reason/v0.15-test", "action_ledger_path": ".ikant/action-ledger.json", "epistemic_authority": 0.0, "runtime_executes_material_actions": false, "host_rechecks_system_safety_law_tool_capability": true},
+  "planning": {"schema": "ikant-planning/v0.16-test", "plan_ledger_path": ".ikant/plan-ledger.json", "epistemic_authority": 0.0, "execution_authority": 0.0, "runtime_executes_plans": false, "host_revalidates_each_material_step": true, "same_turn_approval_reusable": false, "scalar_utility_used": false},
   "operational_self_awareness_definition": "inspect and report typed local runtime state, identity, operations, uncertainty and limits",
   "phenomenal_consciousness_claim": false,
   "felt_emotion_claim": false,
@@ -81,5 +82,5 @@
   "runtime_state_directory": ".ikant",
   "public_bootstrap_connector_required": false,
   "degraded_runtime_simulation_allowed": false,
-  "enforcement_scope": "bounded admission, rights-aware owner authorization, invariant-registry verification, temporal-memory replay integrity, practical action-governance projection, non-recreatable crash-recoverable dashboard egress, transport-attested breach recovery, and file-only machine output"
+  "enforcement_scope": "bounded admission, rights-aware owner authorization, invariant-registry verification, temporal-memory replay integrity, practical action-governance and planning projections, non-recreatable crash-recoverable dashboard egress, transport-attested breach recovery, and file-only machine output"
 }

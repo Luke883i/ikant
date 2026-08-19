@@ -1,4 +1,4 @@
-name: iKant v0.11 reticular consolidation
+name: iKant reticular boundary
 on:
   pull_request:
   push:
@@ -16,7 +16,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - run: python -m compileall -q ikant tests scripts
-      - run: python scripts/check_invariant_registry_v11.py
+      - run: python scripts/check_invariant_registry.py
   full-unit:
     runs-on: ubuntu-latest
     timeout-minutes: 12
@@ -36,6 +36,18 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - run: python scripts/reticular_v11_stress.py --cases 100000 --tail 10000 --seed ${{ matrix.seed }}
+  semantic-access-m:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: {seed: [1, 17, 97, 883, 2026]}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/semantic_access_stress.py --cases 100000 --tail 10000 --seed ${{ matrix.seed }}
+      - run: python scripts/semantic_access_mutations.py --mutations 100000 --tail 10000 --seed ${{ matrix.seed }}
   compression-n:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -76,7 +88,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
-      - run: python -W error::ResourceWarning -m unittest tests.test_pre_admission_v08 tests.test_admission_policy_v08 tests.test_admission_v09 -v
+      - run: python -W error::ResourceWarning -m unittest tests.test_pre_admission_v08 tests.test_admission_policy_v08 tests.test_admission_v09 tests.test_rights_policy_v12 -v
   egress:
     runs-on: ubuntu-latest
     timeout-minutes: 12
@@ -89,15 +101,15 @@ jobs:
       - run: python scripts/egress_v10_mutations.py
   report:
     if: ${{ always() && github.event_name == 'pull_request' }}
-    needs: [registry, full-unit, behavioral-m, compression-n, interaction-chat, psyche, incarnate, admission, egress]
+    needs: [registry, full-unit, behavioral-m, semantic-access-m, compression-n, interaction-chat, psyche, incarnate, admission, egress]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/github-script@v7
         with:
           script: |
-            const states={registry:'${{ needs.registry.result }}',unit:'${{ needs.full-unit.result }}',M:'${{ needs.behavioral-m.result }}',N:'${{ needs.compression-n.result }}',interaction_chat:'${{ needs.interaction-chat.result }}',psyche:'${{ needs.psyche.result }}',incarnate:'${{ needs.incarnate.result }}',admission:'${{ needs.admission.result }}',egress:'${{ needs.egress.result }}'};
+            const states={registry:'${{ needs.registry.result }}',unit:'${{ needs.full-unit.result }}',reticular_M:'${{ needs.behavioral-m.result }}',semantic_M:'${{ needs.semantic-access-m.result }}',N:'${{ needs.compression-n.result }}',interaction_chat:'${{ needs.interaction-chat.result }}',psyche:'${{ needs.psyche.result }}',incarnate:'${{ needs.incarnate.result }}',admission:'${{ needs.admission.result }}',egress:'${{ needs.egress.result }}'};
             const ok=Object.values(states).every(v=>v==='success');
-            const marker='<!-- ikant-v11-reticular-ci-receipt -->';
-            const body=[marker,'## iKant v0.11 reticular consolidation receipt','',`RETICULAR_V11_CI: ${ok?'PASS':'FAIL'}`,`HEAD_SHA: ${context.sha}`,`registry: ${states.registry}`,`full-unit: ${states.unit}`,`M[5 x (100000+10000)]: ${states.M}`,`N[32768+10000]: ${states.N}`,`interaction/chat: ${states.interaction_chat}`,`psyche: ${states.psyche}`,`incarnate: ${states.incarnate}`,`admission: ${states.admission}`,`egress: ${states.egress}`,'','Canonical path is version-neutral; required egress is non-recreatable; breach recovery is transport-attested; ACTIVE machine output is file-only.'].join('\n');
-            const {owner,repo}=context.repo;const issue_number=context.issue.number;const comments=await github.paginate(github.rest.issues.listComments,{owner,repo,issue_number,per_page:100});const previous=comments.find(c=>c.body&&c.body.includes(marker));if(previous)await github.rest.issues.updateComment({owner,repo,comment_id:previous.id,body});else await github.rest.issues.createComment({owner,repo,issue_number,body});if(!ok)core.setFailed(`v0.11 gates failed: ${JSON.stringify(states)}`);
+            const marker='<!-- ikant-reticular-ci-receipt -->';
+            const body=[marker,'## iKant reticular boundary receipt','',`RETICULAR_CI: ${ok?'PASS':'FAIL'}`,`HEAD_SHA: ${context.sha}`,`registry: ${states.registry}`,`full-unit: ${states.unit}`,`reticular M[5 x (100000+10000)]: ${states.reticular_M}`,`semantic M[5 x (100000+10000) + 5 x (100000+10000) mutations]: ${states.semantic_M}`,`N[32768+10000]: ${states.N}`,`interaction/chat: ${states.interaction_chat}`,`psyche: ${states.psyche}`,`incarnate: ${states.incarnate}`,`admission/rights: ${states.admission}`,`egress: ${states.egress}`,'','Rights/admission slices have zero epistemic authority; owner authorization, external legal bases and technical conformance remain distinct.'].join('\n');
+            const {owner,repo}=context.repo;const issue_number=context.issue.number;const comments=await github.paginate(github.rest.issues.listComments,{owner,repo,issue_number,per_page:100});const previous=comments.find(c=>c.body&&c.body.includes(marker));if(previous)await github.rest.issues.updateComment({owner,repo,comment_id:previous.id,body});else await github.rest.issues.createComment({owner,repo,issue_number,body});if(!ok)core.setFailed(`reticular gates failed: ${JSON.stringify(states)}`);

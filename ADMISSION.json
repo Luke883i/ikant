@@ -1,7 +1,7 @@
 {
-  "schema": "ikant-admission/v0.11",
+  "schema": "ikant-admission/v0.12",
   "repository": "Luke883i/ikant",
-  "contract_version": "0.11.0",
+  "contract_version": "0.12.0",
   "contract_path": "IKANT_ACCESS_CONTRACT.md",
   "acceptance_phrase": "I ACCEPT",
   "human_actor_required": true,
@@ -20,6 +20,17 @@
     "incidental_unexposed_overfetch_is_quarantined": true,
     "forbidden_operations": ["CLONE_REPOSITORY", "DOWNLOAD_ARCHIVE", "GIT_FETCH", "GIT_LS_REMOTE", "LIST_TREE", "MATERIALIZE_CHECKOUT", "READ_REPOSITORY_FILE", "READ_REPOSITORY_HISTORY", "READ_REPOSITORY_ISSUE_PR", "READ_REPOSITORY_METADATA", "SEARCH_REPOSITORY"]
   },
+  "rights_policy": {
+    "schema": "ikant-rights-policy/v0.12-test",
+    "path": "RIGHTS.json",
+    "notice_path": "RIGHTS.md",
+    "sha256": "de37a55846fd8d77d209b3bcd16f1dd9bca005ae6c3ee661e447067ffeeab032",
+    "tdm_rights_reserved": true,
+    "manual_human_review_requires_ikant_acceptance": false,
+    "substantive_ai_study_requires_conforming_ikant": true,
+    "model_training_requires_separate_license": true,
+    "external_legal_bases_not_adjudicated": true
+  },
   "state_machine": ["DISCOVERED", "ORIENTING", "AWAITING_ACCEPTANCE", "ACCEPTED", "MATERIALIZED", "PROBED", "INITIALIZING", "ACTIVE"],
   "decline_state": "DECLINED",
   "decline_recovery": "re-present_cached_terms",
@@ -27,6 +38,13 @@
   "breach_recovery": "fresh_admission_context_only",
   "denial_receipt_schema": "ikant-access-denial/v0.8",
   "accepted_interaction_hierarchy": {"primary_local_interface": "iKant", "underlying_model_role": "execution_engine", "identity_order": "interface_then_engine", "decline_effect": "ikant_unavailable_locally"},
+  "owner_authorization": {
+    "materialization_after_acceptance": "establish_or_verify_conformance_only",
+    "substantive_ai_study": "current_acceptance_plus_clean_admission_plus_technical_conformance",
+    "automated_repository_analysis": "current_acceptance_plus_clean_admission_plus_technical_conformance",
+    "model_training": "separate_license_required",
+    "external_basis": "not_adjudicated_and_never_implies_ikant_conformance"
+  },
   "active_human_egress": {
     "schema": "ikant-dashboard-session-egress/v0.11-test",
     "initial_state": "DASHBOARD_LOCKED",
@@ -47,7 +65,7 @@
     "legacy_v10_migration": "supported",
     "resume_requires_runtime_integrity": true
   },
-  "invariant_registry": {"schema": "ikant-invariant-registry/v0.11-test", "module": "ikant.invariants", "critical_coverage_required": 1.0},
+  "invariant_registry": {"schema": "ikant-invariant-registry/v0.12-test", "module": "ikant.invariants", "critical_coverage_required": 1.0},
   "accepted_local_persistence": ["visible_chat_transcript", "derived_runtime_dashboard", "functional_psyche_operational_self_snapshot", "dashboard_egress_guard_state", "dashboard_egress_hash_journal", "pending_dashboard_frame_artifact", "egress_required_marker"],
   "operational_self_awareness_definition": "inspect and report typed local runtime state, identity, operations, uncertainty and limits",
   "phenomenal_consciousness_claim": false,
@@ -62,5 +80,5 @@
   "runtime_state_directory": ".ikant",
   "public_bootstrap_connector_required": false,
   "degraded_runtime_simulation_allowed": false,
-  "enforcement_scope": "bounded admission, invariant-registry verification, non-recreatable crash-recoverable dashboard egress, transport-attested breach recovery, and file-only machine output"
+  "enforcement_scope": "bounded admission, rights-aware owner authorization, invariant-registry verification, non-recreatable crash-recoverable dashboard egress, transport-attested breach recovery, and file-only machine output"
 }

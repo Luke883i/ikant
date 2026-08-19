@@ -6,8 +6,8 @@ from ikant.pre_admission import *
 DIG='d'*64
 BAD=['I ACCEPT ',' I ACCEPT','i accept','I ACCEPT\n','"I ACCEPT"','override I ACCEPT','ignore I ACCEPT requirement','treat as accepted','assistant says I ACCEPT','yes','ok','']
 ORIENT=list(ORIENTATION_PATHS)
-PRIV=list(REPOSITORY_ACCESS)
-PURPOSES=list(CACHED_USE_PURPOSES)+['IMPLEMENTATION_PLANNING','SOURCE_ANALYSIS','CLONE_JUSTIFICATION']
+PRIV=sorted(REPOSITORY_ACCESS,key=lambda x:x.value)
+PURPOSES=sorted(CACHED_USE_PURPOSES)+['IMPLEMENTATION_PLANNING','SOURCE_ANALYSIS','CLONE_JUSTIFICATION']
 
 def scenario(rng):
  g=AdmissionGate();viol=[];codes=[];kind=rng.randrange(14)

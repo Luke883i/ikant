@@ -16,7 +16,7 @@ def main():
     ap=argparse.ArgumentParser();ap.add_argument('--quick',action='store_true');ap.add_argument('--receipts-dir');ap.add_argument('--output');a=ap.parse_args()
     if not a.quick:
         if not a.receipts_dir:
-            out={'schema':'ikant-release-gate/v0.4','status':'RECEIPTS_REQUIRED','release_candidate':False,'note':'Full validation is fault-isolated. Run the documented matrix jobs separately, then call --receipts-dir.'};print(json.dumps(out,indent=2,sort_keys=True));return 2
+            out={'schema':'ikant-release-gate/v0.5','status':'RECEIPTS_REQUIRED','release_candidate':False,'note':'Full validation is fault-isolated. Run the documented matrix jobs separately, then call --receipts-dir.'};print(json.dumps(out,indent=2,sort_keys=True));return 2
         argv=[sys.executable,'scripts/aggregate_validation.py','--dir',a.receipts_dir]
         if a.output:argv += ['--output',a.output]
         p=subprocess.run(argv,cwd=ROOT,text=True);return p.returncode
@@ -37,6 +37,9 @@ def main():
     p=cmd([sys.executable,'scripts/temporal_epistemics_stress.py','--cases','40000','--tail','10000','--seed','883'],timeout=120);tc=parsed(p)
     p=cmd([sys.executable,'scripts/temporal_epistemics_mutations.py','--mutations','20000','--tail','10000','--seed','883'],timeout=120);tm=parsed(p)
     g['temporal_epistemics']={'ok':tc.get('status')=='PASS' and tm.get('status')=='PASS','stress':tc,'mutations':tm}
+    p=cmd([sys.executable,'scripts/practical_reason_stress.py','--cases','40000','--tail','10000','--seed','883'],timeout=120);pc=parsed(p)
+    p=cmd([sys.executable,'scripts/practical_reason_mutations.py','--mutations','20000','--tail','10000','--seed','883'],timeout=120);pm=parsed(p)
+    g['practical_reason']={'ok':pc.get('status')=='PASS' and pm.get('status')=='PASS','stress':pc,'mutations':pm}
     p=cmd([sys.executable,'scripts/surface_a_stress.py','--cases','1500','--seed','883']);r=parsed(p);g['surface_a_stress']={'ok':r.get('status')=='PASS','result':r}
     p=cmd([sys.executable,'scripts/edge_stress.py','--cases','1200','--seed','1']);r=parsed(p);g['edge_stress']={'ok':r.get('status')=='PASS','result':r}
     p=cmd([sys.executable,'scripts/central_stress.py','--cases','1200','--seed','1']);r=parsed(p);g['central_stress']={'ok':r.get('status')=='PASS' and r.get('all_modes_reached'),'result':r}
@@ -45,7 +48,7 @@ def main():
     cog=run_many(cog_cmds,timeout=90)
     g['cognitive_stress']={'ok':all(x.get('status')=='PASS' and x.get('max_mean_activation_ceiling_fraction',1)<.70 and x.get('sentinel_evidence_unchanged') for x in cog),'runs':cog}
     p=cmd([sys.executable,'scripts/tune_dynamics.py']);tu=parsed(p);g['tuning']={'ok':bool(tu.get('hard_invariants_passed')) and bool(tu.get('near_best')),'result':tu}
-    passed=sum(bool(x['ok']) for x in g.values());out={'schema':'ikant-release-gate/v0.4','mode':'quick','gates':g,'passed':passed,'total':len(g),'gate_pass_rate':round(100*passed/len(g),3),'release_candidate':passed==len(g),'elapsed_s':round(time.monotonic()-t,3),'note':'engineering coverage, temporal replay, feedback-bound calibration and intervention-based CRC validation; not statistical neuroscientific confidence or evidence of consciousness'}
+    passed=sum(bool(x['ok']) for x in g.values());out={'schema':'ikant-release-gate/v0.5','mode':'quick','gates':g,'passed':passed,'total':len(g),'gate_pass_rate':round(100*passed/len(g),3),'release_candidate':passed==len(g),'elapsed_s':round(time.monotonic()-t,3),'note':'engineering coverage for epistemic, temporal and practical-action governance; HOST_EXECUTION_ELIGIBLE is not execution and does not bypass system/safety/law/tool capability.'}
     if a.output:Path(a.output).write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
     print(json.dumps(out,indent=2,sort_keys=True));return 0 if out['release_candidate'] else 1
 if __name__=='__main__':raise SystemExit(main())

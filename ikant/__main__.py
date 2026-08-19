@@ -1,2 +1,2 @@
-from .v05_cli import main
+from .app_cli import main
 raise SystemExit(main())

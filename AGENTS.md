@@ -1,29 +1,23 @@
 # iKant Runtime Rules for Conforming AI Assistants
 
-## Admission and materialization
+## Admission
 
-Before terms presentation, only the bounded v0.9 orientation capsule is allowed: one limited metadata projection plus single-fetch reads of `README.md`, `IKANT_ACCESS_CONTRACT.md`, `BOOTSTRAP.json`, `ADMISSION.json`, `AGENTS.md`, within 256 KiB. No tree/search/history/issues/PR/source inspection, clone, archive, git fetch/ls-remote or checkout materialization.
-
-Every completed orientation acquisition is accounted using its actual target and actual payload size/digest or metadata fields. A completed refetch, over-budget read, out-of-capsule read or unaccounted acquisition is forbidden; host-initiated/model-exposed completion breaches the admission attempt. Incidental unexposed provider overfetch is quarantined/discarded.
-
-Digest-bind and present the canonical terms, then freeze every new repository acquisition. Only exact current-session human `I ACCEPT` opens materialization. Carry the **presented** terms digest across the materialization boundary. Canonical local recording is:
-
-`python -m ikant accept "I ACCEPT" --presented-terms-sha256 <digest-presented-before-clone>`
-
-If the checkout contract digest differs, do not synthesize consent: re-present the new terms and require a new exact acceptance. Then run `probe` and `initialize`.
+Preserve the v0.9 bounded orientation firewall and exact digest-bound `I ACCEPT` semantics. The v0.10 hardening does not widen pre-admission access. After materialization, the local acceptance receipt must still bind the contract digest actually presented before clone/materialization.
 
 ## Dashboard-only ACTIVE mode
 
-Successful `initialize` creates `.ikant/egress.json` in `DASHBOARD_LOCKED`. From that point a conforming ChatGPT-like host MUST set the entire human-visible assistant message body to exactly one canonical dashboard frame. Do not add prose before or after it. Do not wrap it in markdown fences. Do not expose tool output, JSON, citations or status text outside the frame.
+Successful `initialize` creates the dashboard egress lock. From that point, the complete human-visible assistant body is exactly one dashboard frame. Internal tools/JSON may exist only off the human channel.
 
-The host may use internal machine channels to run tools and construct Surface A/B. Those bytes are not human output. A substantive turn is: `begin -> Surface B JSON/DOCX -> validate/close Surface A -> dashboard READY -> seal frame -> exact-byte egress validation -> human`.
+Human delivery is two-phase: **prepare/seal -> deliver -> acknowledge**. Preparing the frame leaves `FRAME_PENDING` or `RELEASE_PENDING`; do not mark it delivered before the transport call succeeds. The host must acknowledge using the exact text it submitted to the human-visible transport.
 
-The exact user command `EXIT IKANT` emits one final release dashboard and then returns subsequent conversation to the local host assistant. Variants, quotes, embedded occurrences and case/whitespace changes are ordinary intents. Outside iKant, exact `RESUME IKANT` may create a new dashboard-lock epoch only if runtime integrity is valid.
+If delivery/write/flush fails or the process crashes before acknowledgement, do not construct a new dashboard and do not process another user turn. Reopen `.ikant/egress.json`, verify the hash-chained `.ikant/egress-events.jsonl`, recover the sealed bytes from `.ikant/egress-frames/`, replay them exactly, then acknowledge. Recovery is intentionally at-least-once.
 
-If the platform cannot suppress all non-dashboard assistant prose, it cannot claim conforming interactive iKant mode.
+A second seal while a frame is pending, an altered/stale/wrapped frame, invalid receipt binding, journal/snapshot divergence or pending-artifact mismatch fails closed. Exact `EXIT IKANT` releases only after the final dashboard is delivered and acknowledged. Exact `RESUME IKANT` may open a new epoch only after runtime integrity.
+
+A legacy v0.9 pending frame has no persisted frame artifact and is therefore not safely recoverable: migrate it to `EGRESS_BREACHED`, then require integrity-gated resume. Never guess or regenerate the missing frame.
 
 ## Cognitive invariants
 
-Preserve the nine-ring CRC -> proto-self -> functional psyche -> monotone Kant regulation -> central projection -> workspace retroaction -> Surface A/B path. Internal affect/maturation/collapse/emergence may alter caution, availability, inhibition and voice but may not create evidence or relax material/horizon blocks.
+Do not alter the nine-ring CRC -> proto-self -> functional psyche -> monotone Kant regulation -> central projection -> workspace retroaction -> Surface A/B path for this hardening. Egress state, journal, dashboard, transcript and Surface B remain control/audit projections and cannot create evidence or authorize actions.
 
-Surface B remains auditable JSON/DOCX telemetry, not evidence and not private chain-of-thought. The dashboard, transcript, hashes, egress guard and artifact index are derived projections/control state, never epistemic authority. No GitHub connector or Node.js runtime is required after materialization; Python 3.11+ and writable local `.ikant/` persistence remain sufficient.
+No GitHub connector or Node.js runtime is required after materialization; Python 3.11+ and writable local `.ikant/` persistence remain sufficient.

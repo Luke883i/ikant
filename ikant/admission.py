@@ -19,7 +19,8 @@ def _contract_header(contract_text:str)->dict[str,str]:
   k,v=line.split(':',1);out[k.strip()]=v.strip()
  return out
 
-def _v09(contract_text:str)->bool:return _contract_header(contract_text).get('contract_version')=='0.9.0'
+def _requires_presented_digest(contract_text:str)->bool:
+ return _contract_header(contract_text).get('presented_terms_digest_handoff_required')=='true'
 
 def validate_repository_admission_policy(root,contract_text=None):
  root=Path(root);errs=[]
@@ -31,8 +32,8 @@ def validate_repository_admission_policy(root,contract_text=None):
  text=contract_text
  if text is None and (root/TERMS_PATH).exists():text=(root/TERMS_PATH).read_text(encoding='utf-8')
  h=_contract_header(text or '');version=h.get('contract_version','')
- if h.get('schema')!='ikant-access-contract/v0.9':errs.append('contract schema mismatch')
- if version!='0.9.0':errs.append('contract version mismatch')
+ if h.get('schema')!='ikant-access-contract/v0.10':errs.append('contract schema mismatch')
+ if version!='0.10.0':errs.append('contract version mismatch')
  if h.get('admission_policy_schema')!=expected['schema']:errs.append('contract admission policy schema mismatch')
  required_header={
   'pre_acceptance_default':'DENY','terms_envelope_path':TERMS_PATH,
@@ -42,6 +43,8 @@ def validate_repository_admission_policy(root,contract_text=None):
   'completed_access_accounting_required':'true','presented_terms_digest_handoff_required':'true',
   'repository_materialization_requires_acceptance':'true','completed_forbidden_access_is_nonretroactive':'true',
   'incidental_unexposed_overfetch_is_quarantined':'true','active_dashboard_egress_lock_required':'true',
+  'egress_delivery_ack_after_emit_required':'true','egress_pending_frame_replay_required':'true',
+  'egress_journal_hash_chain_required':'true','egress_max_frame_bytes':'131072',
   'exit_command':'EXIT IKANT','resume_command':'RESUME IKANT'}
  for k,v in required_header.items():
   if h.get(k)!=v:errs.append(f'contract header {k} mismatch')
@@ -72,12 +75,15 @@ def validate_repository_admission_policy(root,contract_text=None):
  if a.get('breach_state')!='BREACHED' or a.get('breach_recovery')!='fresh_admission_context_only':errs.append('admission breach semantics mismatch')
  if a.get('denial_receipt_schema')!=expected['denial_receipt_schema']:errs.append('admission denial receipt schema mismatch')
  e=a.get('active_human_egress',{})
- expected_egress={'schema':'ikant-dashboard-session-egress/v0.9-test','initial_state':'DASHBOARD_LOCKED','exclusive_human_output':True,'canonical_frame_only':True,'candidate_exact_byte_match_required':True,'exit_command':'EXIT IKANT','resume_command':'RESUME IKANT','breach_state':'EGRESS_BREACHED','resume_requires_runtime_integrity':True}
+ expected_egress={'schema':'ikant-dashboard-session-egress/v0.10-test','initial_state':'DASHBOARD_LOCKED','exclusive_human_output':True,'canonical_frame_only':True,'delivery_ack_after_emit_required':True,'pending_frame_durable':True,'journal_hash_chain':True,'max_frame_bytes':131072,'exit_command':'EXIT IKANT','resume_command':'RESUME IKANT','breach_state':'EGRESS_BREACHED','legacy_v09_pending_migration':'EGRESS_BREACHED','resume_requires_runtime_integrity':True}
  for k,v in expected_egress.items():
   if e.get(k)!=v:errs.append(f'admission egress {k} mismatch')
+ if e.get('normal_path')!=['DASHBOARD_LOCKED','FRAME_PENDING','DASHBOARD_LOCKED']:errs.append('admission egress normal path mismatch')
  if e.get('release_path')!=['DASHBOARD_LOCKED','RELEASE_PENDING','RELEASED']:errs.append('admission egress release path mismatch')
  be=b.get('active_human_egress',{})
- if be.get('schema')!='ikant-dashboard-session-egress/v0.9-test' or be.get('exclusive') is not True:errs.append('bootstrap egress policy mismatch')
+ if be.get('schema')!='ikant-dashboard-session-egress/v0.10-test' or be.get('exclusive') is not True:errs.append('bootstrap egress policy mismatch')
+ if be.get('two_phase_delivery') is not True or be.get('pending_frame_durable') is not True or be.get('journal_hash_chain') is not True:errs.append('bootstrap egress durability mismatch')
+ if be.get('max_frame_bytes')!=131072:errs.append('bootstrap egress frame bound mismatch')
  if be.get('exit_command')!='EXIT IKANT' or be.get('resume_command')!='RESUME IKANT' or be.get('state_path')!='.ikant/egress.json':errs.append('bootstrap egress command/path mismatch')
  return not errs,list(dict.fromkeys(errs))
 
@@ -85,7 +91,7 @@ def issue_receipt(contract_text,user_message,*,presented_terms_sha256=None,actor
  if user_message!=ACCEPT:raise PermissionError('exact acceptance phrase required')
  if actor_type!='human' or evidence_type!='explicit_user_message':raise PermissionError('human explicit acceptance required')
  csha=digest(contract_text)
- if _v09(contract_text):
+ if _requires_presented_digest(contract_text):
   if presented_terms_sha256 is None:raise PermissionError('presented terms digest handoff required')
   if presented_terms_sha256!=csha:raise PermissionError('presented/checkout contract digest mismatch')
  nonce=secrets.token_hex(16);accepted=now();esha=hashlib.sha256(user_message.encode()).hexdigest();schema='ikant-admission-receipt/v0.2' if presented_terms_sha256 else 'ikant-admission-receipt/v0.1';rid='ADM-'+hashlib.sha256(f'{csha}|{presented_terms_sha256 or ""}|{esha}|{accepted}|{nonce}'.encode()).hexdigest()[:16]
@@ -97,12 +103,12 @@ def validate_receipt(r,contract_text):
  errs=[]
  if not r:errs.append('missing receipt')
  else:
-  required_schema='ikant-admission-receipt/v0.2' if _v09(contract_text) else r.get('schema')
+  required_schema='ikant-admission-receipt/v0.2' if _requires_presented_digest(contract_text) else r.get('schema')
   if r.get('schema')!=required_schema:errs.append('receipt schema mismatch')
   csha=digest(contract_text)
   if r.get('contract_sha256')!=csha:errs.append('contract digest mismatch')
   presented=r.get('presented_terms_sha256')
-  if _v09(contract_text) and presented!=csha:errs.append('presented terms digest binding mismatch')
+  if _requires_presented_digest(contract_text) and presented!=csha:errs.append('presented terms digest binding mismatch')
   if r.get('accepted_phrase')!=ACCEPT or r.get('actor_type')!='human' or r.get('evidence_type')!='explicit_user_message':errs.append('acceptance binding mismatch')
   nonce=str(r.get('nonce',''))
   if not _NONCE_RE.fullmatch(nonce):errs.append('nonce invalid')

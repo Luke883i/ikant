@@ -77,6 +77,19 @@ jobs:
       - run: python scripts/practical_reason_stress.py --cases 20000 --tail 10000 --seed ${{ matrix.seed }}
       - run: python scripts/practical_reason_mutations.py --mutations 20000 --tail 10000 --seed ${{ matrix.seed }}
 
+  planning-stress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: {seed: [17, 883, 2026]}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/planning_stress.py --cases 20000 --tail 10000 --seed ${{ matrix.seed }}
+      - run: python scripts/planning_mutations.py --mutations 20000 --tail 10000 --seed ${{ matrix.seed }}
+
   static-stress:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -169,7 +182,7 @@ jobs:
 
   report:
     if: ${{ always() && github.event_name == 'pull_request' }}
-    needs: [started, unit-and-gates, epistemic-core-stress, practical-reason-stress, static-stress, dynamic-stress, crc-stress, cognitive-stress, edge-stress, central-stress, surface-a-stress, dialogue-smoke]
+    needs: [started, unit-and-gates, epistemic-core-stress, practical-reason-stress, planning-stress, static-stress, dynamic-stress, crc-stress, cognitive-stress, edge-stress, central-stress, surface-a-stress, dialogue-smoke]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -178,7 +191,7 @@ jobs:
         with:
           script: |
             const states = {
-              started:'${{ needs.started.result }}', unit_and_gates:'${{ needs.unit-and-gates.result }}', epistemic_core:'${{ needs.epistemic-core-stress.result }}', practical_reason:'${{ needs.practical-reason-stress.result }}',
+              started:'${{ needs.started.result }}', unit_and_gates:'${{ needs.unit-and-gates.result }}', epistemic_core:'${{ needs.epistemic-core-stress.result }}', practical_reason:'${{ needs.practical-reason-stress.result }}', planning:'${{ needs.planning-stress.result }}',
               static_stress:'${{ needs.static-stress.result }}', dynamic_stress:'${{ needs.dynamic-stress.result }}', crc_stress:'${{ needs.crc-stress.result }}',
               cognitive_stress:'${{ needs.cognitive-stress.result }}', edge_stress:'${{ needs.edge-stress.result }}', central_stress:'${{ needs.central-stress.result }}',
               surface_a_stress:'${{ needs.surface-a-stress.result }}', dialogue_smoke:'${{ needs.dialogue-smoke.result }}'
@@ -186,7 +199,7 @@ jobs:
             const ok = Object.values(states).every((v) => v === 'success');
             const marker = '<!-- ikant-hosted-ci-receipt -->';
             const body = [marker,'## iKant hosted CI receipt','',`HOSTED_CI: ${ok ? 'PASS' : 'FAIL'}`,`HEAD_SHA: ${context.sha}`,
-              `unit-and-gates: ${states.unit_and_gates}`,`epistemic-core[3 x (20000+10000) + mutations]: ${states.epistemic_core}`,`practical-reason[3 x (20000+10000) + mutations]: ${states.practical_reason}`,
+              `unit-and-gates: ${states.unit_and_gates}`,`epistemic-core[3 x (20000+10000) + mutations]: ${states.epistemic_core}`,`practical-reason[3 x (20000+10000) + mutations]: ${states.practical_reason}`,`planning[3 x (20000+10000) + mutations]: ${states.planning}`,
               `static-stress: ${states.static_stress}`,`dynamic-stress[1,17,97,883,2026]: ${states.dynamic_stress}`,
               `crc-stress[1,17,97,883,2026]: ${states.crc_stress}`,`cognitive-stress[17,883,2026]: ${states.cognitive_stress}`,
               `edge-stress[1,97,883]: ${states.edge_stress}`,`central-stress[1,97,883]: ${states.central_stress}`,

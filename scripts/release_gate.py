@@ -26,29 +26,25 @@ def main():
     p=cmd([sys.executable,'scripts/stress.py','--cases','1000','--novelty-tail','100']);r=parsed(p);g['static_stress']={'ok':r.get('status')=='PASS','result':r}
     seeds=[883]
     dynamic_cmds=[[sys.executable,'scripts/dynamic_stress.py','--operations','1200','--novelty-tail','100','--seed',str(seed)] for seed in seeds]
-    runs=run_many(dynamic_cmds,timeout=90)
-    g['dynamic_stress']={'ok':all(x.get('status')=='PASS' and x.get('max_mean_activation_ceiling_fraction_sampled',1)<=.5 and x.get('max_activation_saturation_share_85_sampled',1)<=.05 for x in runs),'runs':runs}
+    runs=run_many(dynamic_cmds,timeout=90);g['dynamic_stress']={'ok':all(x.get('status')=='PASS' and x.get('max_mean_activation_ceiling_fraction_sampled',1)<=.5 and x.get('max_activation_saturation_share_85_sampled',1)<=.05 for x in runs),'runs':runs}
     crc_cmds=[[sys.executable,'scripts/crc_stress.py','--cases','750','--seed',str(seed)] for seed in seeds]
-    crc_runs=run_many(crc_cmds,timeout=90)
-    g['crc_stress']={'ok':all(x.get('status')=='PASS' for x in crc_runs),'runs':crc_runs}
+    crc_runs=run_many(crc_cmds,timeout=90);g['crc_stress']={'ok':all(x.get('status')=='PASS' for x in crc_runs),'runs':crc_runs}
     p=cmd([sys.executable,'scripts/epistemic_core_stress.py','--cases','20000','--tail','10000','--seed','883'],timeout=120);ec=parsed(p)
-    p=cmd([sys.executable,'scripts/epistemic_core_mutations.py','--mutations','20000','--tail','10000','--seed','883'],timeout=120);em=parsed(p)
-    g['epistemic_core']={'ok':ec.get('status')=='PASS' and em.get('status')=='PASS','stress':ec,'mutations':em}
+    p=cmd([sys.executable,'scripts/epistemic_core_mutations.py','--mutations','20000','--tail','10000','--seed','883'],timeout=120);em=parsed(p);g['epistemic_core']={'ok':ec.get('status')=='PASS' and em.get('status')=='PASS','stress':ec,'mutations':em}
     p=cmd([sys.executable,'scripts/temporal_epistemics_stress.py','--cases','40000','--tail','10000','--seed','883'],timeout=120);tc=parsed(p)
-    p=cmd([sys.executable,'scripts/temporal_epistemics_mutations.py','--mutations','20000','--tail','10000','--seed','883'],timeout=120);tm=parsed(p)
-    g['temporal_epistemics']={'ok':tc.get('status')=='PASS' and tm.get('status')=='PASS','stress':tc,'mutations':tm}
+    p=cmd([sys.executable,'scripts/temporal_epistemics_mutations.py','--mutations','20000','--tail','10000','--seed','883'],timeout=120);tm=parsed(p);g['temporal_epistemics']={'ok':tc.get('status')=='PASS' and tm.get('status')=='PASS','stress':tc,'mutations':tm}
     p=cmd([sys.executable,'scripts/practical_reason_stress.py','--cases','40000','--tail','10000','--seed','883'],timeout=120);pc=parsed(p)
-    p=cmd([sys.executable,'scripts/practical_reason_mutations.py','--mutations','20000','--tail','10000','--seed','883'],timeout=120);pm=parsed(p)
-    g['practical_reason']={'ok':pc.get('status')=='PASS' and pm.get('status')=='PASS','stress':pc,'mutations':pm}
+    p=cmd([sys.executable,'scripts/practical_reason_mutations.py','--mutations','20000','--tail','10000','--seed','883'],timeout=120);pm=parsed(p);g['practical_reason']={'ok':pc.get('status')=='PASS' and pm.get('status')=='PASS','stress':pc,'mutations':pm}
+    p=cmd([sys.executable,'scripts/planning_stress.py','--cases','40000','--tail','10000','--seed','883'],timeout=120);plc=parsed(p)
+    p=cmd([sys.executable,'scripts/planning_mutations.py','--mutations','20000','--tail','10000','--seed','883'],timeout=120);plm=parsed(p);g['planning']={'ok':plc.get('status')=='PASS' and plm.get('status')=='PASS','stress':plc,'mutations':plm}
     p=cmd([sys.executable,'scripts/surface_a_stress.py','--cases','1500','--seed','883']);r=parsed(p);g['surface_a_stress']={'ok':r.get('status')=='PASS','result':r}
     p=cmd([sys.executable,'scripts/edge_stress.py','--cases','1200','--seed','1']);r=parsed(p);g['edge_stress']={'ok':r.get('status')=='PASS','result':r}
     p=cmd([sys.executable,'scripts/central_stress.py','--cases','1200','--seed','1']);r=parsed(p);g['central_stress']={'ok':r.get('status')=='PASS' and r.get('all_modes_reached'),'result':r}
     p=cmd([sys.executable,'scripts/dialogue_smoke.py']);r=parsed(p);g['dialogue_smoke']={'ok':r.get('status')=='PASS' and r.get('all_responses_zero_evidence') and r.get('all_surface_b'),'result':r}
     cog_cmds=[[sys.executable,'scripts/cognitive_stress.py','--turns','120','--novelty-tail','30','--seed',str(seed)] for seed in seeds]
-    cog=run_many(cog_cmds,timeout=90)
-    g['cognitive_stress']={'ok':all(x.get('status')=='PASS' and x.get('max_mean_activation_ceiling_fraction',1)<.70 and x.get('sentinel_evidence_unchanged') for x in cog),'runs':cog}
+    cog=run_many(cog_cmds,timeout=90);g['cognitive_stress']={'ok':all(x.get('status')=='PASS' and x.get('max_mean_activation_ceiling_fraction',1)<.70 and x.get('sentinel_evidence_unchanged') for x in cog),'runs':cog}
     p=cmd([sys.executable,'scripts/tune_dynamics.py']);tu=parsed(p);g['tuning']={'ok':bool(tu.get('hard_invariants_passed')) and bool(tu.get('near_best')),'result':tu}
-    passed=sum(bool(x['ok']) for x in g.values());out={'schema':'ikant-release-gate/v0.5','mode':'quick','gates':g,'passed':passed,'total':len(g),'gate_pass_rate':round(100*passed/len(g),3),'release_candidate':passed==len(g),'elapsed_s':round(time.monotonic()-t,3),'note':'engineering coverage for epistemic, temporal and practical-action governance; HOST_EXECUTION_ELIGIBLE is not execution and does not bypass system/safety/law/tool capability.'}
+    passed=sum(bool(x['ok']) for x in g.values());out={'schema':'ikant-release-gate/v0.5','mode':'quick','gates':g,'passed':passed,'total':len(g),'gate_pass_rate':round(100*passed/len(g),3),'release_candidate':passed==len(g),'elapsed_s':round(time.monotonic()-t,3),'note':'engineering coverage for epistemic, temporal, practical-action and planning governance; planning is zero-authority and PLAN_HOST_REVALIDATION_REQUIRED is not execution.'}
     if a.output:Path(a.output).write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
     print(json.dumps(out,indent=2,sort_keys=True));return 0 if out['release_candidate'] else 1
 if __name__=='__main__':raise SystemExit(main())

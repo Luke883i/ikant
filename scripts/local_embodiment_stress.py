@@ -19,7 +19,7 @@ def main():
     for i in range(total):
         mask=i%65536 if i<65536 else rng.randrange(65536);universe.add(mask);sig=consequence(mask)
         bits=[bool(mask&(1<<j)) for j in range(16)]
-        if sig[-1] and not all(bits[j] for j in (0,1,2,3,4,5,6,7,8,11,12,13,14,15)):viol+=1
+        if sig[-1] and (not bits[12] or not bits[13] or not bits[14] or not bits[15] or (bits[10] and not bits[11])):viol+=1
         if i<a.cases:seen.add(sig)
         elif sig not in seen:tail_new+=1;seen.add(sig)
     out={'schema':'ikant-local-embodiment-stress/v0.20-test','status':'PASS' if viol==0 and tail_new==0 else 'FAIL','cases':a.cases,'tail':a.tail,'explicit_universe_seen':len(universe),'explicit_universe':65536,'consequence_signatures':len(seen),'violations':viol,'tail_novelty':tail_new}

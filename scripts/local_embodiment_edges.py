@@ -1,5 +1,7 @@
 from __future__ import annotations
-import argparse,json,random
+import argparse,json,random,sys
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT))
 from ikant.local_security import origin_allowed,require_loopback_url
 from ikant.local_http import host_header_allowed
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 import hashlib,json,math,re
 from typing import Any
-from .human_frame import validate_human_frame
+from .human_frame import normalize_entitlements,validate_human_frame
 
 HSP_SCHEMA='ikant-human-surface-protocol/v0.25-test'
 HSP_KINDS=frozenset({'INITIALIZE','DASHBOARD','TURN','NOTICE','APPROVAL_REQUEST','PROGRESS','ERROR','DEGRADED','RECOVERY','EXIT','RESUME'})
@@ -32,7 +32,7 @@ def _approval_projection(frame:dict[str,Any],session_id:str)->dict[str,Any]:
  purpose=str(frame.get('purpose') or '')
  if purpose not in {'CAPABILITY_GRANT','CAPABILITY_REVOKE','ACTION_CONFIRMATION'}:raise ValueError('HumanFrame is not a decision request')
  if frame.get('authority_effect')!='NONE' or frame.get('epistemic_authority') not in {0,0.0} or frame.get('execution_authority') not in {0,0.0}:raise ValueError('approval projection authority drift')
- return {'human_frame_schema':frame.get('schema'),'frame_sha256':frame.get('sha256'),'purpose':purpose,'title':_bounded_text(frame.get('title'),limit=1024),'body':_bounded_text(frame.get('body')),'subject_id':frame.get('subject_id'),'cycle_id':frame.get('cycle_id'),'action_fingerprint':frame.get('action_fingerprint'),'handoff_id':frame.get('handoff_id'),'requested_entitlements':list(frame.get('requested_entitlements') or []),'requires_explicit_decision':True,'presentation_is_not_authorization':True,'decision_recorded':False,'grant_issued':False,'epistemic_authority':0.0,'execution_authority':0.0}
+ return {'human_frame_schema':frame.get('schema'),'frame_sha256':frame.get('sha256'),'session_id':frame.get('session_id'),'actor_binding_id':frame.get('actor_binding_id'),'purpose':purpose,'title':_bounded_text(frame.get('title'),limit=1024),'body':_bounded_text(frame.get('body')),'subject_id':frame.get('subject_id'),'cycle_id':frame.get('cycle_id'),'action_fingerprint':frame.get('action_fingerprint'),'handoff_id':frame.get('handoff_id'),'requested_entitlements':list(frame.get('requested_entitlements') or []),'requires_explicit_decision':True,'presentation_is_not_authorization':True,'decision_recorded':False,'grant_issued':False,'epistemic_authority':0.0,'execution_authority':0.0}
 
 def _turn_projection(dashboard:dict[str,Any],cycle_id:str|None)->dict[str,Any]:
  inc=dashboard.get('incarnate') or {};a=inc.get('surface_a') or {};b=inc.get('surface_b') or {};expected=str(cycle_id or inc.get('cycle_id') or '') or None
@@ -86,7 +86,8 @@ def validate_human_surface(dashboard:dict[str,Any])->tuple[bool,list[str]]:
  kind=env.get('kind')
  if kind not in HSP_KINDS:errors.append('kind')
  if env.get('state') not in HSP_STATES or env.get('state')!=_KIND_STATE.get(kind):errors.append('state')
- if not isinstance(env.get('runtime_session_id'),str) or not env.get('runtime_session_id'):errors.append('session')
+ session_id=env.get('runtime_session_id')
+ if not isinstance(session_id,str) or not session_id:errors.append('session')
  if env.get('egress_state')!='DASHBOARD_LOCKED' or not isinstance(env.get('egress_epoch'),int) or isinstance(env.get('egress_epoch'),bool) or env.get('egress_epoch',0)<1:errors.append('egress_binding')
  for key in ('single_human_egress','semantic_payload_inside_dashboard_only'):
   if env.get(key) is not True:errors.append(key)
@@ -114,9 +115,14 @@ def validate_human_surface(dashboard:dict[str,Any])->tuple[bool,list[str]]:
  elif kind=='APPROVAL_REQUEST':
   a=p.get('approval_request') if isinstance(p.get('approval_request'),dict) else {}
   if a.get('human_frame_schema')!='ikant-human-frame/v0.19-test' or not isinstance(a.get('frame_sha256'),str) or not _SHA256_RE.fullmatch(a.get('frame_sha256')):errors.append('approval_frame')
+  if a.get('session_id')!=session_id or not isinstance(a.get('actor_binding_id'),str) or not a.get('actor_binding_id'):errors.append('approval_session_binding')
   if a.get('purpose') not in {'CAPABILITY_GRANT','CAPABILITY_REVOKE','ACTION_CONFIRMATION'}:errors.append('approval_purpose')
   if not _valid_bounded_text(a.get('title'),1024) or not _valid_bounded_text(a.get('body'),MAX_MESSAGE_BYTES):errors.append('approval_text')
-  if not isinstance(a.get('requested_entitlements'),list):errors.append('approval_entitlements')
+  ents=a.get('requested_entitlements')
+  try:
+   canonical=[{'capability':c,'resource':r} for c,r in normalize_entitlements(ents or [])]
+   if not isinstance(ents,list) or ents!=canonical:errors.append('approval_entitlements')
+  except (TypeError,ValueError):errors.append('approval_entitlements')
   if a.get('requires_explicit_decision') is not True or a.get('presentation_is_not_authorization') is not True or a.get('decision_recorded') is not False or a.get('grant_issued') is not False:errors.append('approval_boundary')
   if a.get('epistemic_authority') not in {0,0.0} or a.get('execution_authority') not in {0,0.0}:errors.append('approval_authority')
  elif kind=='PROGRESS':
@@ -132,8 +138,11 @@ def validate_human_surface(dashboard:dict[str,Any])->tuple[bool,list[str]]:
   if x.get('authority_effect')!='NONE':errors.append('error_authority')
  elif kind=='DEGRADED':
   x=p.get('degraded') if isinstance(p.get('degraded'),dict) else {};loss=x.get('capability_loss')
+  malformed=not isinstance(loss,list) or any(not isinstance(v,str) for v in (loss if isinstance(loss,list) else []))
+  if malformed:errors.append('degraded_capability_loss')
+  else:
+   if loss!=sorted(set(loss)) or any(not _valid_bounded_text(v,256) for v in loss):errors.append('degraded_capability_loss')
   if not _valid_bounded_text(x.get('code'),128) or not _valid_bounded_text(x.get('message'),MAX_MESSAGE_BYTES):errors.append('degraded_text')
-  if not isinstance(loss,list) or loss!=sorted(set(loss)) or any(not _valid_bounded_text(v,256) for v in loss):errors.append('degraded_capability_loss')
   if x.get('authority_effect')!='NONE':errors.append('degraded_authority')
  elif kind=='RECOVERY':
   x=p.get('recovery') if isinstance(p.get('recovery'),dict) else {}

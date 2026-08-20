@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ikant"
-version = "0.18.0a1"
-description = "Host capability and transport conformance SDK with executable vectors, exact profile negotiation and zero-authority host bindings"
+version = "0.22.0a1"
+description = "Governed local epistemic agent runtime with capability-bound web and native agency"
 readme = "README.md"
 requires-python = ">=3.11"
 

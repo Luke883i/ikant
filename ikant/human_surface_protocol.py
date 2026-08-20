@@ -1,5 +1,5 @@
 from __future__ import annotations
-import hashlib,json
+import hashlib,json,math
 from typing import Any
 from .human_frame import validate_human_frame
 
@@ -41,8 +41,8 @@ def project_human_surface(runtime:Any,dashboard:dict[str,Any],*,kind:str,cycle_i
  if k not in HSP_KINDS:raise ValueError('unsupported human surface kind')
  state=getattr(runtime,'runtime',{}) if isinstance(getattr(runtime,'runtime',None),dict) else {};session_id=str(state.get('session_id') or '')
  if not session_id:raise ValueError('runtime session required')
- eg=dashboard.get('session_egress') or {}
- if not eg:raise ValueError('human surface requires egress projection')
+ eg=dashboard.get('session_egress') or {};epoch=eg.get('epoch')
+ if eg.get('state')!='DASHBOARD_LOCKED' or not isinstance(epoch,int) or isinstance(epoch,bool) or epoch<1:raise ValueError('human surface requires locked positive egress epoch')
  payload={x:None for x in _PAYLOAD_KEYS}
  if k=='TURN':payload['surface_turn']=_turn_projection(dashboard,cycle_id)
  elif k in {'NOTICE','INITIALIZE','RESUME'}:payload['notice']={'message':_bounded_text(notice or ({'INITIALIZE':'iKant ACTIVE.','RESUME':'iKant riattivato.'}.get(k) or 'iKant notice')),'authority_effect':'NONE'}
@@ -51,7 +51,10 @@ def project_human_surface(runtime:Any,dashboard:dict[str,Any],*,kind:str,cycle_i
   payload['approval_request']=_approval_projection(approval_frame,session_id)
  elif k=='PROGRESS':
   p=dict(progress or {});label=_bounded_text(p.get('label'),limit=MAX_PROGRESS_LABEL_BYTES);fraction=p.get('fraction')
-  if fraction is not None and (not isinstance(fraction,(int,float)) or isinstance(fraction,bool) or float(fraction)<0 or float(fraction)>1):raise ValueError('progress fraction outside bound')
+  if fraction is not None:
+   if not isinstance(fraction,(int,float)) or isinstance(fraction,bool):raise ValueError('progress fraction must be numeric')
+   f=float(fraction)
+   if not math.isfinite(f) or f<0 or f>1:raise ValueError('progress fraction outside bound')
   payload['progress']={'phase':_bounded_text(p.get('phase') or 'WORKING',limit=128),'label':label,'fraction':None if fraction is None else round(float(fraction),6),'cancellable':bool(p.get('cancellable',False)),'authority_effect':'NONE'}
  elif k=='ERROR':
   e=dict(error or {});payload['error']={'code':_bounded_text(e.get('code') or 'RUNTIME_ERROR',limit=128),'message':_bounded_text(e.get('message')),'retryable':bool(e.get('retryable',False)),'authority_effect':'NONE'}
@@ -68,7 +71,7 @@ def project_human_surface(runtime:Any,dashboard:dict[str,Any],*,kind:str,cycle_i
  expected={'TURN':'surface_turn','NOTICE':'notice','INITIALIZE':'notice','RESUME':'notice','APPROVAL_REQUEST':'approval_request','PROGRESS':'progress','ERROR':'error','DEGRADED':'degraded','RECOVERY':'recovery','EXIT':'release'}.get(k)
  if expected and active!=[expected]:raise ValueError('human surface payload exclusivity')
  if not expected and active:raise ValueError('unexpected human surface payload')
- env={'schema':HSP_SCHEMA,'runtime_session_id':session_id,'egress_epoch':eg.get('epoch'),'egress_state':eg.get('state'),'kind':k,'state':_KIND_STATE[k],'cycle_id':None if cycle_id is None else str(cycle_id),'payload':payload,'single_human_egress':True,'semantic_payload_inside_dashboard_only':True,'raw_model_tokens_visible':False,'parallel_human_message_allowed':False,'presentation_is_not_authorization':True,'epistemic_authority':0.0,'execution_authority':0.0}
+ env={'schema':HSP_SCHEMA,'runtime_session_id':session_id,'egress_epoch':epoch,'egress_state':eg.get('state'),'kind':k,'state':_KIND_STATE[k],'cycle_id':None if cycle_id is None else str(cycle_id),'payload':payload,'single_human_egress':True,'semantic_payload_inside_dashboard_only':True,'raw_model_tokens_visible':False,'parallel_human_message_allowed':False,'presentation_is_not_authorization':True,'epistemic_authority':0.0,'execution_authority':0.0}
  env['sha256']=_digest(env);dashboard['human_surface_protocol']=env;return dashboard
 
 def validate_human_surface(dashboard:dict[str,Any])->tuple[bool,list[str]]:
@@ -76,6 +79,7 @@ def validate_human_surface(dashboard:dict[str,Any])->tuple[bool,list[str]]:
  if env.get('schema')!=HSP_SCHEMA:errors.append('schema')
  if env.get('kind') not in HSP_KINDS:errors.append('kind')
  if env.get('state') not in HSP_STATES or env.get('state')!=_KIND_STATE.get(env.get('kind')):errors.append('state')
+ if env.get('egress_state')!='DASHBOARD_LOCKED' or not isinstance(env.get('egress_epoch'),int) or isinstance(env.get('egress_epoch'),bool) or env.get('egress_epoch',0)<1:errors.append('egress_binding')
  for key in ('single_human_egress','semantic_payload_inside_dashboard_only'):
   if env.get(key) is not True:errors.append(key)
  for key in ('raw_model_tokens_visible','parallel_human_message_allowed'):

@@ -4,12 +4,13 @@ import hashlib
 import json
 from typing import Any
 
-from .web_snapshot import canonical_url, origin_from_url, validate_snapshot
+from .web_snapshot import canonical_url, validate_snapshot
 from .human_frame import normalize_capability, normalize_resource
 
 WEB_ACTION_SCHEMA = 'ikant-web-action/v0.21-test'
 _ALLOWED = {'NAVIGATE': 'web.navigate', 'CLICK': 'web.click', 'FILL': 'web.fill'}
 _MAX_VALUE_BYTES = 64 * 1024
+_FORBIDDEN_FILL_TYPES = frozenset({'password', 'file', 'hidden', 'submit', 'button', 'reset', 'image'})
 
 
 def _canonical(payload: dict[str, Any]) -> bytes:
@@ -62,10 +63,15 @@ def build_web_action(snapshot: dict[str, Any], *, verb: str, target_id: str | No
         if action_verb == 'CLICK':
             if value is not None:
                 raise ValueError('click does not accept value')
+            if target.get('tag') != 'a' or not target.get('href'):
+                raise ValueError('S3 click is restricted to explicit http(s) links')
+            target_url = canonical_url(target['href'])
             resource = base
         else:
-            if target.get('tag') not in {'input', 'textarea', 'select'} and target.get('role') not in {'textbox', 'searchbox', 'combobox'}:
-                raise ValueError('fill target is not an editable control')
+            if target.get('tag') not in {'input', 'textarea'}:
+                raise ValueError('fill target must be input or textarea in S3')
+            if str(target.get('input_type') or '').lower() in _FORBIDDEN_FILL_TYPES:
+                raise ValueError('sensitive or side-effecting fill target type forbidden in S3')
             plaintext = str(value if value is not None else '')
             if len(plaintext.encode('utf-8')) > _MAX_VALUE_BYTES:
                 raise ValueError('fill value exceeds bound')
@@ -100,8 +106,24 @@ def build_web_action(snapshot: dict[str, Any], *, verb: str, target_id: str | No
     return meta
 
 
-def required_entitlements(action: dict[str, Any]) -> tuple[tuple[str, str], ...]:
-    return ((str(action.get('capability') or ''), str(action.get('resource') or '')),)
+def bound_web_resource(action: dict[str, Any], envelope: dict[str, Any]) -> str:
+    action_sha = str(action.get('sha256') or '')
+    handoff_id = str(envelope.get('handoff_id') or '')
+    fingerprint = str(envelope.get('action_fingerprint') or '')
+    idempotency = str(envelope.get('idempotency_key') or '')
+    if len(action_sha) != 64 or not handoff_id or not fingerprint or not idempotency:
+        raise ValueError('web execution binding incomplete')
+    return normalize_resource(
+        'web-action:' + action_sha + '/' + handoff_id + '/af-' + _value_sha(fingerprint) + '/ik-' + _value_sha(idempotency)
+    )
+
+
+def required_entitlements(action: dict[str, Any], envelope: dict[str, Any]) -> tuple[tuple[str, str], ...]:
+    capability = normalize_capability(action.get('capability'))
+    required = tuple(sorted({normalize_capability(x) for x in envelope.get('required_capabilities', []) or []}))
+    if required != (capability,):
+        raise ValueError('handoff required capabilities do not exactly bind web action')
+    return ((capability, bound_web_resource(action, envelope)),)
 
 
 def validate_web_action(action: dict[str, Any], snapshot: dict[str, Any]) -> tuple[bool, list[str]]:
@@ -144,11 +166,23 @@ def validate_web_action(action: dict[str, Any], snapshot: dict[str, Any]) -> tup
             target = None
         base = None if target is None else 'web-target:' + snapshot['origin'] + '/' + snapshot['sha256'] + '/' + target['control_id']
         if verb == 'CLICK':
+            if target is not None and (target.get('tag') != 'a' or not target.get('href')):
+                errors.append('action click target kind')
+            expected_url = None
+            if target is not None and target.get('href'):
+                try: expected_url = canonical_url(target['href'])
+                except ValueError: errors.append('action click href')
+            if raw.get('target_url') != expected_url:
+                errors.append('action click target url')
             if base and raw.get('resource') != base:
                 errors.append('action click resource')
             if raw.get('value_sha256') is not None or 'value' in raw:
                 errors.append('action click value')
         else:
+            if target is not None and (target.get('tag') not in {'input', 'textarea'} or str(target.get('input_type') or '').lower() in _FORBIDDEN_FILL_TYPES):
+                errors.append('action fill target kind')
+            if raw.get('target_url') is not None:
+                errors.append('action fill target url')
             value = raw.get('value')
             if not isinstance(value, str) or len(value.encode('utf-8')) > _MAX_VALUE_BYTES:
                 errors.append('action fill value')

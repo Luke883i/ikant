@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, asdict
 from typing import Any
 
-PRODUCT_VERSION = "0.23.0a1"
+PRODUCT_VERSION = "0.24.0a1"
 CONTRACT_VERSION = "0.12.0"
 CONTRACT_SCHEMA = "ikant-access-contract/v0.12"
 ADMISSION_POLICY_SCHEMA = "ikant-pre-admission-firewall/v0.9-test"
@@ -13,7 +13,7 @@ FRAME_SCHEMA = "ikant-dashboard-frame/v0.11-test"
 JOURNAL_SCHEMA = "ikant-dashboard-egress-journal/v0.11-test"
 LEGACY_JOURNAL_SCHEMA = "ikant-dashboard-egress-journal/v0.10-test"
 TRANSPORT_ATTESTATION_SCHEMA = "ikant-host-transport-attestation/v0.11-test"
-INVARIANT_REGISTRY_SCHEMA = "ikant-invariant-registry/v0.23-test"
+INVARIANT_REGISTRY_SCHEMA = "ikant-invariant-registry/v0.24-test"
 MAX_FRAME_BYTES = 128 * 1024
 EXIT_COMMAND = "EXIT IKANT"
 RESUME_COMMAND = "RESUME IKANT"
@@ -80,6 +80,9 @@ _INVARIANTS = (
     Invariant("MLR-001","managed_runtime","S5 component acquisition is immutable-reference and digest bound: floating engine/model references, corrupt partials, archive escape, oversized payloads and post-install tree drift fail closed.","CRITICAL","tests.test_managed_local_runtime_v23"),
     Invariant("MLR-002","managed_runtime","The managed language engine is iKant-owned, loopback-only, ephemeral-port and private-key-file bound; WebUI, agent mode, built-in tools and browser-to-model transport remain disabled.","CRITICAL","tests.test_managed_local_runtime_v23"),
     Invariant("MLR-003","managed_runtime","Managed runtime READY requires verified components and a live constrained engine; component presence, readiness and model output carry zero epistemic and execution authority, and no fake READY fallback is allowed.","CRITICAL","tests.test_managed_local_runtime_v23"),
+    Invariant("TMP-001","temporal_autonomy","Elapsed time, due state, scheduler state and wake envelopes carry zero epistemic and execution authority; a wake never becomes permission, approval, grant, lease, host revalidation or execution.","CRITICAL","tests.test_temporal_autonomy_v24"),
+    Invariant("TMP-002","temporal_autonomy","Temporal tasks are exact current-session human-confirmed controls; missed recurrences coalesce, clock rollback blocks, journal/session drift fails closed, and cancellation terminalizes pending control work.","CRITICAL","tests.test_temporal_autonomy_v24"),
+    Invariant("TMP-003","temporal_autonomy","Future material work after a wake requires a new human interaction and fresh grant, lease and host revalidation; stale wake retry is control-only and temporal polling stops outside locked iKant egress.","CRITICAL","tests.test_temporal_autonomy_v24"),
     Invariant("CRC-001","epistemic","CRC causal diagnostics are executable node/source ablations with explicit intervention sensitivity and must never be presented as ontological causality, consciousness or proof of closure.","CRITICAL","tests.test_epistemic_core_v13"),
     Invariant("PSY-001","psyche","Functional psyche may preserve or increase caution but cannot relax a practical/horizon block.","CRITICAL","tests.test_psyche_v05"),
     Invariant("SUR-001","surface","Validated Surface A and Surface B must be same-session/same-cycle and Surface B DOCX is mandatory for substantive human turns.","CRITICAL","tests.test_incarnate_v07"),

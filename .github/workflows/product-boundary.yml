@@ -17,7 +17,7 @@ concurrency:
 jobs:
   constitution:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -28,10 +28,10 @@ jobs:
         run: |
           python scripts/check_invariant_registry.py
           python scripts/product_boundary.py
-      - name: Constitutional and current-slice unit tests
-        run: python -W error::ResourceWarning -m unittest tests.test_constitutional_convergence_v22 tests.test_product_convergence_v23 tests.test_agency_kernel_v19 tests.test_local_embodiment_v20 tests.test_web_agency_v21 tests.test_native_agency_v22 tests.test_managed_local_runtime_v23 -v
+      - name: Constitutional and registered-slice unit tests
+        run: python -W error::ResourceWarning -m unittest tests.test_constitutional_convergence_v22 tests.test_product_convergence_v23 tests.test_product_convergence_v24 tests.test_agency_kernel_v19 tests.test_local_embodiment_v20 tests.test_web_agency_v21 tests.test_native_agency_v22 tests.test_managed_local_runtime_v23 tests.test_temporal_autonomy_v24 -v
 
-  registered-boundary:
+  registered_boundary:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -45,7 +45,7 @@ jobs:
       - name: Execute registered stress, mutation and edge harnesses
         run: python scripts/product_boundary.py --execute --cases 100000 --tail 10000 --seed ${{ matrix.seed }}
 
-  no-novelty:
+  no_novelty:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -55,9 +55,19 @@ jobs:
       - name: Registered slices no-novelty tail
         run: python scripts/product_boundary.py --execute --cases 100000 --tail 100000 --seed 883
 
+  current_slice_saturation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Execute contract-declared current-slice saturation
+        run: python scripts/product_boundary.py --deep-current
+
   report:
     if: ${{ always() && github.event_name == 'pull_request' }}
-    needs: [constitution, registered-boundary, no-novelty]
+    needs: [constitution, registered_boundary, no_novelty, current_slice_saturation]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -67,8 +77,9 @@ jobs:
           script: |
             const states = {
               constitution: '${{ needs.constitution.result }}',
-              registered_boundary: '${{ needs.registered-boundary.result }}',
-              no_novelty: '${{ needs.no-novelty.result }}'
+              registered_boundary: '${{ needs.registered_boundary.result }}',
+              no_novelty: '${{ needs.no_novelty.result }}',
+              current_slice_saturation: '${{ needs.current_slice_saturation.result }}'
             };
             const ok = Object.values(states).every((v) => v === 'success');
             const marker = '<!-- ikant-product-boundary-receipt -->';
@@ -81,8 +92,9 @@ jobs:
               `MERGE_SHA: ${context.sha}`,
               `HEAD_SHA: ${head}`,
               `constitution: ${states.constitution}`,
-              `registered boundary[S1-S5; 3 seeds x stress/mutations/edges]: ${states.registered_boundary}`,
+              `registered boundary[contract slices; 3 seeds x stress/mutations/edges]: ${states.registered_boundary}`,
               `no-novelty[100000 + 100000 tail]: ${states.no_novelty}`,
+              `current-slice saturation[contract-declared M + 100000 tail]: ${states.current_slice_saturation}`,
               '',
               'This receipt is emitted by the version-neutral registered product boundary.'
             ].join('\n');

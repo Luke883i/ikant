@@ -17,7 +17,9 @@ class ConstitutionalConvergenceV22Tests(unittest.TestCase):
         self.assertEqual([x['id'] for x in c['slices']],['S1','S2','S3','S4'])
         for s in c['slices']:
             self.assertTrue((ROOT/(s['machine_test'].replace('.','/')+'.py')).is_file())
+            self.assertTrue(set(s['seeded_harnesses'])<= {'stress','mutations','edges'})
             for key in ('stress','mutations','edges'):self.assertTrue((ROOT/s[key]).is_file())
+        self.assertNotIn('mutations',c['slices'][3]['seeded_harnesses'])
     def test_s1_s4_are_constitutional(self):
         ids=set(critical_ids())
         self.assertTrue({'AGY-001','AGY-002','AGY-003','EMB-001','EMB-002','WEB-001','WEB-002','NAT-001','NAT-002','NAT-003'}<=ids)

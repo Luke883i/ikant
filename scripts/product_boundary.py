@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT=Path(__file__).parents[1]
 EXPECTED_SCHEMA='ikant-product-contract/v0.22-test'
 EXPECTED_SLICES=('S1','S2','S3','S4')
+HARNESS_KEYS=('stress','mutations','edges')
 
 def fail(msg:str)->None:
     raise SystemExit(msg)
@@ -22,18 +23,22 @@ def validate_paths(data:dict)->list[str]:
     for s in data['slices']:
         test=ROOT/(s['machine_test'].replace('.','/')+'.py')
         if not test.is_file():errors.append(f"{s['id']} missing machine test")
-        for key in ('stress','mutations','edges'):
+        seeded=s.get('seeded_harnesses')
+        if not isinstance(seeded,list) or any(x not in HARNESS_KEYS for x in seeded) or len(set(seeded))!=len(seeded):errors.append(f"{s['id']} invalid seeded_harnesses")
+        for key in HARNESS_KEYS:
             if not (ROOT/s[key]).is_file():errors.append(f"{s['id']} missing {key}")
     return errors
 
+def command_for(s:dict,key:str,cases:int,tail:int,seed:int)->list[str]:
+    size_arg='--mutations' if key=='mutations' else '--cases'
+    cmd=[sys.executable,s[key],size_arg,str(cases),'--tail',str(tail)]
+    if key in s['seeded_harnesses']:cmd.extend(('--seed',str(seed)))
+    return cmd
+
 def run_harnesses(data:dict,cases:int,tail:int,seed:int)->None:
     for s in data['slices']:
-        commands=(
-            [sys.executable,s['stress'],'--cases',str(cases),'--tail',str(tail),'--seed',str(seed)],
-            [sys.executable,s['mutations'],'--mutations',str(cases),'--tail',str(tail),'--seed',str(seed)],
-            [sys.executable,s['edges'],'--cases',str(cases),'--tail',str(tail),'--seed',str(seed)],
-        )
-        for cmd in commands:subprocess.run(cmd,cwd=ROOT,check=True)
+        for key in HARNESS_KEYS:
+            subprocess.run(command_for(s,key,cases,tail,seed),cwd=ROOT,check=True)
 
 def main()->int:
     ap=argparse.ArgumentParser();ap.add_argument('--execute',action='store_true');ap.add_argument('--cases',type=int,default=100000);ap.add_argument('--tail',type=int,default=10000);ap.add_argument('--seed',type=int,default=883);a=ap.parse_args()

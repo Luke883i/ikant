@@ -17,11 +17,10 @@ contract=(ROOT/'IKANT_ACCESS_CONTRACT.md').read_text(encoding='utf-8');head=cont
 if head.get('schema')!=CONTRACT_SCHEMA or head.get('contract_version')!=CONTRACT_VERSION:fail('contract registry drift')
 if head.get('rights_policy_schema')!=RIGHTS_SCHEMA:fail('rights schema drift')
 product=json.loads((ROOT/'PRODUCT_CONTRACT.json').read_text(encoding='utf-8'))
-if product.get('schema')!='ikant-product-contract/v0.24-test' or product.get('product_version')!=PRODUCT_VERSION:fail('product contract drift')
+if product.get('schema')!='ikant-product-contract/v0.25-test' or product.get('product_version')!=PRODUCT_VERSION:fail('product contract drift')
 slice_ids=[x.get('id') for x in product.get('slices',[])]
-if slice_ids!=['S1','S2','S3','S4','S5','S6']:fail('product slice coverage drift')
-if product.get('constitutional_convergence')!='S6':fail('product convergence drift')
-# MODEL_RUNTIME is the immutable S5 component contract; a later product version must not rewrite its identity.
+if slice_ids!=['S1','S2','S3','S4','S5','S6','S7']:fail('product slice coverage drift')
+if product.get('constitutional_convergence')!='S7':fail('product convergence drift')
 model_runtime=load_manifest(ROOT/'MODEL_RUNTIME.json')
 if model_runtime.get('schema')!=MODEL_RUNTIME_SCHEMA or model_runtime.get('product_version')!='0.23.0a1':fail('historical S5 managed runtime manifest drift')
 for name in ('ADMISSION.json','BOOTSTRAP.json'):
@@ -45,6 +44,10 @@ for name in ('ADMISSION.json','BOOTSTRAP.json'):
  expected_tmp={'schema':'ikant-temporal-autonomy/v0.24-test','hash_chained':True,'session_bound':True,'human_action_confirmation_required':True,'fixed_duration_recurring_only':True,'miss_policy':'COALESCE','wall_clock_epoch_ms':True,'monotonic_wait':True,'clock_rollback_blocks':True,'requires_locked_egress_to_poll':True,'hardware_wake':False,'os_background_service':False,'model_called_by_scheduler':False,'material_execution_bridge':False,'pre_wake_approval_reusable':False,'pre_wake_grant_reusable':False,'pre_wake_lease_reusable':False,'fresh_host_revalidation_required':True,'automatic_material_retry':False,'epistemic_authority':0.0,'execution_authority':0.0}
  for key,value in expected_tmp.items():
   if tmp.get(key)!=value:fail(f'{name} temporal autonomy {key} drift')
+ hsp=m.get('human_surface_protocol') or {}
+ expected_hsp={'schema':'ikant-human-surface-protocol/v0.25-test','transport_egress_schema':'ikant-dashboard-session-egress/v0.11-test','single_sealed_dashboard_frame':True,'typed_payload_exclusive':True,'turn_requires_validated_surface_a':True,'turn_requires_same_cycle_bound_surface_b':True,'raw_model_tokens_visible':False,'parallel_active_human_messages':False,'active_dom_error_text_channel':False,'approval_request_requires_valid_human_frame':True,'approval_request_is_authorization':False,'approval_request_records_decision':False,'progress_error_degraded_are_control_only':True,'exit_release_after_exact_ack':True,'epistemic_authority':0.0,'execution_authority':0.0}
+ for key,value in expected_hsp.items():
+  if hsp.get(key)!=value:fail(f'{name} human surface {key} drift')
 rights_ok,rights_errors=validate_repository_rights(ROOT,contract)
 if not rights_ok:fail('rights policy drift: '+'; '.join(rights_errors))
 if f'version = "{PRODUCT_VERSION}"' not in (ROOT/'pyproject.toml').read_text():fail('package version drift')
@@ -55,6 +58,6 @@ for path in ('ikant/__main__.py','ikant/app_cli.py','ikant/session_host.py'):
 for inv in registry_manifest()['invariants']:
  target=inv['machine_test'].replace('.','/')
  if inv['severity']=='CRITICAL' and not ((ROOT/(target+'.py')).exists() or inv['machine_test'].startswith('scripts.')):fail('missing critical machine test '+inv['id'])
-for path in ('ikant/provenance.py','ikant/calibration.py','ikant/hybrid_retrieval.py','ikant/causal_crc.py','ikant/epistemic_core.py','ikant/temporal_memory.py','ikant/commitments.py','ikant/dependency_invalidation.py','ikant/temporal_replay.py','ikant/temporal_core.py','ikant/authority.py','ikant/approvals.py','ikant/action_governance.py','ikant/practical_reason.py','ikant/plan_graph.py','ikant/world_model.py','ikant/decision_lattice.py','ikant/planning.py','ikant/execution_handoff.py','ikant/execution_receipts.py','ikant/outcome_reconciliation.py','ikant/execution_protocol.py','ikant/host_capabilities.py','ikant/host_adapter.py','ikant/host_conformance.py','ikant/host_negotiation.py','ikant/host_sdk.py','ikant/human_frame.py','ikant/agency_kernel.py','ikant/local_service.py','ikant/web_agency.py','ikant/native_agency.py','ikant/component_manifest.py','ikant/component_store.py','ikant/download_manager.py','ikant/model_manager.py','ikant/engine_supervisor.py','ikant/managed_runtime.py','ikant/temporal_autonomy.py'):
+for path in ('ikant/provenance.py','ikant/calibration.py','ikant/hybrid_retrieval.py','ikant/causal_crc.py','ikant/epistemic_core.py','ikant/temporal_memory.py','ikant/commitments.py','ikant/dependency_invalidation.py','ikant/temporal_replay.py','ikant/temporal_core.py','ikant/authority.py','ikant/approvals.py','ikant/action_governance.py','ikant/practical_reason.py','ikant/plan_graph.py','ikant/world_model.py','ikant/decision_lattice.py','ikant/planning.py','ikant/execution_handoff.py','ikant/execution_receipts.py','ikant/outcome_reconciliation.py','ikant/execution_protocol.py','ikant/host_capabilities.py','ikant/host_adapter.py','ikant/host_conformance.py','ikant/host_negotiation.py','ikant/host_sdk.py','ikant/human_frame.py','ikant/agency_kernel.py','ikant/local_service.py','ikant/web_agency.py','ikant/native_agency.py','ikant/component_manifest.py','ikant/component_store.py','ikant/download_manager.py','ikant/model_manager.py','ikant/engine_supervisor.py','ikant/managed_runtime.py','ikant/temporal_autonomy.py','ikant/human_surface_protocol.py'):
  if not (ROOT/path).is_file():fail('missing constitutional module '+path)
-print(json.dumps({'schema':'ikant-invariant-registry-check/v0.24-test','ok':True,'product_version':PRODUCT_VERSION,'critical_count':len([x for x in registry_manifest()['invariants'] if x['severity']=='CRITICAL']),'rights_policy':RIGHTS_SCHEMA,'agency_kernel':'v0.19','local_embodiment':'v0.20','web_agency':'v0.21','native_agency':'v0.22','managed_local_runtime':'v0.23','temporal_autonomy':'v0.24'},indent=2))
+print(json.dumps({'schema':'ikant-invariant-registry-check/v0.25-test','ok':True,'product_version':PRODUCT_VERSION,'critical_count':len([x for x in registry_manifest()['invariants'] if x['severity']=='CRITICAL']),'rights_policy':RIGHTS_SCHEMA,'agency_kernel':'v0.19','local_embodiment':'v0.20','web_agency':'v0.21','native_agency':'v0.22','managed_local_runtime':'v0.23','temporal_autonomy':'v0.24','human_surface_protocol':'v0.25'},indent=2))

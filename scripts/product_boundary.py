@@ -2,7 +2,8 @@ from __future__ import annotations
 import argparse,json,subprocess,sys
 from pathlib import Path
 
-ROOT=Path(__file__).parents[1]
+ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT))
 EXPECTED_SCHEMA='ikant-product-contract/v0.22-test'
 EXPECTED_SLICES=('S1','S2','S3','S4')
 HARNESS_KEYS=('stress','mutations','edges')

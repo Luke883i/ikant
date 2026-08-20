@@ -12,25 +12,23 @@ for line in contract.splitlines()[1:]:
  if ':' in line:k,v=line.split(':',1);head[k.strip()]=v.strip()
 if head.get('schema')!=CONTRACT_SCHEMA or head.get('contract_version')!=CONTRACT_VERSION:fail('contract registry drift')
 if head.get('rights_policy_schema')!=RIGHTS_SCHEMA:fail('rights schema drift')
+product=json.loads((ROOT/'PRODUCT_CONTRACT.json').read_text(encoding='utf-8'))
+if product.get('schema')!='ikant-product-contract/v0.22-test' or product.get('product_version')!=PRODUCT_VERSION:fail('product contract drift')
+if [x.get('id') for x in product.get('slices',[])]!=['S1','S2','S3','S4']:fail('product slice coverage drift')
 for name in ('ADMISSION.json','BOOTSTRAP.json'):
  m=json.loads((ROOT/name).read_text(encoding='utf-8'))
  if m.get('contract_version')!=CONTRACT_VERSION:fail(f'{name} contract drift')
  if (m.get('active_human_egress') or {}).get('schema')!=EGRESS_SCHEMA:fail(f'{name} egress drift')
  if (m.get('invariant_registry') or {}).get('schema')!=registry_manifest()['schema']:fail(f'{name} registry schema drift')
- if (m.get('product_contract') or {}).get('schema')!='ikant-product-contract/v0.22-test':fail(f'{name} product contract drift')
- if (m.get('product_contract') or {}).get('product_version')!=PRODUCT_VERSION:fail(f'{name} product version drift')
- for key,schema in (('practical_reason','ikant-practical-reason/v0.15-test'),('planning','ikant-planning/v0.16-test'),('execution_protocol','ikant-execution-protocol/v0.17-test')):
-  if (m.get(key) or {}).get('schema')!=schema:fail(f'{name} {key} drift')
- host=m.get('host_conformance') or {}
- if host.get('schema')!='ikant-host-conformance-receipt/v0.18-test':fail(f'{name} host conformance drift')
- agency=m.get('agency_kernel') or {}
- if agency.get('schema')!='ikant-capability-grant/v0.19-test' or agency.get('one_shot_leases') is not True:fail(f'{name} agency kernel drift')
- embodiment=m.get('local_embodiment') or {}
- if embodiment.get('schema')!='ikant-local-embodiment/v0.20-test' or embodiment.get('model_output_is_authority') is not False:fail(f'{name} embodiment drift')
- web=m.get('web_agency') or {}
- if web.get('schema')!='ikant-web-agency/v0.21-test' or web.get('requires_fresh_s1_lease') is not True:fail(f'{name} web agency drift')
- native=m.get('native_agency') or {}
- if native.get('schema')!='ikant-native-agency/v0.22-test' or native.get('requires_fresh_s1_lease') is not True:fail(f'{name} native agency drift')
+ if (m.get('product_contract') or {}).get('schema')!=product['schema'] or (m.get('product_contract') or {}).get('product_version')!=PRODUCT_VERSION:fail(f'{name} product contract drift')
+ if (m.get('practical_reason') or {}).get('schema')!='ikant-practical-reason/v0.15-test':fail(f'{name} practical reason drift')
+ if (m.get('planning') or {}).get('schema')!='ikant-planning/v0.16-test':fail(f'{name} planning drift')
+ if (m.get('execution_protocol') or {}).get('schema')!='ikant-execution-protocol/v0.17-test':fail(f'{name} execution protocol drift')
+ if (m.get('host_conformance') or {}).get('schema')!='ikant-host-conformance-receipt/v0.18-test':fail(f'{name} host conformance drift')
+ if (m.get('agency_kernel') or {}).get('schema')!='ikant-capability-grant/v0.19-test' or (m.get('agency_kernel') or {}).get('one_shot_leases') is not True:fail(f'{name} agency kernel drift')
+ if (m.get('local_embodiment') or {}).get('schema')!='ikant-local-embodiment/v0.20-test' or (m.get('local_embodiment') or {}).get('model_output_is_authority') is not False:fail(f'{name} embodiment drift')
+ if (m.get('web_agency') or {}).get('schema')!='ikant-web-execution/v0.21-test' or (m.get('web_agency') or {}).get('requires_fresh_s1_lease') is not True:fail(f'{name} web agency drift')
+ if (m.get('native_agency') or {}).get('schema')!='ikant-native-execution/v0.22-test' or (m.get('native_agency') or {}).get('requires_fresh_s1_lease') is not True:fail(f'{name} native agency drift')
 rights_ok,rights_errors=validate_repository_rights(ROOT,contract)
 if not rights_ok:fail('rights policy drift: '+'; '.join(rights_errors))
 if f'version = "{PRODUCT_VERSION}"' not in (ROOT/'pyproject.toml').read_text():fail('package version drift')

@@ -1,27 +1,27 @@
-# iKant v0.22-test
+# iKant v0.23-test
 
-iKant is a governed local epistemic agent runtime for conforming AI session-chat hosts. The current product line includes the Epistemic Core, Temporal Epistemics, Practical Reason, Planning, Execution Handoff, Host Conformance, and the first four agency slices: **S1 Agency Kernel, S2 Local Embodiment, S3 Web Agency, S4 Native Agency**.
+iKant is a governed local epistemic agent runtime. Product v0.23 materializes **S1 Agency Kernel, S2 Local Embodiment, S3 Web Agency, S4 Native Agency, and S5 Managed Local Runtime & Model Supply Chain** on top of the existing Epistemic Core, Temporal Epistemics, Practical Reason, Planning, Execution Handoff and Host Conformance layers.
 
 ## Constitutional boundary
 
-The v0.12 rights/access contract remains the owner-authorization contract. Product v0.22 does not weaken it. After ACTIVE, canonical human egress remains the sealed dashboard frame and machine output remains file-only. Runtime-derived state, model output, control receipts, grants, leases and execution reports carry no independent epistemic authority.
-
-The authority lattice is intentionally non-collapsible:
+The v0.12 rights/access contract remains unchanged. S5 adds component acquisition and process supervision, not authority. The lattice remains non-collapsible:
 
 `evidence != permission != approval != grant != lease != execution != world truth`.
 
-S1 issues exact session-bound capability grants and one-shot execution leases. S2 provides the loopback-only local browser/PWA embodiment and zero-authority local model/voice adapters. S3 adds capability-bound web observation/action. S4 adds a deliberately narrow native filesystem boundary (`read` existing regular UTF-8 files and `create` absent UTF-8 files) without generic process, shell, credential or secret authority.
+Model output, downloaded component presence, engine health and runtime readiness all carry **zero epistemic and execution authority**. S1 grants/leases, S3 web effects and S4 native effects keep their existing explicit commit points. After ACTIVE, canonical human egress remains the sealed dashboard frame and machine output remains file-only.
 
-`PRODUCT_CONTRACT.json` is the product-slice manifest. `ikant.invariants` remains the canonical cross-cutting invariant registry. `scripts/product_boundary.py` verifies that every materialized agency slice is registered, has its machine tests and stress/mutation/edge harnesses, and preserves the authority boundary.
+`PRODUCT_CONTRACT.json` is the cumulative product-slice manifest; `ikant.invariants` is the cross-cutting invariant registry; `scripts/product_boundary.py` discovers and falsifies every registered slice without adding per-version workflows.
 
-## Local execution
-
-The current S2 launcher is:
+## One-command local runtime
 
 ```sh
 ./ikant.sh
 ```
 
-It starts the local iKant daemon/PWA. At v0.22 the language model endpoint is still an already-running loopback OpenAI-compatible service; managed model download, weight lifecycle and inference-engine supervision are intentionally deferred to the next product slice rather than being silently implied here.
+S5 owns the complete language-engine lifecycle. On first launch it validates `MODEL_RUNTIME.json`, resumes or downloads exact pinned artifacts, enforces byte bounds, verifies SHA-256, atomically installs the pinned `llama.cpp` engine and Qwen GGUF, starts `llama-server` on a private loopback ephemeral port with a private API-key file and `--no-webui`, waits for health, then starts the local iKant daemon/PWA. If any step fails, startup is **BLOCKED**; no simulated fallback may declare READY.
 
-Canonical CLI execution remains `python -m ikant`. See `IKANT_ACCESS_CONTRACT.md`, `RIGHTS.md`, `docs/S3_WEB_AGENCY.md`, and `docs/S4_NATIVE_AGENCY.md`.
+The baseline model is `Qwen3.5-0.8B-Q4_0` (~563 MB, Apache-2.0). Components are stored outside the repository under `XDG_DATA_HOME/ikant` or `~/.local/share/ikant` (override with `IKANT_COMPONENT_HOME`). The project persists only a zero-authority binding projection in `.ikant/model-runtime.json`; model endpoint, API key and model-server output are not persisted or exposed to the browser.
+
+Pre-ACTIVE acquisition progress is emitted by the launcher. A rich componentized browser installer is intentionally not introduced before the Human Surface Protocol v2 slice, because doing so would create a parallel semantic human surface under the current exact-frame egress contract.
+
+Canonical CLI execution remains `python -m ikant`. See `IKANT_ACCESS_CONTRACT.md`, `RIGHTS.md`, `docs/S5_MANAGED_LOCAL_RUNTIME.md`, and the prior S3/S4 design notes.

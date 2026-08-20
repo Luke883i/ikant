@@ -17,23 +17,23 @@ concurrency:
 jobs:
   constitution:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - name: Compile constitutional surface
         run: python -m compileall -q ikant tests scripts
-      - name: Verify invariant registry and S1-S4 product contract
+      - name: Verify invariant registry and registered product contract
         run: |
           python scripts/check_invariant_registry.py
           python scripts/product_boundary.py
-      - name: Constitutional convergence unit tests
-        run: python -W error::ResourceWarning -m unittest tests.test_constitutional_convergence_v22 tests.test_agency_kernel_v19 tests.test_local_embodiment_v20 tests.test_web_agency_v21 tests.test_native_agency_v22 -v
+      - name: Constitutional and current-slice unit tests
+        run: python -W error::ResourceWarning -m unittest tests.test_constitutional_convergence_v22 tests.test_product_convergence_v23 tests.test_agency_kernel_v19 tests.test_local_embodiment_v20 tests.test_web_agency_v21 tests.test_native_agency_v22 tests.test_managed_local_runtime_v23 -v
 
-  s1-s4-boundary:
+  registered-boundary:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -47,17 +47,17 @@ jobs:
 
   no-novelty:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
-      - name: S1-S4 no-novelty tail
+      - name: Registered slices no-novelty tail
         run: python scripts/product_boundary.py --execute --cases 100000 --tail 100000 --seed 883
 
   report:
     if: ${{ always() && github.event_name == 'pull_request' }}
-    needs: [constitution, s1-s4-boundary, no-novelty]
+    needs: [constitution, registered-boundary, no-novelty]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -67,7 +67,7 @@ jobs:
           script: |
             const states = {
               constitution: '${{ needs.constitution.result }}',
-              s1_s4_boundary: '${{ needs.s1-s4-boundary.result }}',
+              registered_boundary: '${{ needs.registered-boundary.result }}',
               no_novelty: '${{ needs.no-novelty.result }}'
             };
             const ok = Object.values(states).every((v) => v === 'success');
@@ -81,10 +81,10 @@ jobs:
               `MERGE_SHA: ${context.sha}`,
               `HEAD_SHA: ${head}`,
               `constitution: ${states.constitution}`,
-              `S1-S4 boundary[3 seeds x registered stress/mutations/edges]: ${states.s1_s4_boundary}`,
+              `registered boundary[S1-S5; 3 seeds x stress/mutations/edges]: ${states.registered_boundary}`,
               `no-novelty[100000 + 100000 tail]: ${states.no_novelty}`,
               '',
-              'This receipt is emitted by the version-neutral S1-S4 product boundary.'
+              'This receipt is emitted by the version-neutral registered product boundary.'
             ].join('\n');
             const { owner, repo } = context.repo;
             const issue_number = context.issue.number;

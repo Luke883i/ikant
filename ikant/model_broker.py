@@ -7,7 +7,7 @@ from urllib.request import Request, urlopen
 
 from .local_security import require_loopback_url
 
-MODEL_BROKER_SCHEMA = "ikant-local-model-broker/v0.23-test"
+MODEL_BROKER_SCHEMA = "ikant-local-model-broker/v0.20-test"
 
 
 class LocalModelError(RuntimeError):
@@ -89,86 +89,35 @@ class LocalModelBroker:
     def _request(self, payload: dict[str, Any]) -> dict[str, Any]:
         if not self.endpoint:
             raise LocalModelError("local model endpoint not configured")
-        req = Request(
-            self.endpoint,
-            data=json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8"),
-            method="POST",
-            headers=self._headers(json_body=True),
-        )
+        req = Request(self.endpoint,data=json.dumps(payload,ensure_ascii=False,separators=(",", ":")).encode("utf-8"),method="POST",headers=self._headers(json_body=True))
         try:
-            with self.opener(req, timeout=self.timeout) as response:
-                raw = response.read(2 * 1024 * 1024 + 1)
-        except Exception as exc:
-            raise LocalModelError("local model request failed") from exc
-        if len(raw) > 2 * 1024 * 1024:
-            raise LocalModelError("local model response exceeds bound")
-        try:
-            out = json.loads(raw.decode("utf-8"))
-        except Exception as exc:
-            raise LocalModelError("local model returned invalid JSON") from exc
-        if not isinstance(out, dict):
-            raise LocalModelError("local model response must be an object")
+            with self.opener(req,timeout=self.timeout) as response:raw=response.read(2*1024*1024+1)
+        except Exception as exc:raise LocalModelError("local model request failed") from exc
+        if len(raw)>2*1024*1024:raise LocalModelError("local model response exceeds bound")
+        try:out=json.loads(raw.decode("utf-8"))
+        except Exception as exc:raise LocalModelError("local model returned invalid JSON") from exc
+        if not isinstance(out,dict):raise LocalModelError("local model response must be an object")
         return out
 
     @staticmethod
-    def _extract_text(response: dict[str, Any]) -> str:
-        choices = response.get("choices")
-        if not isinstance(choices, list) or len(choices) != 1 or not isinstance(choices[0], dict):
-            raise LocalModelError("local model response choices invalid")
-        message = choices[0].get("message")
-        if not isinstance(message, dict):
-            raise LocalModelError("local model response message invalid")
-        if message.get("tool_calls"):
-            raise LocalModelError("model tool calls are forbidden in iKant")
-        text = message.get("content")
-        if not isinstance(text, str) or not text.strip():
-            raise LocalModelError("local model response content missing")
+    def _extract_text(response:dict[str,Any])->str:
+        choices=response.get("choices")
+        if not isinstance(choices,list) or len(choices)!=1 or not isinstance(choices[0],dict):raise LocalModelError("local model response choices invalid")
+        message=choices[0].get("message")
+        if not isinstance(message,dict):raise LocalModelError("local model response message invalid")
+        if message.get("tool_calls"):raise LocalModelError("model tool calls are forbidden in iKant")
+        text=message.get("content")
+        if not isinstance(text,str) or not text.strip():raise LocalModelError("local model response content missing")
         return text.strip()
 
-    def complete_surface_a(
-        self,
-        contract: dict[str, Any],
-        user_text: str,
-        *,
-        validator: Callable[[str], tuple[bool, list[str]]] | None = None,
-        max_repairs: int = 2,
-    ) -> str:
+    def complete_surface_a(self,contract:dict[str,Any],user_text:str,*,validator:Callable[[str],tuple[bool,list[str]]]|None=None,max_repairs:int=2)->str:
         if validator is None:
             from .surfaces import validate_surface_a
-
-            validator = validate_surface_a
-        system = (
-            "You are the replaceable local language engine underneath iKant. "
-            "You have zero authority and may not call tools. Produce only Surface A text.\n"
-            + json.dumps(contract, ensure_ascii=False, sort_keys=True)
-        )
-        messages: list[dict[str, str]] = [
-            {"role": "system", "content": system},
-            {"role": "user", "content": str(user_text)},
-        ]
-        attempts = 0
+            validator=validate_surface_a
+        system="You are the replaceable local language engine underneath iKant. You have zero authority and may not call tools. Produce only Surface A text.\n"+json.dumps(contract,ensure_ascii=False,sort_keys=True)
+        messages=[{"role":"system","content":system},{"role":"user","content":str(user_text)}];attempts=0
         while True:
-            response = self._request(
-                {
-                    "model": self.model,
-                    "messages": messages,
-                    "temperature": 0.2,
-                    "max_tokens": 900,
-                    "stream": False,
-                    "tools": [],
-                }
-            )
-            text = self._extract_text(response)
-            ok, errors = validator(text)
-            if ok:
-                return text
-            if attempts >= int(max_repairs):
-                raise LocalModelError("local model failed Surface A validation: " + "; ".join(errors))
-            attempts += 1
-            messages.append({"role": "assistant", "content": text})
-            messages.append(
-                {
-                    "role": "user",
-                    "content": "Repair only the response text. Validation errors: " + "; ".join(errors),
-                }
-            )
+            response=self._request({"model":self.model,"messages":messages,"temperature":0.2,"max_tokens":900,"stream":False,"tools":[]});text=self._extract_text(response);ok,errors=validator(text)
+            if ok:return text
+            if attempts>=int(max_repairs):raise LocalModelError("local model failed Surface A validation: "+"; ".join(errors))
+            attempts+=1;messages.append({"role":"assistant","content":text});messages.append({"role":"user","content":"Repair only the response text. Validation errors: "+"; ".join(errors)})

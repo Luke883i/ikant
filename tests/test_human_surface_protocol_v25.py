@@ -1,5 +1,5 @@
 from __future__ import annotations
-import copy,math,unittest
+import copy,hashlib,json,unittest
 from pathlib import Path
 from ikant.human_frame import build_human_frame
 from ikant.human_surface_protocol import HSP_SCHEMA,project_human_surface,validate_human_surface
@@ -9,6 +9,8 @@ class FakeRuntime:
 def base_dashboard():return {'session_egress':{'state':'DASHBOARD_LOCKED','epoch':3},'incarnate':{'state':'IDLE','cycle_id':None,'surface_a':{'status':'EMPTY','cycle_id':None,'text':None},'surface_b':{'bound':False,'cycle_id':None,'json':{},'docx':{}}}}
 def turn_dashboard():
  d=base_dashboard();d['incarnate']={'state':'READY','cycle_id':'CYC-7','surface_a':{'status':'VALIDATED','cycle_id':'CYC-7','text':'Risposta validata'},'surface_b':{'bound':True,'cycle_id':'CYC-7','json':{'sha256':'a'*64},'docx':{'sha256':'b'*64}}};return d
+def rehash(env):
+ material=dict(env);material.pop('sha256',None);env['sha256']=hashlib.sha256(json.dumps(material,ensure_ascii=False,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
 class HumanSurfaceProtocolV25Tests(unittest.TestCase):
  def test_notice_is_single_zero_authority_payload(self):
   d=project_human_surface(FakeRuntime(),base_dashboard(),kind='NOTICE',notice='Stato aggiornato');ok,e=validate_human_surface(d);self.assertTrue(ok,e);h=d['human_surface_protocol'];self.assertEqual(h['schema'],HSP_SCHEMA);self.assertEqual(h['kind'],'NOTICE');self.assertEqual([k for k,v in h['payload'].items() if v is not None],['notice']);self.assertFalse(h['raw_model_tokens_visible']);self.assertFalse(h['parallel_human_message_allowed']);self.assertEqual(h['execution_authority'],0.0)
@@ -37,6 +39,9 @@ class HumanSurfaceProtocolV25Tests(unittest.TestCase):
   with self.assertRaises(ValueError):project_human_surface(FakeRuntime(),base_dashboard(),kind='RESUME',notice='Rientro',release_after_frame=True)
  def test_digest_and_payload_tamper_fail_closed(self):
   d=project_human_surface(FakeRuntime(),base_dashboard(),kind='ERROR',error={'code':'E','message':'errore'});bad=copy.deepcopy(d);bad['human_surface_protocol']['payload']['error']['retryable']=True;self.assertFalse(validate_human_surface(bad)[0]);bad=copy.deepcopy(d);bad['human_surface_protocol']['payload']['notice']={'message':'parallel'};self.assertFalse(validate_human_surface(bad)[0])
+ def test_rehashed_typed_tamper_still_fails_semantic_validation(self):
+  d=project_human_surface(FakeRuntime(),base_dashboard(),kind='ERROR',error={'code':'E','message':'errore'});bad=copy.deepcopy(d);bad['human_surface_protocol']['payload']['error']['authority_effect']='EXECUTE';rehash(bad['human_surface_protocol']);ok,e=validate_human_surface(bad);self.assertFalse(ok);self.assertIn('error_authority',e)
+  x=project_human_surface(FakeRuntime(),base_dashboard(),kind='EXIT',notice='Uscita',release_after_frame=True);bad=copy.deepcopy(x);bad['human_surface_protocol']['payload']['release']['command']='QUIT';rehash(bad['human_surface_protocol']);ok,e=validate_human_surface(bad);self.assertFalse(ok);self.assertIn('exit_release',e)
  def test_active_browser_has_no_parallel_error_text_channel(self):
   js=(ROOT/'ikant'/'web'/'app.js').read_text(encoding='utf-8');self.assertIn('recoverActiveFrame',js);self.assertNotIn("setError('active-error',error.message)",js);self.assertNotIn("setError('active-error',_error.message)",js)
  def test_session_host_projects_protocol_before_seal(self):

@@ -1,5 +1,5 @@
 from __future__ import annotations
-import hashlib,json,math
+import hashlib,json,math,re
 from typing import Any
 from .human_frame import validate_human_frame
 
@@ -10,14 +10,20 @@ MAX_MESSAGE_BYTES=8192
 MAX_PROGRESS_LABEL_BYTES=512
 _KIND_STATE={'INITIALIZE':'READY','DASHBOARD':'READY','TURN':'READY','NOTICE':'READY','APPROVAL_REQUEST':'NEEDS_HUMAN','PROGRESS':'WORKING','ERROR':'BLOCKED','DEGRADED':'DEGRADED','RECOVERY':'RECOVERING','EXIT':'RELEASING','RESUME':'READY'}
 _PAYLOAD_KEYS=('surface_turn','notice','approval_request','progress','error','degraded','recovery','release')
+_SHA256_RE=re.compile(r'^[0-9a-f]{64}$')
 
-def _canonical(x:dict[str,Any])->bytes:return json.dumps(x,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode('utf-8')
+def _canonical(x:dict[str,Any])->bytes:return json.dumps(x,ensure_ascii=False,sort_keys=True,separators=(',',':'),allow_nan=False).encode('utf-8')
 def _digest(x:dict[str,Any])->str:return hashlib.sha256(_canonical(x)).hexdigest()
 def _bounded_text(value:object,*,limit:int=MAX_MESSAGE_BYTES,required:bool=True)->str:
  text=' '.join(str(value or '').replace('\x00',' ').replace('\r',' ').split())
  if required and not text:raise ValueError('human surface text required')
  if len(text.encode('utf-8'))>limit:raise ValueError('human surface text outside bound')
  return text
+
+def _valid_bounded_text(value:object,limit:int)->bool:
+ if not isinstance(value,str):return False
+ try:return bool(value) and value==_bounded_text(value,limit=limit) and len(value.encode('utf-8'))<=limit
+ except (TypeError,ValueError):return False
 
 def _approval_projection(frame:dict[str,Any],session_id:str)->dict[str,Any]:
  ok,errors=validate_human_frame(frame)
@@ -75,10 +81,12 @@ def project_human_surface(runtime:Any,dashboard:dict[str,Any],*,kind:str,cycle_i
  env['sha256']=_digest(env);dashboard['human_surface_protocol']=env;return dashboard
 
 def validate_human_surface(dashboard:dict[str,Any])->tuple[bool,list[str]]:
- env=dict(dashboard.get('human_surface_protocol') or {});errors=[]
+ raw=dashboard.get('human_surface_protocol');env=dict(raw) if isinstance(raw,dict) else {};errors=[]
  if env.get('schema')!=HSP_SCHEMA:errors.append('schema')
- if env.get('kind') not in HSP_KINDS:errors.append('kind')
- if env.get('state') not in HSP_STATES or env.get('state')!=_KIND_STATE.get(env.get('kind')):errors.append('state')
+ kind=env.get('kind')
+ if kind not in HSP_KINDS:errors.append('kind')
+ if env.get('state') not in HSP_STATES or env.get('state')!=_KIND_STATE.get(kind):errors.append('state')
+ if not isinstance(env.get('runtime_session_id'),str) or not env.get('runtime_session_id'):errors.append('session')
  if env.get('egress_state')!='DASHBOARD_LOCKED' or not isinstance(env.get('egress_epoch'),int) or isinstance(env.get('egress_epoch'),bool) or env.get('egress_epoch',0)<1:errors.append('egress_binding')
  for key in ('single_human_egress','semantic_payload_inside_dashboard_only'):
   if env.get(key) is not True:errors.append(key)
@@ -89,17 +97,52 @@ def validate_human_surface(dashboard:dict[str,Any])->tuple[bool,list[str]]:
  p=env.get('payload')
  if not isinstance(p,dict) or set(p)!=set(_PAYLOAD_KEYS):errors.append('payload_shape');p=p if isinstance(p,dict) else {}
  active=[k for k in _PAYLOAD_KEYS if p.get(k) is not None]
- expected={'TURN':'surface_turn','NOTICE':'notice','INITIALIZE':'notice','RESUME':'notice','APPROVAL_REQUEST':'approval_request','PROGRESS':'progress','ERROR':'error','DEGRADED':'degraded','RECOVERY':'recovery','EXIT':'release'}.get(env.get('kind'))
+ expected={'TURN':'surface_turn','NOTICE':'notice','INITIALIZE':'notice','RESUME':'notice','APPROVAL_REQUEST':'approval_request','PROGRESS':'progress','ERROR':'error','DEGRADED':'degraded','RECOVERY':'recovery','EXIT':'release'}.get(kind)
  if expected:
   if active!=[expected]:errors.append('payload_exclusivity')
  elif active:errors.append('unexpected_payload')
- if env.get('kind')=='APPROVAL_REQUEST':
-  a=p.get('approval_request') or {}
-  if a.get('requires_explicit_decision') is not True or a.get('presentation_is_not_authorization') is not True or a.get('decision_recorded') is not False or a.get('grant_issued') is not False:errors.append('approval_boundary')
- if env.get('kind')=='TURN':
-  t=p.get('surface_turn') or {}
+ if kind=='TURN':
+  t=p.get('surface_turn') if isinstance(p.get('surface_turn'),dict) else {}
   if t.get('surface_a_inside_dashboard') is not True or t.get('surface_b_bound') is not True:errors.append('turn_binding')
- if env.get('kind')=='EXIT' and (p.get('release') or {}).get('release_after_frame') is not True:errors.append('exit_release')
- supplied=env.pop('sha256',None)
- if supplied!=_digest(env):errors.append('digest')
+  if not isinstance(t.get('cycle_id'),str) or not t.get('cycle_id') or env.get('cycle_id')!=t.get('cycle_id'):errors.append('turn_cycle')
+  for key in ('surface_a_sha256','surface_b_json_sha256','surface_b_docx_sha256'):
+   if not isinstance(t.get(key),str) or not _SHA256_RE.fullmatch(t.get(key)):errors.append('turn_'+key)
+ elif kind in {'NOTICE','INITIALIZE','RESUME'}:
+  n=p.get('notice') if isinstance(p.get('notice'),dict) else {}
+  if not _valid_bounded_text(n.get('message'),MAX_MESSAGE_BYTES):errors.append('notice_message')
+  if n.get('authority_effect')!='NONE':errors.append('notice_authority')
+ elif kind=='APPROVAL_REQUEST':
+  a=p.get('approval_request') if isinstance(p.get('approval_request'),dict) else {}
+  if a.get('human_frame_schema')!='ikant-human-frame/v0.19-test' or not isinstance(a.get('frame_sha256'),str) or not _SHA256_RE.fullmatch(a.get('frame_sha256')):errors.append('approval_frame')
+  if a.get('purpose') not in {'CAPABILITY_GRANT','CAPABILITY_REVOKE','ACTION_CONFIRMATION'}:errors.append('approval_purpose')
+  if not _valid_bounded_text(a.get('title'),1024) or not _valid_bounded_text(a.get('body'),MAX_MESSAGE_BYTES):errors.append('approval_text')
+  if not isinstance(a.get('requested_entitlements'),list):errors.append('approval_entitlements')
+  if a.get('requires_explicit_decision') is not True or a.get('presentation_is_not_authorization') is not True or a.get('decision_recorded') is not False or a.get('grant_issued') is not False:errors.append('approval_boundary')
+  if a.get('epistemic_authority') not in {0,0.0} or a.get('execution_authority') not in {0,0.0}:errors.append('approval_authority')
+ elif kind=='PROGRESS':
+  x=p.get('progress') if isinstance(p.get('progress'),dict) else {};fraction=x.get('fraction')
+  if not _valid_bounded_text(x.get('phase'),128) or not _valid_bounded_text(x.get('label'),MAX_PROGRESS_LABEL_BYTES):errors.append('progress_text')
+  if fraction is not None and (not isinstance(fraction,(int,float)) or isinstance(fraction,bool) or not math.isfinite(float(fraction)) or float(fraction)<0 or float(fraction)>1):errors.append('progress_fraction')
+  if not isinstance(x.get('cancellable'),bool):errors.append('progress_cancellable')
+  if x.get('authority_effect')!='NONE':errors.append('progress_authority')
+ elif kind=='ERROR':
+  x=p.get('error') if isinstance(p.get('error'),dict) else {}
+  if not _valid_bounded_text(x.get('code'),128) or not _valid_bounded_text(x.get('message'),MAX_MESSAGE_BYTES):errors.append('error_text')
+  if not isinstance(x.get('retryable'),bool):errors.append('error_retryable')
+  if x.get('authority_effect')!='NONE':errors.append('error_authority')
+ elif kind=='DEGRADED':
+  x=p.get('degraded') if isinstance(p.get('degraded'),dict) else {};loss=x.get('capability_loss')
+  if not _valid_bounded_text(x.get('code'),128) or not _valid_bounded_text(x.get('message'),MAX_MESSAGE_BYTES):errors.append('degraded_text')
+  if not isinstance(loss,list) or loss!=sorted(set(loss)) or any(not _valid_bounded_text(v,256) for v in loss):errors.append('degraded_capability_loss')
+  if x.get('authority_effect')!='NONE':errors.append('degraded_authority')
+ elif kind=='RECOVERY':
+  x=p.get('recovery') if isinstance(p.get('recovery'),dict) else {}
+  if not _valid_bounded_text(x.get('reason'),MAX_MESSAGE_BYTES) or x.get('replay_only') is not True or x.get('authority_effect')!='NONE':errors.append('recovery_boundary')
+ elif kind=='EXIT':
+  x=p.get('release') if isinstance(p.get('release'),dict) else {}
+  if x.get('command')!='EXIT IKANT' or x.get('release_after_frame') is not True or x.get('authority_effect')!='NONE' or not _valid_bounded_text(x.get('message'),MAX_MESSAGE_BYTES):errors.append('exit_release')
+ try:
+  supplied=env.pop('sha256',None)
+  if supplied!=_digest(env):errors.append('digest')
+ except (TypeError,ValueError):errors.append('canonical_json')
  return not errors,list(dict.fromkeys(errors))

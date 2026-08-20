@@ -1,0 +1,54 @@
+name: iKant product boundary
+
+on:
+  pull_request:
+  push:
+    branches: [main, 'agent/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ikant-product-boundary-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  constitution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Compile constitutional surface
+        run: python -m compileall -q ikant tests scripts
+      - name: Verify invariant registry and S1-S4 product contract
+        run: |
+          python scripts/check_invariant_registry.py
+          python scripts/product_boundary.py
+      - name: Constitutional convergence unit tests
+        run: python -W error::ResourceWarning -m unittest tests.test_constitutional_convergence_v22 tests.test_agency_kernel_v19 tests.test_local_embodiment_v20 tests.test_web_agency_v21 tests.test_native_agency_v22 -v
+
+  s1-s4-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [17, 883, 2026]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Execute registered stress, mutation and edge harnesses
+        run: python scripts/product_boundary.py --execute --cases 100000 --tail 10000 --seed ${{ matrix.seed }}
+
+  no-novelty:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: S1-S4 no-novelty tail
+        run: python scripts/product_boundary.py --execute --cases 100000 --tail 100000 --seed 883

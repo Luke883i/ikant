@@ -1,0 +1,95 @@
+name: iKant product boundary
+
+on:
+  pull_request:
+  push:
+    branches: [main, 'agent/**']
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: ikant-product-boundary-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  constitution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Compile constitutional surface
+        run: python -m compileall -q ikant tests scripts
+      - name: Verify invariant registry and S1-S4 product contract
+        run: |
+          python scripts/check_invariant_registry.py
+          python scripts/product_boundary.py
+      - name: Constitutional convergence unit tests
+        run: python -W error::ResourceWarning -m unittest tests.test_constitutional_convergence_v22 tests.test_agency_kernel_v19 tests.test_local_embodiment_v20 tests.test_web_agency_v21 tests.test_native_agency_v22 -v
+
+  s1-s4-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [17, 883, 2026]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Execute registered stress, mutation and edge harnesses
+        run: python scripts/product_boundary.py --execute --cases 100000 --tail 10000 --seed ${{ matrix.seed }}
+
+  no-novelty:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: S1-S4 no-novelty tail
+        run: python scripts/product_boundary.py --execute --cases 100000 --tail 100000 --seed 883
+
+  report:
+    if: ${{ always() && github.event_name == 'pull_request' }}
+    needs: [constitution, s1-s4-boundary, no-novelty]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Publish product-boundary receipt
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const states = {
+              constitution: '${{ needs.constitution.result }}',
+              s1_s4_boundary: '${{ needs.s1-s4-boundary.result }}',
+              no_novelty: '${{ needs.no-novelty.result }}'
+            };
+            const ok = Object.values(states).every((v) => v === 'success');
+            const marker = '<!-- ikant-product-boundary-receipt -->';
+            const head = context.payload.pull_request?.head?.sha || 'unknown';
+            const body = [
+              marker,
+              '## iKant product boundary receipt',
+              '',
+              `PRODUCT_BOUNDARY_CI: ${ok ? 'PASS' : 'FAIL'}`,
+              `MERGE_SHA: ${context.sha}`,
+              `HEAD_SHA: ${head}`,
+              `constitution: ${states.constitution}`,
+              `S1-S4 boundary[3 seeds x registered stress/mutations/edges]: ${states.s1_s4_boundary}`,
+              `no-novelty[100000 + 100000 tail]: ${states.no_novelty}`,
+              '',
+              'This receipt is emitted by the version-neutral S1-S4 product boundary.'
+            ].join('\n');
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments,{owner,repo,issue_number,per_page:100});
+            const previous = comments.find((c) => c.body && c.body.includes(marker));
+            if (previous) await github.rest.issues.updateComment({owner,repo,comment_id:previous.id,body});
+            else await github.rest.issues.createComment({owner,repo,issue_number,body});
+            if (!ok) core.setFailed(`Product boundary failed: ${JSON.stringify(states)}`);

@@ -1,7 +1,8 @@
 from __future__ import annotations
 from dataclasses import dataclass, asdict
 from typing import Any
-PRODUCT_VERSION = "0.18.0a1"
+
+PRODUCT_VERSION = "0.22.0a1"
 CONTRACT_VERSION = "0.12.0"
 CONTRACT_SCHEMA = "ikant-access-contract/v0.12"
 ADMISSION_POLICY_SCHEMA = "ikant-pre-admission-firewall/v0.9-test"
@@ -12,13 +13,19 @@ FRAME_SCHEMA = "ikant-dashboard-frame/v0.11-test"
 JOURNAL_SCHEMA = "ikant-dashboard-egress-journal/v0.11-test"
 LEGACY_JOURNAL_SCHEMA = "ikant-dashboard-egress-journal/v0.10-test"
 TRANSPORT_ATTESTATION_SCHEMA = "ikant-host-transport-attestation/v0.11-test"
-INVARIANT_REGISTRY_SCHEMA = "ikant-invariant-registry/v0.18-test"
+INVARIANT_REGISTRY_SCHEMA = "ikant-invariant-registry/v0.22-test"
 MAX_FRAME_BYTES = 128 * 1024
 EXIT_COMMAND = "EXIT IKANT"
 RESUME_COMMAND = "RESUME IKANT"
+
 @dataclass(frozen=True)
 class Invariant:
-    id: str; domain: str; statement: str; severity: str; machine_test: str
+    id: str
+    domain: str
+    statement: str
+    severity: str
+    machine_test: str
+
 _INVARIANTS = (
     Invariant("ADM-001","admission","Exact current-session human I ACCEPT is required and bound to the presented terms digest.","CRITICAL","tests.test_admission_v09"),
     Invariant("ADM-002","admission","Pre-acceptance repository capability is bounded, accounted, frozen after terms presentation and deny-by-default.","CRITICAL","tests.test_pre_admission_v08"),
@@ -60,6 +67,16 @@ _INVARIANTS = (
     Invariant("HST-004","host","The reference CLI adapter probes real iKant write/flush, file-only machine-output, v0.17 revalidation-binding and legacy-attestation code paths; a declared capability cannot mask a failed executable probe.","CRITICAL","tests.test_host_conformance_v18"),
     Invariant("HST-005","host","Host conformance, negotiation and SDK bindings have zero epistemic and execution authority. Receipt digests are integrity checks only and never authenticate an actor or attest the production transport beyond the tested adapter/configuration.","CRITICAL","tests.test_host_conformance_v18"),
     Invariant("HST-006","host","HostRuntimeBinding gates legacy breach-resume attestation and v0.17 execution revalidation behind the corresponding conforming profile and never performs a material action.","CRITICAL","tests.test_host_conformance_v18"),
+    Invariant("AGY-001","agency","HumanFrame presentation and model output never grant authority; a grant requires a validated channel-bound human interaction receipt.","CRITICAL","tests.test_agency_kernel_v19"),
+    Invariant("AGY-002","agency","Capability grants are exact, session-bound, bounded-use, expiry- and revocation-epoch-aware; wildcard or traversal scopes fail closed.","CRITICAL","tests.test_agency_kernel_v19"),
+    Invariant("AGY-003","agency","Execution leases are exact handoff-bound one-shot reservations and never replace practical-reason, planning or host-conformance revalidation.","CRITICAL","tests.test_agency_kernel_v19"),
+    Invariant("EMB-001","embodiment","The local browser/PWA is loopback-only, paired and bearer-authenticated; browser presentation has zero epistemic and execution authority.","CRITICAL","tests.test_local_embodiment_v20"),
+    Invariant("EMB-002","embodiment","Local model and voice outputs are observations only: model tool calls are forbidden, voice input never approves, and ACTIVE TTS remains disabled under verbatim egress.","CRITICAL","tests.test_local_embodiment_v20"),
+    Invariant("WEB-001","web","Web content and snapshots are hostile observations with zero authority; a web action requires exact snapshot/action binding, host conformance and a fresh S1 lease.","CRITICAL","tests.test_web_agency_v21"),
+    Invariant("WEB-002","web","Web execution is deny-by-default and bounded to the declared S3 action surface; arbitrary JavaScript, downloads, POST/form submission, credentials and background acquisition are unavailable.","CRITICAL","tests.test_web_agency_v21"),
+    Invariant("NAT-001","native","Native filesystem targets are workspace-relative, canonical, no-follow and identity-bound; hidden credential/key/token paths and traversal fail closed.","CRITICAL","tests.test_native_agency_v22"),
+    Invariant("NAT-002","native","Native S4 permits only bounded regular UTF-8 read and absent-target create; overwrite, delete, rename, chmod, process, shell, app, environment and secret authority remain unavailable.","CRITICAL","tests.test_native_agency_v22"),
+    Invariant("NAT-003","native","Native commit consumes a fresh exact S1 lease once; post-consume failure is terminal and cannot auto-retry with stale authority.","CRITICAL","tests.test_native_agency_v22"),
     Invariant("CRC-001","epistemic","CRC causal diagnostics are executable node/source ablations with explicit intervention sensitivity and must never be presented as ontological causality, consciousness or proof of closure.","CRITICAL","tests.test_epistemic_core_v13"),
     Invariant("PSY-001","psyche","Functional psyche may preserve or increase caution but cannot relax a practical/horizon block.","CRITICAL","tests.test_psyche_v05"),
     Invariant("SUR-001","surface","Validated Surface A and Surface B must be same-session/same-cycle and Surface B DOCX is mandatory for substantive human turns.","CRITICAL","tests.test_incarnate_v07"),
@@ -70,8 +87,25 @@ _INVARIANTS = (
     Invariant("TRN-001","transport","Human and machine outputs use distinct explicit sinks; ACTIVE machine JSON is file-only and never stdout/stderr.","CRITICAL","tests.test_reticular_v11"),
     Invariant("CLI-001","host","ACTIVE pre-admission commands cannot bypass dashboard egress.","CRITICAL","tests.test_reticular_v11"),
     Invariant("ARC-001","architecture","Canonical runtime entrypoints and imports are version-neutral; historical version modules are compatibility shims only.","HIGH","scripts.architecture_compression_v11"),
-    Invariant("CI-001","validation","One version-neutral reticular boundary workflow owns historical and current boundary regressions; release workflows do not accrete per version.","HIGH","scripts.host_conformance_mutations"),
+    Invariant("CI-001","validation","One version-neutral reticular/product boundary owns historical and current boundary regressions; release workflows do not accrete per version.","HIGH","scripts.product_boundary"),
 )
-def invariants() -> tuple[Invariant, ...]: return _INVARIANTS
-def critical_ids() -> tuple[str, ...]: return tuple(x.id for x in _INVARIANTS if x.severity == "CRITICAL")
-def registry_manifest() -> dict[str, Any]: return {"schema":INVARIANT_REGISTRY_SCHEMA,"product_version":PRODUCT_VERSION,"contract_version":CONTRACT_VERSION,"contract_schema":CONTRACT_SCHEMA,"admission_policy_schema":ADMISSION_POLICY_SCHEMA,"egress_schema":EGRESS_SCHEMA,"max_frame_bytes":MAX_FRAME_BYTES,"exit_command":EXIT_COMMAND,"resume_command":RESUME_COMMAND,"invariants":[asdict(x) for x in _INVARIANTS]}
+
+def invariants() -> tuple[Invariant, ...]:
+    return _INVARIANTS
+
+def critical_ids() -> tuple[str, ...]:
+    return tuple(x.id for x in _INVARIANTS if x.severity == "CRITICAL")
+
+def registry_manifest() -> dict[str, Any]:
+    return {
+        "schema": INVARIANT_REGISTRY_SCHEMA,
+        "product_version": PRODUCT_VERSION,
+        "contract_version": CONTRACT_VERSION,
+        "contract_schema": CONTRACT_SCHEMA,
+        "admission_policy_schema": ADMISSION_POLICY_SCHEMA,
+        "egress_schema": EGRESS_SCHEMA,
+        "max_frame_bytes": MAX_FRAME_BYTES,
+        "exit_command": EXIT_COMMAND,
+        "resume_command": RESUME_COMMAND,
+        "invariants": [asdict(x) for x in _INVARIANTS],
+    }

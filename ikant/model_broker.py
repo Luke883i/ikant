@@ -7,7 +7,7 @@ from urllib.request import Request, urlopen
 
 from .local_security import require_loopback_url
 
-MODEL_BROKER_SCHEMA = "ikant-local-model-broker/v0.20-test"
+MODEL_BROKER_SCHEMA = "ikant-local-model-broker/v0.23-test"
 
 
 class LocalModelError(RuntimeError):
@@ -15,7 +15,7 @@ class LocalModelError(RuntimeError):
 
 
 class LocalModelBroker:
-    """Zero-authority adapter for an already-running local OpenAI-compatible chat endpoint."""
+    """Zero-authority adapter for an iKant-owned or explicitly supplied loopback model endpoint."""
 
     def __init__(
         self,
@@ -24,27 +24,48 @@ class LocalModelBroker:
         model: str = "Qwen3.5-0.8B",
         timeout: float = 45.0,
         opener: Callable[..., Any] = urlopen,
+        api_key: str | None = None,
+        runtime_binding_digest: str | None = None,
+        managed_runtime: bool = False,
     ):
         self.endpoint = None if not endpoint else require_loopback_url(str(endpoint))
         self.model = str(model or "Qwen3.5-0.8B")
         self.timeout = float(timeout)
         self.opener = opener
+        self._api_key = str(api_key) if api_key else None
+        self.runtime_binding_digest = str(runtime_binding_digest) if runtime_binding_digest else None
+        self.managed_runtime = bool(managed_runtime)
+        if self.managed_runtime and (not self.endpoint or not self._api_key or not self.runtime_binding_digest):
+            raise LocalModelError("managed model broker requires endpoint, private key and runtime binding")
 
     @property
     def configured(self) -> bool:
         return bool(self.endpoint)
 
+    def _headers(self, *, json_body: bool = False) -> dict[str, str]:
+        headers = {"Accept": "application/json"}
+        if json_body:
+            headers["Content-Type"] = "application/json"
+        if self._api_key:
+            headers["Authorization"] = "Bearer " + self._api_key
+        return headers
+
     def status(self) -> dict[str, Any]:
-        return {
+        out = {
             "schema": MODEL_BROKER_SCHEMA,
             "configured": self.configured,
             "endpoint_scope": "LOOPBACK_ONLY" if self.configured else "DISABLED",
             "model": self.model,
+            "managed_runtime": self.managed_runtime,
+            "api_key_exposed": False,
             "tool_calls_accepted": False,
             "model_output_is_authority": False,
             "epistemic_authority": 0.0,
             "execution_authority": 0.0,
         }
+        if self.managed_runtime:
+            out["runtime_binding_digest"] = self.runtime_binding_digest
+        return out
 
     def _models_url(self) -> str:
         if not self.endpoint:
@@ -58,7 +79,7 @@ class LocalModelBroker:
     def health(self) -> bool:
         if not self.endpoint:
             return False
-        req = Request(self._models_url(), method="GET", headers={"Accept": "application/json"})
+        req = Request(self._models_url(), method="GET", headers=self._headers())
         try:
             with self.opener(req, timeout=min(self.timeout, 3.0)) as response:
                 return 200 <= int(getattr(response, "status", 200)) < 300
@@ -72,7 +93,7 @@ class LocalModelBroker:
             self.endpoint,
             data=json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8"),
             method="POST",
-            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            headers=self._headers(json_body=True),
         )
         try:
             with self.opener(req, timeout=self.timeout) as response:
@@ -98,7 +119,7 @@ class LocalModelBroker:
         if not isinstance(message, dict):
             raise LocalModelError("local model response message invalid")
         if message.get("tool_calls"):
-            raise LocalModelError("model tool calls are forbidden in S2")
+            raise LocalModelError("model tool calls are forbidden in iKant")
         text = message.get("content")
         if not isinstance(text, str) or not text.strip():
             raise LocalModelError("local model response content missing")

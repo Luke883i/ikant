@@ -8,6 +8,7 @@ from typing import Any, Callable
 from .component_manifest import load_manifest
 from .component_store import atomic_json
 from .engine_supervisor import EngineSupervisor
+from .local_service import LocalAppError, LocalEmbodimentService
 from .model_broker import LocalModelBroker
 from .model_manager import ModelManager
 
@@ -83,6 +84,9 @@ class ManagedLocalRuntime:
         try:
             manifest = load_manifest(self.manifest_path)
             self._persist("PREPARING", manifest_sha256=hashlib.sha256(self.manifest_path.read_bytes()).hexdigest())
+            if progress:
+                model = manifest["model"]
+                progress({"phase": "PLAN", "bytes": int(model["display_size_mb"]) * 1_000_000, "target": str(model["id"])})
             manager = self.manager_factory(manifest, component_root=self.component_root)
             binding = manager.ensure(progress=progress)
             digest = _binding_digest(binding)
@@ -133,3 +137,35 @@ class ManagedLocalRuntime:
             if self.binding_digest:
                 extra["binding_sha256"] = self.binding_digest
             self._persist("STOPPED", **extra)
+
+
+class ManagedLocalEmbodimentService(LocalEmbodimentService):
+    """S2 embodiment with S5 readiness bound into PROBE and INITIALIZE."""
+
+    def _managed_model_check(self) -> dict[str, Any]:
+        managed = bool(getattr(self.model, "managed_runtime", False))
+        healthy = managed and self.model.health()
+        binding = str(getattr(self.model, "runtime_binding_digest", "") or "")
+        return {
+            "status": "AVAILABLE" if healthy and len(binding) == 64 else "UNAVAILABLE",
+            "detail": "verified managed engine reachable" if healthy and len(binding) == 64 else "managed engine unavailable or unbound",
+            "binding_sha256": binding if len(binding) == 64 else None,
+            "model_output_is_authority": False,
+            "epistemic_authority": 0.0,
+            "execution_authority": 0.0,
+        }
+
+    def probe(self):
+        with self._lock:
+            out = super().probe()
+            out["checks"]["MODEL_RUNTIME"] = self._managed_model_check()
+            out["overall"] = "READY" if all(x.get("status") == "AVAILABLE" for x in out["checks"].values()) else "BLOCKED"
+            from .admission import save_probe
+            save_probe(self.state_dir, out)
+            return out
+
+    def initialize(self):
+        check = self._managed_model_check()
+        if check["status"] != "AVAILABLE":
+            raise LocalAppError("INITIALIZE requires the verified managed language engine to remain READY")
+        return super().initialize()

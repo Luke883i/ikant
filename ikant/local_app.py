@@ -2,9 +2,8 @@ from __future__ import annotations
 import argparse,os,sys,webbrowser
 from pathlib import Path
 from .local_http import build_server
-from .local_service import LocalEmbodimentService,LocalAppError,operational_fallback
-from .local_security import PairingSession
-from .managed_runtime import ManagedLocalRuntime,ManagedRuntimeError
+from .local_service import operational_fallback
+from .managed_runtime import ManagedLocalEmbodimentService,ManagedLocalRuntime,ManagedRuntimeError
 from .voice_input import LocalVoiceInputBroker
 _operational_fallback=operational_fallback
 
@@ -24,7 +23,7 @@ def main(argv=None):
     try:
         runtime=ManagedLocalRuntime(root,manifest_path=a.runtime_manifest,component_root=a.component_root)
         model=runtime.start(progress=_progress,readiness_timeout=a.runtime_ready_timeout)
-        voice=LocalVoiceInputBroker(os.environ.get('IKANT_STT_ENDPOINT'));service=LocalEmbodimentService(root,model=model,voice=voice);server,pairing=build_server(service,host=host,port=a.port)
+        voice=LocalVoiceInputBroker(os.environ.get('IKANT_STT_ENDPOINT'));service=ManagedLocalEmbodimentService(root,model=model,voice=voice);server,pairing=build_server(service,host=host,port=a.port)
         port=int(server.server_address[1]);url=f'http://localhost:{port}/';print(f'iKant Local Embodiment: {url}',flush=True);print(f'Pairing code: {pairing.code}',flush=True)
         if codespaces:print('Codespaces: keep the forwarded port private and enter the one-time pairing code.',flush=True)
         elif not a.no_open:webbrowser.open(url+'#pair='+pairing.code,new=2)

@@ -1,0 +1,10 @@
+{
+  "name": "iKant",
+  "forwardPorts": [8765],
+  "portsAttributes": {
+    "8765": {
+      "label": "iKant Local Embodiment",
+      "onAutoForward": "openPreview"
+    }
+  }
+}

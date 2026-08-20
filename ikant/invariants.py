@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, asdict
 from typing import Any
 
-PRODUCT_VERSION = "0.22.0a1"
+PRODUCT_VERSION = "0.23.0a1"
 CONTRACT_VERSION = "0.12.0"
 CONTRACT_SCHEMA = "ikant-access-contract/v0.12"
 ADMISSION_POLICY_SCHEMA = "ikant-pre-admission-firewall/v0.9-test"
@@ -13,7 +13,7 @@ FRAME_SCHEMA = "ikant-dashboard-frame/v0.11-test"
 JOURNAL_SCHEMA = "ikant-dashboard-egress-journal/v0.11-test"
 LEGACY_JOURNAL_SCHEMA = "ikant-dashboard-egress-journal/v0.10-test"
 TRANSPORT_ATTESTATION_SCHEMA = "ikant-host-transport-attestation/v0.11-test"
-INVARIANT_REGISTRY_SCHEMA = "ikant-invariant-registry/v0.22-test"
+INVARIANT_REGISTRY_SCHEMA = "ikant-invariant-registry/v0.23-test"
 MAX_FRAME_BYTES = 128 * 1024
 EXIT_COMMAND = "EXIT IKANT"
 RESUME_COMMAND = "RESUME IKANT"
@@ -77,6 +77,9 @@ _INVARIANTS = (
     Invariant("NAT-001","native","Native filesystem targets are workspace-relative, canonical, no-follow and identity-bound; hidden credential/key/token paths and traversal fail closed.","CRITICAL","tests.test_native_agency_v22"),
     Invariant("NAT-002","native","Native S4 permits only bounded regular UTF-8 read and absent-target create; overwrite, delete, rename, chmod, process, shell, app, environment and secret authority remain unavailable.","CRITICAL","tests.test_native_agency_v22"),
     Invariant("NAT-003","native","Native commit consumes a fresh exact S1 lease once; post-consume failure is terminal and cannot auto-retry with stale authority.","CRITICAL","tests.test_native_agency_v22"),
+    Invariant("MLR-001","managed_runtime","S5 component acquisition is immutable-reference and digest bound: floating engine/model references, corrupt partials, archive escape, oversized payloads and post-install tree drift fail closed.","CRITICAL","tests.test_managed_local_runtime_v23"),
+    Invariant("MLR-002","managed_runtime","The managed language engine is iKant-owned, loopback-only, ephemeral-port and private-key-file bound; WebUI, agent mode, built-in tools and browser-to-model transport remain disabled.","CRITICAL","tests.test_managed_local_runtime_v23"),
+    Invariant("MLR-003","managed_runtime","Managed runtime READY requires verified components and a live constrained engine; component presence, readiness and model output carry zero epistemic and execution authority, and no fake READY fallback is allowed.","CRITICAL","tests.test_managed_local_runtime_v23"),
     Invariant("CRC-001","epistemic","CRC causal diagnostics are executable node/source ablations with explicit intervention sensitivity and must never be presented as ontological causality, consciousness or proof of closure.","CRITICAL","tests.test_epistemic_core_v13"),
     Invariant("PSY-001","psyche","Functional psyche may preserve or increase caution but cannot relax a practical/horizon block.","CRITICAL","tests.test_psyche_v05"),
     Invariant("SUR-001","surface","Validated Surface A and Surface B must be same-session/same-cycle and Surface B DOCX is mandatory for substantive human turns.","CRITICAL","tests.test_incarnate_v07"),
@@ -90,22 +93,7 @@ _INVARIANTS = (
     Invariant("CI-001","validation","One version-neutral reticular/product boundary owns historical and current boundary regressions; release workflows do not accrete per version.","HIGH","scripts.product_boundary"),
 )
 
-def invariants() -> tuple[Invariant, ...]:
-    return _INVARIANTS
-
-def critical_ids() -> tuple[str, ...]:
-    return tuple(x.id for x in _INVARIANTS if x.severity == "CRITICAL")
-
+def invariants() -> tuple[Invariant, ...]: return _INVARIANTS
+def critical_ids() -> tuple[str, ...]: return tuple(x.id for x in _INVARIANTS if x.severity == "CRITICAL")
 def registry_manifest() -> dict[str, Any]:
-    return {
-        "schema": INVARIANT_REGISTRY_SCHEMA,
-        "product_version": PRODUCT_VERSION,
-        "contract_version": CONTRACT_VERSION,
-        "contract_schema": CONTRACT_SCHEMA,
-        "admission_policy_schema": ADMISSION_POLICY_SCHEMA,
-        "egress_schema": EGRESS_SCHEMA,
-        "max_frame_bytes": MAX_FRAME_BYTES,
-        "exit_command": EXIT_COMMAND,
-        "resume_command": RESUME_COMMAND,
-        "invariants": [asdict(x) for x in _INVARIANTS],
-    }
+    return {"schema":INVARIANT_REGISTRY_SCHEMA,"product_version":PRODUCT_VERSION,"contract_version":CONTRACT_VERSION,"contract_schema":CONTRACT_SCHEMA,"admission_policy_schema":ADMISSION_POLICY_SCHEMA,"egress_schema":EGRESS_SCHEMA,"max_frame_bytes":MAX_FRAME_BYTES,"exit_command":EXIT_COMMAND,"resume_command":RESUME_COMMAND,"invariants":[asdict(x) for x in _INVARIANTS]}

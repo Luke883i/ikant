@@ -1,0 +1,20 @@
+{
+  "schema": "ikant-model-runtime/v0.23-test",
+  "product_version": "0.23.0a1",
+  "engine": {
+    "id": "llama.cpp",
+    "release_tag": "b10344",
+    "artifacts": {
+      "darwin-arm64": {"url":"https://github.com/ggml-org/llama.cpp/releases/download/b10344/llama-b10344-bin-macos-arm64.tar.gz","sha256":"24bf4348ddc6d1d9b465105ed8ae371e326c576623ac612fbff73532181c8f13","archive":"tar.gz","server_basename":"llama-server","max_size_bytes":25000000},
+      "darwin-x86_64": {"url":"https://github.com/ggml-org/llama.cpp/releases/download/b10344/llama-b10344-bin-macos-x64.tar.gz","sha256":"4df4fe900423ec147552724ad4ebbbbd03c8991dcd8f32c1ea20446c5d942c13","archive":"tar.gz","server_basename":"llama-server","max_size_bytes":25000000},
+      "linux-aarch64": {"url":"https://github.com/ggml-org/llama.cpp/releases/download/b10344/llama-b10344-bin-ubuntu-arm64.tar.gz","sha256":"d04da2488689820c855fe47f89d20023ed4059073478d65d47b9f07a52e1a8df","archive":"tar.gz","server_basename":"llama-server","max_size_bytes":30000000},
+      "linux-x86_64": {"url":"https://github.com/ggml-org/llama.cpp/releases/download/b10344/llama-b10344-bin-ubuntu-openvino-2026.2.1-x64.tar.gz","sha256":"e86a81b4a443200996efc33e627b321bd377bad19ea2d9489d43ad960ccc16ae","archive":"tar.gz","server_basename":"llama-server","max_size_bytes":160000000}
+    },
+    "server_contract": {"host":"127.0.0.1","ephemeral_port":true,"api_key_file":true,"webui_enabled":false,"agent_mode_enabled":false,"builtin_tools_enabled":false,"browser_model_transport":false}
+  },
+  "model": {
+    "id":"Qwen3.5-0.8B-Q4_0","repository":"ggml-org/Qwen3.5-0.8B-GGUF","revision":"9447f74101aeb4e93621884dfa36ee8effb8831b","file":"Qwen3.5-0.8B-Q4_0.gguf","url":"https://huggingface.co/ggml-org/Qwen3.5-0.8B-GGUF/resolve/9447f74101aeb4e93621884dfa36ee8effb8831b/Qwen3.5-0.8B-Q4_0.gguf","sha256":"57d1997790d1744fba5b40a7317df71ea5e2acee28c47e78f0cce39c0703f8cf","display_size_mb":563,"license":"Apache-2.0","max_size_bytes":650000000
+  },
+  "storage": {"shared_component_root":"XDG_DATA_HOME/ikant or ~/.local/share/ikant","project_binding_path":".ikant/model-runtime.json","partial_suffix":".partial"},
+  "authority": {"model_output_is_authority":false,"component_presence_is_authority":false,"runtime_readiness_is_authority":false,"epistemic_authority":0.0,"execution_authority":0.0}
+}

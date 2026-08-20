@@ -1,16 +1,17 @@
 {
-  "schema": "ikant-product-contract/v0.22-test",
-  "product_version": "0.22.0a1",
-  "contract_version": "0.12.0",
-  "constitutional_convergence": "S4bis",
-  "authority_chain": ["evidence", "permission", "approval", "grant", "lease", "execution", "reported_outcome"],
-  "authority_separation_required": true,
-  "slices": [
+  "schema":"ikant-product-contract/v0.23-test",
+  "product_version":"0.23.0a1",
+  "contract_version":"0.12.0",
+  "constitutional_convergence":"S5",
+  "authority_chain":["evidence","permission","approval","grant","lease","execution","reported_outcome"],
+  "authority_separation_required":true,
+  "slices":[
     {"id":"S1","name":"Agency Kernel","schema":"ikant-capability-grant/v0.19-test","domain":"agency","machine_test":"tests.test_agency_kernel_v19","stress":"scripts/agency_kernel_stress.py","mutations":"scripts/agency_kernel_mutations.py","edges":"scripts/agency_kernel_edges.py","seeded_harnesses":["stress","mutations","edges"]},
     {"id":"S2","name":"Local Embodiment","schema":"ikant-local-embodiment/v0.20-test","domain":"embodiment","machine_test":"tests.test_local_embodiment_v20","stress":"scripts/local_embodiment_stress.py","mutations":"scripts/local_embodiment_mutations.py","edges":"scripts/local_embodiment_edges.py","seeded_harnesses":["stress","mutations","edges"]},
     {"id":"S3","name":"Web Agency","schema":"ikant-web-execution/v0.21-test","domain":"web","machine_test":"tests.test_web_agency_v21","stress":"scripts/web_agency_stress.py","mutations":"scripts/web_agency_mutations.py","edges":"scripts/web_agency_edges.py","seeded_harnesses":["stress","mutations","edges"]},
-    {"id":"S4","name":"Native Agency","schema":"ikant-native-execution/v0.22-test","domain":"native","machine_test":"tests.test_native_agency_v22","stress":"scripts/native_agency_stress.py","mutations":"scripts/native_agency_mutations.py","edges":"scripts/native_agency_edges.py","seeded_harnesses":["stress","edges"]}
+    {"id":"S4","name":"Native Agency","schema":"ikant-native-execution/v0.22-test","domain":"native","machine_test":"tests.test_native_agency_v22","stress":"scripts/native_agency_stress.py","mutations":"scripts/native_agency_mutations.py","edges":"scripts/native_agency_edges.py","seeded_harnesses":["stress","edges"]},
+    {"id":"S5","name":"Managed Local Runtime & Model Supply Chain","schema":"ikant-model-runtime/v0.23-test","domain":"managed_runtime","machine_test":"tests.test_managed_local_runtime_v23","stress":"scripts/managed_local_runtime_stress.py","mutations":"scripts/managed_local_runtime_mutations.py","edges":"scripts/managed_local_runtime_edges.py","seeded_harnesses":["stress","mutations","edges"]}
   ],
-  "global_invariants": ["model_output_is_zero_authority","evidence_never_creates_permission","permission_never_creates_approval","approval_never_creates_grant","grant_never_executes","lease_is_exact_one_shot_and_revalidated","execution_receipt_never_proves_world_truth","derived_control_state_has_zero_epistemic_authority"],
-  "future_slice_rule": "A material slice is not constitutional until registered here, covered by the invariant registry and exercised by the version-neutral product boundary gate."
+  "global_invariants":["model_output_is_zero_authority","component_presence_is_zero_authority","runtime_readiness_is_zero_authority","evidence_never_creates_permission","permission_never_creates_approval","approval_never_creates_grant","grant_never_executes","lease_is_exact_one_shot_and_revalidated","execution_receipt_never_proves_world_truth","derived_control_state_has_zero_epistemic_authority"],
+  "future_slice_rule":"A material slice is not constitutional until registered here, covered by the invariant registry and exercised by the version-neutral product boundary gate."
 }

@@ -8,9 +8,7 @@ HSP_KINDS=frozenset({'INITIALIZE','DASHBOARD','TURN','NOTICE','APPROVAL_REQUEST'
 HSP_STATES=frozenset({'READY','WORKING','NEEDS_HUMAN','DEGRADED','BLOCKED','RELEASING','RECOVERING'})
 MAX_MESSAGE_BYTES=8192
 MAX_PROGRESS_LABEL_BYTES=512
-_KIND_STATE={
- 'INITIALIZE':'READY','DASHBOARD':'READY','TURN':'READY','NOTICE':'READY','APPROVAL_REQUEST':'NEEDS_HUMAN',
- 'PROGRESS':'WORKING','ERROR':'BLOCKED','DEGRADED':'DEGRADED','RECOVERY':'RECOVERING','EXIT':'RELEASING','RESUME':'READY'}
+_KIND_STATE={'INITIALIZE':'READY','DASHBOARD':'READY','TURN':'READY','NOTICE':'READY','APPROVAL_REQUEST':'NEEDS_HUMAN','PROGRESS':'WORKING','ERROR':'BLOCKED','DEGRADED':'DEGRADED','RECOVERY':'RECOVERING','EXIT':'RELEASING','RESUME':'READY'}
 _PAYLOAD_KEYS=('surface_turn','notice','approval_request','progress','error','degraded','recovery','release')
 
 def _canonical(x:dict[str,Any])->bytes:return json.dumps(x,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode('utf-8')
@@ -47,7 +45,7 @@ def project_human_surface(runtime:Any,dashboard:dict[str,Any],*,kind:str,cycle_i
  if not eg:raise ValueError('human surface requires egress projection')
  payload={x:None for x in _PAYLOAD_KEYS}
  if k=='TURN':payload['surface_turn']=_turn_projection(dashboard,cycle_id)
- elif k=='NOTICE':payload['notice']={'message':_bounded_text(notice),'authority_effect':'NONE'}
+ elif k in {'NOTICE','INITIALIZE','RESUME'}:payload['notice']={'message':_bounded_text(notice or ({'INITIALIZE':'iKant ACTIVE.','RESUME':'iKant riattivato.'}.get(k) or 'iKant notice')),'authority_effect':'NONE'}
  elif k=='APPROVAL_REQUEST':
   if not isinstance(approval_frame,dict):raise ValueError('approval frame required')
   payload['approval_request']=_approval_projection(approval_frame,session_id)
@@ -62,14 +60,12 @@ def project_human_surface(runtime:Any,dashboard:dict[str,Any],*,kind:str,cycle_i
  elif k=='RECOVERY':payload['recovery']={'reason':_bounded_text((recovery or {}).get('reason') or 'sealed frame recovery'),'replay_only':True,'authority_effect':'NONE'}
  elif k=='EXIT':
   if not release_after_frame:raise ValueError('EXIT must release after frame')
-  payload['release']={'command':'EXIT IKANT','release_after_frame':True,'authority_effect':'NONE'}
- elif k=='RESUME':
-  if release_after_frame:raise ValueError('RESUME cannot release')
- elif k in {'INITIALIZE','DASHBOARD'}:
-  if release_after_frame:raise ValueError(k+' cannot release')
+  payload['release']={'command':'EXIT IKANT','message':_bounded_text(notice or 'Uscita da iKant confermata.'),'release_after_frame':True,'authority_effect':'NONE'}
+ elif k=='DASHBOARD':
+  if release_after_frame:raise ValueError('DASHBOARD cannot release')
  if k!='EXIT' and release_after_frame:raise ValueError('release allowed only for EXIT')
  active=[name for name,value in payload.items() if value is not None]
- expected={'TURN':'surface_turn','NOTICE':'notice','APPROVAL_REQUEST':'approval_request','PROGRESS':'progress','ERROR':'error','DEGRADED':'degraded','RECOVERY':'recovery','EXIT':'release'}.get(k)
+ expected={'TURN':'surface_turn','NOTICE':'notice','INITIALIZE':'notice','RESUME':'notice','APPROVAL_REQUEST':'approval_request','PROGRESS':'progress','ERROR':'error','DEGRADED':'degraded','RECOVERY':'recovery','EXIT':'release'}.get(k)
  if expected and active!=[expected]:raise ValueError('human surface payload exclusivity')
  if not expected and active:raise ValueError('unexpected human surface payload')
  env={'schema':HSP_SCHEMA,'runtime_session_id':session_id,'egress_epoch':eg.get('epoch'),'egress_state':eg.get('state'),'kind':k,'state':_KIND_STATE[k],'cycle_id':None if cycle_id is None else str(cycle_id),'payload':payload,'single_human_egress':True,'semantic_payload_inside_dashboard_only':True,'raw_model_tokens_visible':False,'parallel_human_message_allowed':False,'presentation_is_not_authorization':True,'epistemic_authority':0.0,'execution_authority':0.0}
@@ -89,7 +85,7 @@ def validate_human_surface(dashboard:dict[str,Any])->tuple[bool,list[str]]:
  p=env.get('payload')
  if not isinstance(p,dict) or set(p)!=set(_PAYLOAD_KEYS):errors.append('payload_shape');p=p if isinstance(p,dict) else {}
  active=[k for k in _PAYLOAD_KEYS if p.get(k) is not None]
- expected={'TURN':'surface_turn','NOTICE':'notice','APPROVAL_REQUEST':'approval_request','PROGRESS':'progress','ERROR':'error','DEGRADED':'degraded','RECOVERY':'recovery','EXIT':'release'}.get(env.get('kind'))
+ expected={'TURN':'surface_turn','NOTICE':'notice','INITIALIZE':'notice','RESUME':'notice','APPROVAL_REQUEST':'approval_request','PROGRESS':'progress','ERROR':'error','DEGRADED':'degraded','RECOVERY':'recovery','EXIT':'release'}.get(env.get('kind'))
  if expected:
   if active!=[expected]:errors.append('payload_exclusivity')
  elif active:errors.append('unexpected_payload')

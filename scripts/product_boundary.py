@@ -1,25 +1,37 @@
 from __future__ import annotations
-import argparse,json,subprocess,sys
+import argparse,json,re,subprocess,sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT))
-EXPECTED_SCHEMA='ikant-product-contract/v0.23-test';EXPECTED_SLICES=('S1','S2','S3','S4','S5');HARNESS_KEYS=('stress','mutations','edges')
+HARNESS_KEYS=('stress','mutations','edges')
+SCHEMA_RE=re.compile(r'^ikant-product-contract/(v0\.\d+-test)$')
 def fail(msg:str)->None:raise SystemExit(msg)
 def load_contract()->dict:
  p=ROOT/'PRODUCT_CONTRACT.json'
  try:data=json.loads(p.read_text(encoding='utf-8'))
  except Exception as exc:fail('product contract unreadable: '+str(exc))
- if data.get('schema')!=EXPECTED_SCHEMA:fail('product contract schema drift')
- if tuple(x.get('id') for x in data.get('slices',[]))!=EXPECTED_SLICES:fail('product slice order/coverage drift')
+ match=SCHEMA_RE.fullmatch(str(data.get('schema') or ''))
+ if not match:fail('product contract schema drift')
+ slices=data.get('slices')
+ if not isinstance(slices,list) or not slices:fail('product slices missing')
+ ids=[str(x.get('id') or '') for x in slices];expected=[f'S{i}' for i in range(1,len(slices)+1)]
+ if ids!=expected:fail('product slice order/coverage drift')
+ if data.get('constitutional_convergence')!=ids[-1]:fail('constitutional convergence must equal current slice')
  return data
 def validate_paths(data:dict)->list[str]:
- errors=[]
+ errors=[];owned=set()
  for s in data['slices']:
-  test=ROOT/(s['machine_test'].replace('.','/')+'.py')
+  test=ROOT/(str(s.get('machine_test') or '').replace('.','/')+'.py')
   if not test.is_file():errors.append(f"{s['id']} missing machine test")
   seeded=s.get('seeded_harnesses')
   if not isinstance(seeded,list) or any(x not in HARNESS_KEYS for x in seeded) or len(set(seeded))!=len(seeded):errors.append(f"{s['id']} invalid seeded_harnesses")
+  inv=s.get('invariants')
+  if not isinstance(inv,list) or not inv or len(set(inv))!=len(inv):errors.append(f"{s['id']} invalid invariant ownership")
+  else:
+   overlap=owned&set(inv)
+   if overlap:errors.append(f"{s['id']} duplicate invariant ownership: {','.join(sorted(overlap))}")
+   owned.update(inv)
   for key in HARNESS_KEYS:
-   if not (ROOT/s[key]).is_file():errors.append(f"{s['id']} missing {key}")
+   if not (ROOT/str(s.get(key) or '')).is_file():errors.append(f"{s['id']} missing {key}")
  return errors
 def command_for(s:dict,key:str,cases:int,tail:int,seed:int)->list[str]:
  size_arg='--mutations' if key=='mutations' else '--cases';cmd=[sys.executable,s[key],size_arg,str(cases),'--tail',str(tail)]
@@ -28,14 +40,26 @@ def command_for(s:dict,key:str,cases:int,tail:int,seed:int)->list[str]:
 def run_harnesses(data:dict,cases:int,tail:int,seed:int)->None:
  for s in data['slices']:
   for key in HARNESS_KEYS:subprocess.run(command_for(s,key,cases,tail,seed),cwd=ROOT,check=True)
+def run_current_saturation(data:dict)->dict:
+ current=data['slices'][-1];sat=current.get('saturation')
+ if not isinstance(sat,dict):fail('current slice saturation contract missing')
+ required={'cases','mutations','edges','tail','seed'}
+ if set(sat)!=required or any(isinstance(sat[k],bool) or not isinstance(sat[k],int) for k in required):fail('current slice saturation contract invalid')
+ if min(sat.values())<0 or sat['cases']<1 or sat['mutations']<1 or sat['edges']<1:fail('current slice saturation bounds invalid')
+ sizes={'stress':sat['cases'],'mutations':sat['mutations'],'edges':sat['edges']}
+ for key in HARNESS_KEYS:subprocess.run(command_for(current,key,sizes[key],sat['tail'],sat['seed']),cwd=ROOT,check=True)
+ return {'slice':current['id'],**sat}
 def main()->int:
- ap=argparse.ArgumentParser();ap.add_argument('--execute',action='store_true');ap.add_argument('--cases',type=int,default=100000);ap.add_argument('--tail',type=int,default=10000);ap.add_argument('--seed',type=int,default=883);a=ap.parse_args();data=load_contract();errors=validate_paths(data)
+ ap=argparse.ArgumentParser();ap.add_argument('--execute',action='store_true');ap.add_argument('--deep-current',action='store_true');ap.add_argument('--cases',type=int,default=100000);ap.add_argument('--tail',type=int,default=10000);ap.add_argument('--seed',type=int,default=883);a=ap.parse_args();data=load_contract();errors=validate_paths(data)
  if errors:fail('; '.join(errors))
  from ikant.invariants import PRODUCT_VERSION,INVARIANT_REGISTRY_SCHEMA,critical_ids
  if data.get('product_version')!=PRODUCT_VERSION:fail('product version drift')
- if INVARIANT_REGISTRY_SCHEMA!='ikant-invariant-registry/v0.23-test':fail('registry schema drift')
- required={'AGY-001','AGY-002','AGY-003','EMB-001','EMB-002','WEB-001','WEB-002','NAT-001','NAT-002','NAT-003','MLR-001','MLR-002','MLR-003'}
- if not required.issubset(set(critical_ids())):fail('S1-S5 invariant coverage drift')
+ suffix=SCHEMA_RE.fullmatch(data['schema']).group(1)
+ if INVARIANT_REGISTRY_SCHEMA!='ikant-invariant-registry/'+suffix:fail('registry schema drift')
+ required={inv for s in data['slices'] for inv in s['invariants']}
+ if not required.issubset(set(critical_ids())):fail('registered slice invariant coverage drift')
+ if a.execute and a.deep_current:fail('--execute and --deep-current are mutually exclusive')
  if a.execute:run_harnesses(data,a.cases,a.tail,a.seed)
- print(json.dumps({'schema':'ikant-product-boundary/v0.23-test','status':'PASS','product_version':PRODUCT_VERSION,'slices':list(EXPECTED_SLICES),'harnesses_executed':bool(a.execute)},sort_keys=True));return 0
+ saturation=run_current_saturation(data) if a.deep_current else None
+ print(json.dumps({'schema':'ikant-product-boundary/'+suffix,'status':'PASS','product_version':PRODUCT_VERSION,'slices':[s['id'] for s in data['slices']],'harnesses_executed':bool(a.execute),'current_saturation':saturation},sort_keys=True));return 0
 if __name__=='__main__':raise SystemExit(main())

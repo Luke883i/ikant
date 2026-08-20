@@ -1,16 +1,16 @@
-# iKant v0.23-test
+# iKant v0.24-test
 
-iKant is a governed local epistemic agent runtime. Product v0.23 materializes **S1 Agency Kernel, S2 Local Embodiment, S3 Web Agency, S4 Native Agency, and S5 Managed Local Runtime & Model Supply Chain** on top of the existing Epistemic Core, Temporal Epistemics, Practical Reason, Planning, Execution Handoff and Host Conformance layers.
+iKant is a governed local epistemic agent runtime. Product v0.24 materializes **S1 Agency Kernel, S2 Local Embodiment, S3 Web Agency, S4 Native Agency, S5 Managed Local Runtime & Model Supply Chain, and S6 Temporal Autonomy** on top of the Epistemic Core, Temporal Epistemics, Practical Reason, Planning, Execution Handoff and Host Conformance layers.
 
 ## Constitutional boundary
 
-The v0.12 rights/access contract remains unchanged. S5 adds component acquisition and process supervision, not authority. The lattice remains non-collapsible:
+The v0.12 rights/access contract remains unchanged. S6 adds durable temporal control, not authority. The lattice remains non-collapsible:
 
-`evidence != permission != approval != grant != lease != execution != world truth`.
+`time != authority != evidence != permission != approval != grant != lease != execution != world truth`.
 
-Model output, downloaded component presence, engine health and runtime readiness all carry **zero epistemic and execution authority**. S1 grants/leases, S3 web effects and S4 native effects keep their existing explicit commit points. After ACTIVE, canonical human egress remains the sealed dashboard frame and machine output remains file-only.
+A due task or wake envelope can make an intention eligible for fresh consideration only. It cannot reuse a pre-wake approval, capability grant or execution lease, cannot satisfy host revalidation, and cannot perform a material action. Future material work starts again from a fresh human interaction and the existing S1-S4 execution gates.
 
-`PRODUCT_CONTRACT.json` is the cumulative product-slice manifest; `ikant.invariants` is the cross-cutting invariant registry; `scripts/product_boundary.py` discovers and falsifies every registered slice without adding per-version workflows.
+`PRODUCT_CONTRACT.json` is the cumulative product-slice manifest; `ikant.invariants` is the cross-cutting invariant registry; `scripts/product_boundary.py` derives all registered slices and can execute the current slice's contract-declared saturation budget without adding per-version workflows.
 
 ## One-command local runtime
 
@@ -18,10 +18,12 @@ Model output, downloaded component presence, engine health and runtime readiness
 ./ikant.sh
 ```
 
-S5 owns the complete language-engine lifecycle. On first launch it validates `MODEL_RUNTIME.json`, resumes or downloads exact pinned artifacts, enforces byte bounds, verifies SHA-256, atomically installs the pinned `llama.cpp` engine and Qwen GGUF, starts `llama-server` on a private loopback ephemeral port with a private API-key file and `--no-webui`, waits for health, then starts the local iKant daemon/PWA. If any step fails, startup is **BLOCKED**; no simulated fallback may declare READY.
+S5 still owns the verified model/engine lifecycle. S6 additionally starts a local temporal-control runner after the local service is constructed. It polls only while the runtime is ACTIVE and dashboard egress is exactly `DASHBOARD_LOCKED`; pending output, release, egress breach or `EXIT IKANT` suspend temporal polling.
 
-The baseline model is `Qwen3.5-0.8B-Q4_0` (~563 MB, Apache-2.0). Components are stored outside the repository under `XDG_DATA_HOME/ikant` or `~/.local/share/ikant` (override with `IKANT_COMPONENT_HOME`). The project persists only a zero-authority binding projection in `.ikant/model-runtime.json`; model endpoint, API key and model-server output are not persisted or exposed to the browser.
+Temporal tasks are current-session, exact human `ACTION_CONFIRMATION` controls. One-shot and bounded fixed-duration recurrence are supported. Missed recurring intervals coalesce into one wake; wall-clock rollback blocks the scheduler until the prior clock floor is reached; process waiting uses a monotonic clock. The hash-chained temporal journal is canonical and `.ikant/temporal-autonomy.json` is a zero-authority rebuildable projection.
 
-Pre-ACTIVE acquisition progress is emitted by the launcher. A rich componentized browser installer is intentionally not introduced before the Human Surface Protocol v2 slice, because doing so would create a parallel semantic human surface under the current exact-frame egress contract.
+S6 does **not** install an OS background daemon and does not wake a powered-off or sleeping machine. If iKant is restarted later, persisted tasks are replayed and an overdue recurrence is coalesced into one control wake. Rich human presentation and work-item consumption of these wakes remain intentionally deferred to S7 Human Surface Protocol v2, avoiding a second human egress surface.
 
-Canonical CLI execution remains `python -m ikant`. See `IKANT_ACCESS_CONTRACT.md`, `RIGHTS.md`, `docs/S5_MANAGED_LOCAL_RUNTIME.md`, and the prior S3/S4 design notes.
+The S5 baseline model remains `Qwen3.5-0.8B-Q4_0` (~563 MB, Apache-2.0); `MODEL_RUNTIME.json` retains its historical S5/v0.23 identity even though the product has advanced to v0.24.
+
+Canonical CLI execution remains `python -m ikant`. See `IKANT_ACCESS_CONTRACT.md`, `RIGHTS.md`, `docs/S5_MANAGED_LOCAL_RUNTIME.md`, and `docs/S6_TEMPORAL_AUTONOMY.md`.

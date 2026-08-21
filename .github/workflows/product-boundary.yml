@@ -29,7 +29,7 @@ jobs:
           python scripts/check_invariant_registry.py
           python scripts/product_boundary.py
       - name: Constitutional and registered-slice unit tests
-        run: python -W error::ResourceWarning -m unittest tests.test_constitutional_convergence_v22 tests.test_product_convergence_v23 tests.test_product_convergence_v24 tests.test_product_convergence_v25 tests.test_agency_kernel_v19 tests.test_local_embodiment_v20 tests.test_web_agency_v21 tests.test_native_agency_v22 tests.test_managed_local_runtime_v23 tests.test_temporal_autonomy_v24 tests.test_human_surface_protocol_v25 -v
+        run: python -W error::ResourceWarning -m unittest tests.test_constitutional_convergence_v22 tests.test_product_convergence_v23 tests.test_product_convergence_v24 tests.test_product_convergence_v25 tests.test_product_convergence_v26 tests.test_agency_kernel_v19 tests.test_local_embodiment_v20 tests.test_web_agency_v21 tests.test_native_agency_v22 tests.test_managed_local_runtime_v23 tests.test_temporal_autonomy_v24 tests.test_human_surface_protocol_v25 tests.test_advanced_web_shell_v26 -v
 
   registered_boundary:
     runs-on: ubuntu-latest

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#111111">
-  <title>iKant</title>
+  <title>iKant · Advanced Web Shell</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="stylesheet" href="/styles.css">
 </head>
@@ -12,7 +12,7 @@
   <main class="shell" aria-labelledby="brand">
     <header class="topbar">
       <div>
-        <div class="eyebrow">LOCAL EMBODIMENT</div>
+        <div class="eyebrow">ADVANCED LOCAL WEB SHELL · ZERO AUTHORITY</div>
         <h1 id="brand">iKant</h1>
       </div>
       <button id="pair-reset" class="ghost" type="button" hidden>Disconnetti UI</button>
@@ -20,8 +20,8 @@
 
     <section id="pair-panel" class="panel narrow" aria-labelledby="pair-title">
       <p class="eyebrow">PAIRING LOCALE</p>
-      <h2 id="pair-title">Collega questa UI al daemon</h2>
-      <p>Inserisci il codice mostrato dal comando <code>./ikant.sh</code>. Il codice è monouso.</p>
+      <h2 id="pair-title">Collega questa shell al runtime</h2>
+      <p>Inserisci il codice mostrato da <code>./ikant.sh</code>. Il pairing è monouso e non attribuisce autorità al browser.</p>
       <form id="pair-form">
         <label for="pair-code">Codice pairing</label>
         <div class="row">
@@ -34,9 +34,9 @@
 
     <section id="admission-panel" class="panel" hidden aria-labelledby="admission-title">
       <p class="eyebrow">ADMISSION</p>
-      <h2 id="admission-title">T&C → PROBE → INITIALIZE</h2>
+      <h2 id="admission-title">T&amp;C → PROBE → INITIALIZE</h2>
       <div class="steps" aria-label="Lifecycle">
-        <span id="step-accept">1 · T&C</span><span id="step-probe">2 · PROBE</span><span id="step-init">3 · INITIALIZE</span>
+        <span id="step-accept">1 · T&amp;C</span><span id="step-probe">2 · PROBE</span><span id="step-init">3 · INITIALIZE</span>
       </div>
       <pre id="terms" class="terms" tabindex="0" aria-label="iKant access contract"></pre>
       <p class="digest">SHA-256: <code id="terms-digest"></code></p>
@@ -55,27 +55,43 @@
     </section>
 
     <section id="active-panel" class="active" hidden aria-label="iKant ACTIVE">
-      <div class="dashboard-wrap">
-        <div class="dashboard-head">
-          <span>CANONICAL HUMAN FRAME</span>
-          <span>VERBATIM</span>
+      <aside class="shell-rail" aria-label="S8 local shell controls">
+        <div>
+          <p class="eyebrow">S8 · SINGLE WRITER</p>
+          <div id="shell-status" class="shell-status" aria-live="polite">LOCAL CONTROL · BINDING</div>
         </div>
-        <pre id="dashboard" class="dashboard" tabindex="0" aria-live="polite" aria-atomic="true"></pre>
-      </div>
+        <dl class="shell-contract">
+          <div><dt>Output</dt><dd>HSPv2 sealed viewport</dd></div>
+          <div><dt>Delivery</dt><dd>exact visible-text ACK</dd></div>
+          <div><dt>Retry</dt><dd>idempotent / frame-bound</dd></div>
+          <div><dt>Model</dt><dd>no direct browser transport</dd></div>
+          <div><dt>Authority</dt><dd>shell = 0</dd></div>
+        </dl>
+        <button id="sync-button" class="ghost rail-action" type="button">SYNC FRAME</button>
+      </aside>
 
-      <form id="turn-form" class="composer">
-        <label class="sr-only" for="intent">Messaggio a iKant</label>
-        <textarea id="intent" rows="3" maxlength="65536" placeholder="Scrivi a iKant…"></textarea>
-        <div class="composer-actions">
-          <button id="voice-button" class="ghost" type="button">Voce input</button>
-          <button id="exit-button" class="ghost" type="button">EXIT IKANT</button>
-          <button id="send-button" type="submit">Invia</button>
+      <div class="workspace">
+        <div class="dashboard-wrap">
+          <div class="dashboard-head">
+            <span>CANONICAL HUMAN FRAME</span>
+            <span>HSPv2 · VERBATIM</span>
+          </div>
+          <pre id="dashboard" class="dashboard" tabindex="0" aria-live="polite" aria-atomic="true"></pre>
         </div>
-      </form>
-      <p id="active-error" class="error" role="alert"></p>
-      <div id="released-panel" class="released" hidden>
-        <p>iKant ha rilasciato il canale umano.</p>
-        <button id="resume-button" type="button">RESUME IKANT</button>
+
+        <form id="turn-form" class="composer">
+          <label class="sr-only" for="intent">Messaggio a iKant</label>
+          <textarea id="intent" rows="3" maxlength="65536" placeholder="Scrivi a iKant… · Ctrl/Cmd+Enter per inviare"></textarea>
+          <div class="composer-actions">
+            <button id="voice-button" class="ghost" type="button">Voce input</button>
+            <button id="exit-button" class="ghost" type="button">EXIT IKANT</button>
+            <button id="send-button" type="submit">Invia</button>
+          </div>
+        </form>
+        <div id="released-panel" class="released" hidden>
+          <p>Canale iKant rilasciato dopo ACK esatto.</p>
+          <button id="resume-button" type="button">RESUME IKANT</button>
+        </div>
       </div>
     </section>
   </main>

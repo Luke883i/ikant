@@ -1,10 +1,23 @@
 from __future__ import annotations
 import argparse,json,re,subprocess,sys
 from pathlib import Path
-ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT))
-HARNESS_KEYS=('stress','mutations','edges')
-SCHEMA_RE=re.compile(r'^ikant-product-contract/(v0\.\d+-test)$')
+ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT));HARNESS_KEYS=('stress','mutations','edges');SCHEMA_RE=re.compile(r'^ikant-product-contract/(v0\.\d+-test)$');SLICE_RE=re.compile(r'^S([1-9]\d*)(bis)?$')
 def fail(msg:str)->None:raise SystemExit(msg)
+def valid_lineage(ids:list[str])->bool:
+ if not ids or ids[0]!='S1':return False
+ prev_n=1;prev_bis=False
+ for sid in ids[1:]:
+  m=SLICE_RE.fullmatch(sid)
+  if not m:return False
+  n=int(m.group(1));bis=bool(m.group(2))
+  if prev_bis:
+   if bis or n!=prev_n+1:return False
+  else:
+   if bis:
+    if n!=prev_n:return False
+   elif n!=prev_n+1:return False
+  prev_n,prev_bis=n,bis
+ return True
 def load_contract()->dict:
  p=ROOT/'PRODUCT_CONTRACT.json'
  try:data=json.loads(p.read_text(encoding='utf-8'))
@@ -13,8 +26,8 @@ def load_contract()->dict:
  if not match:fail('product contract schema drift')
  slices=data.get('slices')
  if not isinstance(slices,list) or not slices:fail('product slices missing')
- ids=[str(x.get('id') or '') for x in slices];expected=[f'S{i}' for i in range(1,len(slices)+1)]
- if ids!=expected:fail('product slice order/coverage drift')
+ ids=[str(x.get('id') or '') for x in slices]
+ if not valid_lineage(ids):fail('product slice order/coverage drift')
  if data.get('constitutional_convergence')!=ids[-1]:fail('constitutional convergence must equal current slice')
  return data
 def validate_paths(data:dict)->list[str]:

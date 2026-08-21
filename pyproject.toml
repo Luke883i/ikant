@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ikant"
-version = "0.28.0a1"
-description = "Governed local epistemic agent runtime with chat-first product workspace, progressive Surface B inspection, local voice, typed human surface and capability-bound agency"
+version = "0.29.0a1"
+description = "Governed local epistemic agent runtime with auditable bootstrap, chat-first workspace, Surface B inspection, local voice, typed human surface and capability-bound agency"
 readme = "README.md"
 requires-python = ">=3.11"
 

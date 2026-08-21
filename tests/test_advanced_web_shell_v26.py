@@ -214,6 +214,7 @@ class AdvancedWebShellV26Tests(unittest.TestCase):
         html = (ROOT/"ikant"/"web"/"index.html").read_text(encoding="utf-8")
         http = (ROOT/"ikant"/"local_http.py").read_text(encoding="utf-8")
         local_app = (ROOT/"ikant"/"local_app.py").read_text(encoding="utf-8")
+        product = (ROOT/"ikant"/"product_experience.py").read_text(encoding="utf-8")
         self.assertIn("/api/v2/shell/open", app)
         self.assertIn("/api/v2/shell/command", app)
         self.assertIn("/api/v2/shell/ack", app)
@@ -222,7 +223,8 @@ class AdvancedWebShellV26Tests(unittest.TestCase):
         self.assertIn("_legacy_active_blocked", http)
         for route in ("/api/v1/frame","/api/v1/frame/ack","/api/v1/turn","/api/v1/resume","/api/v1/initialize"):
             self.assertIn(route, http)
-        self.assertIn("AdvancedWebShellService", local_app)
+        self.assertIn("ProductBootstrapCoordinator", local_app)
+        self.assertIn("AdvancedWebShellService", product)
 
 
 if __name__ == "__main__":

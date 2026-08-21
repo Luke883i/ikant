@@ -11,6 +11,6 @@ class ProductConvergenceV25Tests(unittest.TestCase):
  def test_manifests_preserve_hsp_noncollapse(self):
   for name in ('ADMISSION.json','BOOTSTRAP.json'):
    m=json.loads((ROOT/name).read_text(encoding='utf-8'));s=m['human_surface_protocol'];self.assertEqual(s['schema'],'ikant-human-surface-protocol/v0.25-test');self.assertTrue(s['single_sealed_dashboard_frame']);self.assertTrue(s['typed_payload_exclusive']);self.assertFalse(s['raw_model_tokens_visible']);self.assertFalse(s['parallel_active_human_messages']);self.assertFalse(s['approval_request_is_authorization']);self.assertFalse(s['approval_request_records_decision']);self.assertEqual(s['epistemic_authority'],0.0);self.assertEqual(s['execution_authority'],0.0)
- def test_browser_active_error_channel_remains_removed(self):
-  js=(ROOT/'ikant'/'web'/'app.js').read_text(encoding='utf-8');html=(ROOT/'ikant'/'web'/'index.html').read_text(encoding='utf-8');self.assertIn('recoverActiveFrame',js);self.assertNotIn("setError('active-error',error.message)",js);self.assertNotIn('id="active-error"',html)
+ def test_browser_parallel_error_channel_remains_removed_under_s8_recovery(self):
+  js=(ROOT/'ikant'/'web'/'app.js').read_text(encoding='utf-8');html=(ROOT/'ikant'/'web'/'index.html').read_text(encoding='utf-8');self.assertIn('recoverShell',js);self.assertNotIn("setError('active-error',error.message)",js);self.assertNotIn('id="active-error"',html)
 if __name__=='__main__':unittest.main()

@@ -22,7 +22,10 @@ class ObservableProductBootstrapCoordinator(ProductBootstrapCoordinator):
    if self._stopping:raise LocalAppError('product runtime is stopping')
    if self._delegate is not None:return self.product_status()
    if self._thread is not None and self._thread.is_alive():return self.product_status()
-   self._attempt+=1;self._attempt_id=new_attempt_id();self._stage='PREPARING';self._progress={'phase':'PREPARING','target':'verified local runtime','bytes':0};self._planned_bytes=0;self._error_code=None;self._error_detail=None;self._terminal_steps=set();self._started_steps=set();self._diag('WEB_APP','PASS','LOCAL_WEB_AVAILABLE','iKant local web application','loopback product surface is available while runtime preparation continues');self._diag('MANIFEST','START','RUNTIME_MANIFEST_LOAD','MODEL_RUNTIME.json','loading and validating pinned managed-runtime manifest');t=threading.Thread(target=self._prepare,name='ikant-product-bootstrap',daemon=True);self._thread=t;t.start()
+   self._attempt+=1;self._attempt_id=new_attempt_id();self._stage='PREPARING';self._progress={'phase':'PREPARING','target':'verified local runtime','bytes':0};self._planned_bytes=0;self._error_code=None;self._error_detail=None;self._terminal_steps=set();self._started_steps=set()
+   if self.bootstrap_journal.state.integrity!='OK':
+    self._delegate=None;self._stage='BLOCKED';self._error_code='BOOTSTRAP_DIAGNOSTICS_CORRUPT';self._error_detail='bootstrap journal integrity unavailable';self._diagnostic_degraded='CORRUPT';self._progress={'phase':'BLOCKED','target':'.ikant/bootstrap-events.jsonl','bytes':0};return self.product_status()
+   self._diag('WEB_APP','PASS','LOCAL_WEB_AVAILABLE','iKant local web application','loopback product surface is available while runtime preparation continues');self._diag('MANIFEST','START','RUNTIME_MANIFEST_LOAD','MODEL_RUNTIME.json','loading and validating pinned managed-runtime manifest');t=threading.Thread(target=self._prepare,name='ikant-product-bootstrap',daemon=True);self._thread=t;t.start()
   return self.product_status()
  def _component_step(self,target):
   low=str(target or '').lower()
@@ -75,7 +78,8 @@ class ObservableProductBootstrapCoordinator(ProductBootstrapCoordinator):
  def bootstrap_status(self):
   with self._lock:attempt=max(1,self._attempt);attempt_id=self._attempt_id;stage=self._stage;code=self._error_code;detail=self._error_detail;degraded=self._diagnostic_degraded
   out=self.bootstrap_journal.status(attempt_id=attempt_id,attempt=attempt);out['schema']=BOOTSTRAP_OBSERVABILITY_SCHEMA;out['runtime_stage']=stage;out['diagnostics_degraded']=degraded
-  if stage=='BLOCKED' and out['summary']['failed']==0:out['overall']='BLOCKED';out['fallback_failure']={'code':code or 'BOOTSTRAP_FAILED','detail':detail or 'runtime blocked; structured journal unavailable','remediation':{'id':'OPEN_RAW_DIAGNOSTICS','label':'Controlla il log diagnostico e riprova','action':'retry'}}
+  if stage=='BLOCKED' and out['summary']['failed']==0:
+   corrupt=code=='BOOTSTRAP_DIAGNOSTICS_CORRUPT';out['overall']='BLOCKED';out['fallback_failure']={'code':code or 'BOOTSTRAP_FAILED','detail':detail or 'runtime blocked; structured journal unavailable','remediation':{'id':'ARCHIVE_CORRUPT_DIAGNOSTICS' if corrupt else 'OPEN_RAW_DIAGNOSTICS','label':'Preserva il log corrotto e riavvia iKant' if corrupt else 'Controlla il log diagnostico e riprova','action':'manual' if corrupt else 'retry'}}
   out['silent_failure']=bool(stage=='BLOCKED' and not (out['summary']['failed'] or out.get('fallback_failure')));return out
  def bootstrap_events(self,after_seq=0,limit=128):
   try:after=max(0,int(after_seq));size=max(1,min(256,int(limit)))

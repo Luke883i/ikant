@@ -56,6 +56,12 @@ def make_handler(service,pairing,*,assets_dir:Path,allowed_hosts:frozenset[str],
             if origin and not origin_allowed(self.headers.get('Origin'),host):self._error(403,'origin not allowed');return False
             if auth and not pairing.authenticate(self.headers.get('Authorization')):self._error(401,'pairing authentication required');return False
             return True
+        def _shell_claimed(self):
+            check=getattr(service,'shell_claimed',None)
+            try:return bool(check()) if callable(check) else False
+            except Exception:return True
+        def _legacy_active_blocked(self,path):
+            return runtime_active(service.root) and self._shell_claimed() and path in {'/api/v1/frame','/api/v1/frame/ack','/api/v1/turn','/api/v1/resume','/api/v1/initialize','/api/v1/voice/transcribe'}
         def do_GET(self):
             path=self.path.split('?',1)[0]
             if path.startswith('/api/'):
@@ -63,6 +69,7 @@ def make_handler(service,pairing,*,assets_dir:Path,allowed_hosts:frozenset[str],
                     if self._guard(auth=False):self._json(200,pairing.public_status())
                     return
                 if not self._guard():return
+                if self._legacy_active_blocked(path):self._empty(409);return
                 try:
                     if path=='/api/v1/state':out=service.lifecycle()
                     elif path=='/api/v1/admission':out=service.admission_view()
@@ -92,6 +99,17 @@ def make_handler(service,pairing,*,assets_dir:Path,allowed_hosts:frozenset[str],
                 except Exception as exc:self._error(400,str(exc))
                 return
             if not self._guard(origin=True):return
+            if path.startswith('/api/v2/shell/'):
+                try:
+                    body=_read_json(self)
+                    if path=='/api/v2/shell/open':out=service.shell_open(body.get('client_id'))
+                    elif path=='/api/v2/shell/command':out=service.shell_command(body)
+                    elif path=='/api/v2/shell/ack':out=service.shell_ack(body)
+                    else:self._empty(404);return
+                    self._json(200,out)
+                except Exception:self._empty(409)
+                return
+            if self._legacy_active_blocked(path):self._empty(409);return
             try:
                 if path=='/api/v1/voice/transcribe':
                     try:n=int(self.headers.get('Content-Length') or '0')

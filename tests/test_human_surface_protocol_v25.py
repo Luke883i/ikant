@@ -46,7 +46,7 @@ class HumanSurfaceProtocolV25Tests(unittest.TestCase):
  def test_malformed_degraded_projection_returns_fail_not_validator_exception(self):
   d=project_human_surface(FakeRuntime(),base_dashboard(),kind='DEGRADED',degraded={'code':'D','message':'degraded','capability_loss':['voice']});bad=copy.deepcopy(d);bad['human_surface_protocol']['payload']['degraded']['capability_loss']=[{}];rehash(bad['human_surface_protocol']);ok,e=validate_human_surface(bad);self.assertFalse(ok);self.assertIn('degraded_capability_loss',e)
  def test_active_browser_has_no_parallel_error_text_channel(self):
-  js=(ROOT/'ikant'/'web'/'app.js').read_text(encoding='utf-8');self.assertIn('recoverActiveFrame',js);self.assertNotIn("setError('active-error',error.message)",js);self.assertNotIn("setError('active-error',_error.message)",js)
+  js=(ROOT/'ikant'/'web'/'app.js').read_text(encoding='utf-8');html=(ROOT/'ikant'/'web'/'index.html').read_text(encoding='utf-8');self.assertIn('recoverShell',js);self.assertNotIn("setError('active-error',error.message)",js);self.assertNotIn("setError('active-error',_error.message)",js);self.assertNotIn('id="active-error"',html)
  def test_session_host_projects_protocol_before_seal(self):
   text=(ROOT/'ikant'/'session_host.py').read_text(encoding='utf-8');self.assertLess(text.index('project_human_surface'),text.index('prepare_text_frame(runtime,render_dashboard_ascii'))
 if __name__=='__main__':unittest.main()

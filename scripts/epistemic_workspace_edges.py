@@ -3,6 +3,13 @@ import argparse,json,random
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 FAMILIES=40
+EDGE_VECTORS=64
+DENIAL_KEYS=(
+ ('FRAME_DRIFT','frame',True),('SESSION_DRIFT','session',True),('CYCLE_DRIFT','cycle',True),
+ ('PATH_ESCAPE','path',True),('PENDING_FRAME','pending',False),('SNAPSHOT_BOUND','size',True),
+ ('HISTORY_BOUND','history',True),('OBJECT_BOUND','objects',True),('READ_ONLY','read_only',True),
+ ('SINGLE_SURFACE','single_surface',True),
+)
 
 def code_audit()->list[str]:
  e=[]
@@ -28,18 +35,28 @@ def code_audit()->list[str]:
  if '@media(prefers-reduced-motion:reduce)' not in css:e.append('reduced_motion')
  return e
 
+def semantic_edge(i:int)->tuple[int,str,bool]:
+ f=i%FAMILIES;vector=(i//FAMILIES)%EDGE_VECTORS
+ flags={'frame':True,'session':True,'cycle':True,'path':True,'pending':False,'size':True,'history':True,'objects':True,'read_only':True,'single_surface':True}
+ primary=vector%11
+ if primary:
+  _,key,want=DENIAL_KEYS[primary-1];flags[key]=not want
+ if vector>=11:
+  _,key,want=DENIAL_KEYS[(vector*7+f)%len(DENIAL_KEYS)];flags[key]=not want
+ consequence='ALLOW'
+ for name,key,want in DENIAL_KEYS:
+  if flags[key]!=want:consequence=name;break
+ return f,consequence,consequence=='ALLOW'
+
 def run(cases:int,tail:int,seed:int)->dict:
  rng=random.Random(seed);hits=[0]*FAMILIES;base=set();novel=set();viol=0
  for i in range(cases+tail):
-  f=i%FAMILIES;hits[f]+=1
-  frame_ok=(i&1)==0;session_ok=(i%3)!=0;cycle_ok=(i%5)!=0;path_ok=(i%7)!=0;pending=(i%11)==0;size_ok=(i%13)!=0;history_ok=(i%17)!=0;objects_ok=(i%19)!=0;read_only=(i%23)!=0;single_surface=(i%29)!=0
-  allow=frame_ok and session_ok and cycle_ok and path_ok and not pending and size_ok and history_ok and objects_ok and read_only and single_surface
-  rng.getrandbits(32)
-  sig=(f,frame_ok,session_ok,cycle_ok,path_ok,pending,size_ok,history_ok,objects_ok,read_only,single_surface,allow)
-  if allow and not all((frame_ok,session_ok,cycle_ok,path_ok,not pending,size_ok,history_ok,objects_ok,read_only,single_surface)):viol+=1
+  f,consequence,allow=semantic_edge(i);hits[f]+=1;rng.getrandbits(32)
+  if allow and consequence!='ALLOW':viol+=1
+  sig=(f,consequence,allow)
   if i<cases:base.add(sig)
   elif sig not in base:novel.add(sig)
- return {'cases':cases,'tail':tail,'seed':seed,'families_total':FAMILIES,'families_covered':sum(x>0 for x in hits),'signatures':len(base),'violations':viol,'tail_novelty':len(novel)}
+ return {'cases':cases,'tail':tail,'seed':seed,'edge_vectors':EDGE_VECTORS,'families_total':FAMILIES,'families_covered':sum(x>0 for x in hits),'signatures':len(base),'violations':viol,'tail_novelty':len(novel)}
 
 def minimality(seed:int,tail:int)->dict:
  required=(1<<13)-1;forbidden=sum(1<<i for i in range(13,20));accepted=0;best=99

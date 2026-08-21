@@ -3,6 +3,7 @@ import json,tempfile,threading,unittest
 from pathlib import Path
 from ikant.epistemic_workspace import EpistemicWorkspaceCoordinator,EpistemicWorkspaceError,EpistemicWorkspaceReader
 from ikant.epistemic_projection import EPISTEMIC_INDEX_SCHEMA,EPISTEMIC_WORKSPACE_SCHEMA,MAX_HISTORY,MAX_OBJECTS,MAX_SNAPSHOT_BYTES
+from scripts.epistemic_workspace_edges import run as run_epistemic_edges
 ROOT=Path(__file__).resolve().parents[1]
 FRAME={'runtime_session_id':'SES-S10','epoch':2,'frame_seq':7,'frame_sha256':'a'*64};CYCLE='CYC-S10-1'
 
@@ -47,6 +48,10 @@ class EpistemicWorkspaceV28Tests(unittest.TestCase):
   with self.assertRaises(PermissionError):c.epistemic_index('wrong-shell-1234567890','client-1234567890123456',FRAME)
   base.delegate.web_shell._pending={'seq':8}
   with self.assertRaises(EpistemicWorkspaceError):c.epistemic_index('shell-1234567890123456','client-1234567890123456',FRAME)
+ def test_edge_oracle_converges_at_registered_boundary_scales(self):
+  for seed in (17,883,2026):
+   short=run_epistemic_edges(100000,10000,seed);self.assertEqual(short['violations'],0);self.assertEqual(short['families_covered'],40);self.assertEqual(short['tail_novelty'],0)
+  long_tail=run_epistemic_edges(100000,100000,883);self.assertEqual(long_tail['tail_novelty'],0);self.assertEqual(long_tail['signatures'],440)
  def test_static_ui_and_http_preserve_s9_semantic_surface(self):
   js=(ROOT/'ikant/web/epistemic.js').read_text(encoding='utf-8');css=(ROOT/'ikant/web/epistemic.css').read_text(encoding='utf-8');http=(ROOT/'ikant/epistemic_http.py').read_text(encoding='utf-8');app=(ROOT/'ikant/local_app.py').read_text(encoding='utf-8');index=(ROOT/'ikant/web/index.html').read_text(encoding='utf-8');sw=(ROOT/'ikant/web/sw.js').read_text(encoding='utf-8')
   self.assertEqual(index.count('id="dashboard"'),1);self.assertNotIn('dashboard',js);self.assertIn('/api/v4/epistemic/index',http);self.assertIn('/api/v4/epistemic/artifact',http);self.assertIn('make_handler',http);self.assertNotIn('do_POST',http);self.assertIn('Graph',js);self.assertIn('List',js);self.assertIn("event.code==='Space'",js);self.assertIn('bindingHeaders',js);self.assertNotIn('https://',js+css);self.assertIn('prefers-reduced-motion:reduce',css);self.assertIn('EpistemicWorkspaceCoordinator',app);self.assertIn('epistemic_http',app);self.assertIn('ikant-s10-epistemic-v1',sw)

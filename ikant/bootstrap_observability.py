@@ -28,6 +28,7 @@ def classify_failure(step:str,exc:BaseException):
   if 'exited before readiness' in msg:return 'ENGINE_EXITED_EARLY',{'id':'CHECK_ENGINE_AND_RETRY','label':'Controlla il runtime LLM e riprova','action':'retry'}
   if 'readiness probe failed' in msg:return 'ENGINE_READINESS_FAILED',{'id':'CHECK_ENGINE_AND_RETRY','label':'Controlla la readiness del runtime LLM e riprova','action':'retry'}
   return 'ENGINE_START_FAILED',{'id':'CHECK_ENGINE_AND_RETRY','label':'Controlla il runtime locale e riprova','action':'retry'}
+ if 'ArchiveTopologyError' in names:return 'ENGINE_ARCHIVE_UNSAFE_TOPOLOGY',{'id':'VERIFY_ENGINE_ARTIFACT','label':'Verifica la compatibilità del pacchetto engine','action':'manual'}
  if 'ModelManagerError' in names or 'ComponentStoreError' in names:return 'COMPONENT_INSTALL_FAILED',{'id':'CLEAR_COMPONENT_CACHE_AND_RETRY','label':'Ripristina il componente locale e riprova','action':'retry'}
  if step=='MANIFEST' or 'ComponentManifestError' in names or 'JSONDecodeError' in names:return 'RUNTIME_MANIFEST_INVALID',{'id':'VERIFY_RUNTIME_MANIFEST','label':'Verifica MODEL_RUNTIME.json','action':'manual'}
  return 'BOOTSTRAP_FAILED',{'id':'OPEN_RAW_DIAGNOSTICS','label':'Apri il log tecnico e riprova','action':'retry'}

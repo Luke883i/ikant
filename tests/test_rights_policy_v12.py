@@ -37,21 +37,35 @@ class RightsPolicyV12(unittest.TestCase):
         self.assertEqual(d.owner_authorization, "NOT_REQUIRED_BY_IKANT_POLICY")
         self.assertFalse(d.epistemic_authority)
 
-    def test_public_or_acceptance_alone_does_not_authorize_ai_study(self):
+    def test_public_or_acceptance_without_admission_does_not_authorize_ai_study(self):
         self.assertEqual(decide_owner_authorization(AccessMode.AI_ASSISTED_STUDY).owner_authorization, "RESERVED")
         self.assertEqual(decide_owner_authorization(AccessMode.AI_ASSISTED_STUDY, accepted_current_terms=True).owner_authorization, "RESERVED")
-        self.assertEqual(decide_owner_authorization(AccessMode.AI_ASSISTED_STUDY, accepted_current_terms=True, clean_admission=True).owner_authorization, "RESERVED")
 
-    def test_conforming_ai_study_is_owner_authorized(self):
-        d = decide_owner_authorization(AccessMode.AI_ASSISTED_STUDY, accepted_current_terms=True, clean_admission=True, technical_conformance=True)
+    def test_clean_chat_study_is_owner_authorized_without_local_runtime(self):
+        d = decide_owner_authorization(AccessMode.AI_ASSISTED_STUDY, accepted_current_terms=True, clean_admission=True, technical_conformance=False)
+        self.assertEqual(d.code, "OWNER_AUTHORIZED_CHAT_STUDY")
+        self.assertEqual(d.owner_authorization, "GRANTED_UNDER_CURRENT_IKANT_TERMS")
+        self.assertEqual(d.ikant_conformance, "NOT_REQUIRED_FOR_CHAT_STUDY")
+
+    def test_remediated_chat_study_is_prospective_and_nonconforming(self):
+        d = decide_owner_authorization(AccessMode.AUTOMATED_REPOSITORY_ANALYSIS, accepted_current_terms=True, remediated_admission=True)
+        self.assertEqual(d.code, "OWNER_AUTHORIZED_REMEDIATED_CHAT_STUDY")
+        self.assertEqual(d.owner_authorization, "GRANTED_PROSPECTIVELY_AFTER_REMEDIATION")
+        self.assertEqual(d.ikant_conformance, "NOT_CONFORMING")
+
+    def test_official_ikant_still_requires_clean_technical_conformance(self):
+        self.assertEqual(decide_owner_authorization(AccessMode.OFFICIAL_IKANT, accepted_current_terms=True, clean_admission=True).owner_authorization, "RESERVED")
+        d = decide_owner_authorization(AccessMode.OFFICIAL_IKANT, accepted_current_terms=True, clean_admission=True, technical_conformance=True)
         self.assertEqual(d.code, "OWNER_AUTHORIZED_CONFORMING_IKANT")
         self.assertEqual(d.ikant_conformance, "CONFORMING")
 
-    def test_materialization_is_bootstrap_only(self):
+    def test_materialization_is_bootstrap_only_and_requires_clean_admission(self):
         d = decide_owner_authorization(AccessMode.CONFORMANCE_MATERIALIZATION, accepted_current_terms=True, clean_admission=True)
         self.assertEqual(d.code, "MATERIALIZATION_FOR_CONFORMANCE_ALLOWED")
         self.assertEqual(d.owner_authorization, "GRANTED_FOR_CONFORMANCE_BOOTSTRAP")
         self.assertEqual(d.ikant_conformance, "PENDING")
+        denied = decide_owner_authorization(AccessMode.CONFORMANCE_MATERIALIZATION, accepted_current_terms=True, remediated_admission=True)
+        self.assertEqual(denied.owner_authorization, "RESERVED")
 
     def test_model_training_needs_separate_license_even_after_acceptance(self):
         d = decide_owner_authorization(AccessMode.MODEL_TRAINING, accepted_current_terms=True, clean_admission=True, technical_conformance=True)
@@ -67,8 +81,8 @@ class RightsPolicyV12(unittest.TestCase):
             self.assertFalse(d.epistemic_authority)
 
     def test_semantic_access_slice_has_zero_epistemic_authority(self):
-        s = semantic_access_slice(AccessMode.AI_ASSISTED_STUDY, accepted_current_terms=True, clean_admission=True, technical_conformance=True)
-        self.assertEqual(s["control"]["code"], "OWNER_AUTHORIZED_CONFORMING_IKANT")
+        s = semantic_access_slice(AccessMode.AI_ASSISTED_STUDY, accepted_current_terms=True, clean_admission=True)
+        self.assertEqual(s["control"]["code"], "OWNER_AUTHORIZED_CHAT_STUDY")
         self.assertEqual(s["epistemic_boundary"]["authority"], 0.0)
         self.assertFalse(s["epistemic_boundary"]["may_create_external_evidence"])
         self.assertFalse(s["epistemic_boundary"]["may_corroborate_claims"])
@@ -90,7 +104,7 @@ class RightsPolicyV12(unittest.TestCase):
 
     def test_rights_invariants_are_critical(self):
         ids = set(critical_ids())
-        self.assertTrue({"ADM-003", "RGT-001", "RGT-002", "RGT-003", "RGT-004", "EPI-002"} <= ids)
+        self.assertTrue({"ADM-003", "ADM-004", "RGT-001", "RGT-002", "RGT-003", "RGT-004", "EPI-002"} <= ids)
         self.assertEqual(registry_manifest()["contract_version"], "0.12.0")
 
 

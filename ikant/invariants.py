@@ -1,11 +1,30 @@
 from __future__ import annotations
 from typing import Any
 from ._invariants_base import *
-from ._invariants_base import Invariant, _INVARIANTS as _BASE_INVARIANTS
+from ._invariants_base import Invariant, _INVARIANTS as _RAW_BASE_INVARIANTS
 
 PRODUCT_VERSION = "0.28.0a1"
 INVARIANT_REGISTRY_SCHEMA = "ikant-invariant-registry/v0.28-test"
 
+_BASE_INVARIANTS = tuple(
+    Invariant(
+        "RGT-001",
+        "rights",
+        "Public visibility does not constitute the owner's permission for substantive AI-assisted study; current digest-bound acceptance authorizes same-session chat study in a clean admission context, while official/conforming iKant still additionally requires technical conformance.",
+        "CRITICAL",
+        "tests.test_rights_policy_v12",
+    ) if x.id == "RGT-001" else x
+    for x in _RAW_BASE_INVARIANTS
+)
+_ADMISSION_ERRATUM_INVARIANTS = (
+    Invariant(
+        "ADM-004",
+        "admission",
+        "A completed pre-acceptance breach remains non-retroactive, but after explicit re-presentation of the current terms and exact current-session acceptance it may transition only to prospective same-session chat-study authorization; remediated admission cannot materialize or claim a conforming local runtime.",
+        "CRITICAL",
+        "tests.test_chat_study_admission_v121",
+    ),
+)
 _S8_INVARIANTS = (
     Invariant("AWS-001","web_shell","The canonical ACTIVE PWA is bound to one paired runtime-session shell writer; same-client reopen is idempotent while second-client takeover and runtime-session drift fail closed.","CRITICAL","tests.test_advanced_web_shell_v26"),
     Invariant("AWS-002","web_shell","Shell operations are monotonically sequenced, whole-session idempotency-key unique and exactly bound to the last acknowledged sealed frame; a pending exact replay never re-executes the underlying turn and legacy ACTIVE mutation routes cannot bypass the claimed shell.","CRITICAL","tests.test_advanced_web_shell_v26"),
@@ -23,7 +42,7 @@ _S10_INVARIANTS = (
     Invariant("EPW-003","epistemic_workspace","Graph, list, peek, history and artifact controls are progressive read projections with zero epistemic/execution authority; presentation is neither evidence nor authorization and never creates a second semantic surface or browser-model path.","CRITICAL","tests.test_epistemic_workspace_v28"),
     Invariant("EPW-004","epistemic_workspace","The epistemic projection is not source truth, arbitrary event payload metadata is not exposed, PWA upgrade invalidates stale S9 assets, and S9/S8 interaction semantics remain unchanged outside the derived S10 read adapter.","CRITICAL","tests.test_epistemic_workspace_v28"),
 )
-_INVARIANTS = _BASE_INVARIANTS + _S8_INVARIANTS + _S9_INVARIANTS + _S10_INVARIANTS
+_INVARIANTS = _BASE_INVARIANTS + _ADMISSION_ERRATUM_INVARIANTS + _S8_INVARIANTS + _S9_INVARIANTS + _S10_INVARIANTS
 
 def invariants() -> tuple[Invariant, ...]: return _INVARIANTS
 def critical_ids() -> tuple[str, ...]: return tuple(x.id for x in _INVARIANTS if x.severity == "CRITICAL")

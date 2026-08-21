@@ -1,0 +1,17 @@
+{
+  "schema": "ikant-s10bis-hotfix2-falsification/v0.29-test",
+  "seed": 20260822,
+  "simulations": 10000,
+  "mutations": 10000,
+  "mutation_survivors": 0,
+  "kills": 10000,
+  "killed": 10000,
+  "kill_survivors": 0,
+  "no_novelty_tail": 1000,
+  "tail_novelty": 0,
+  "semantic_signatures": 3707,
+  "authority": {
+    "epistemic": 0.0,
+    "execution": 0.0
+  }
+}

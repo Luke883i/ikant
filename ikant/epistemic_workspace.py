@@ -50,9 +50,10 @@ class EpistemicWorkspaceReader:
   elif key=='DOCX':path=(self.artifacts_dir/f'CRC_SNAPSHOT_{cid}.docx').resolve();ctype='application/vnd.openxmlformats-officedocument.wordprocessingml.document';parent=self.artifacts_dir.resolve()
   else:raise EpistemicWorkspaceError('unsupported artifact kind')
   if path.parent!=parent or not path.is_file():raise EpistemicWorkspaceError('artifact unavailable')
-  if key=='JSON':
-   snap=load_json(path)
-   if str(snap.get('session_id') or '')!=session or str(snap.get('cycle_id') or '')!=cid:raise EpistemicWorkspaceError('artifact session/cycle mismatch')
+  companion=(self.cognitive_dir/f'{cid}.json').resolve()
+  if companion.parent!=self.cognitive_dir.resolve():raise EpistemicWorkspaceError('artifact companion path escape')
+  snap=load_json(companion)
+  if str(snap.get('session_id') or '')!=session or str(snap.get('cycle_id') or '')!=cid:raise EpistemicWorkspaceError('artifact session/cycle mismatch')
   raw=path.read_bytes()
   if len(raw)>16*1024*1024:raise EpistemicWorkspaceError('artifact outside download bound')
   meta={'schema':EPISTEMIC_ARTIFACT_SCHEMA,'runtime_session_id':session,'cycle_id':cid,'kind':key,'frame_binding':frame,'name':path.name,'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest(),'read_only':True,'epistemic_authority':0.0,'execution_authority':0.0}

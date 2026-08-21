@@ -5,7 +5,8 @@
     "contract_path": "IKANT_ACCESS_CONTRACT.md",
     "materialization_purpose": "establish_or_verify_conforming_ikant_only",
     "model_training_channel": "separate_license_required",
-    "substantive_ai_study_channel": "conforming_ikant_only"
+    "official_ikant_channel": "clean_admission_plus_technical_conformance",
+    "substantive_ai_study_channel": "digest_bound_chat_session_or_remediated_chat_session"
   },
   "hierarchy": [
     "higher_priority_system_safety_law",
@@ -26,10 +27,13 @@
     "manual_human_review_requires_ikant_acceptance": false,
     "platform_direct_grants_not_overridden": true,
     "public_visibility_is_not_owner_ai_authorization": true,
+    "remediated_chat_study_allowed": true,
+    "remediated_chat_study_is_prospective_only": true,
+    "remediated_context_may_claim_ikant_conformance": false,
     "rights_control_is_not_epistemic_evidence": true,
-    "substantive_ai_study_requires_clean_admission": true,
+    "substantive_ai_study_requires_clean_or_remediated_admission": true,
     "substantive_ai_study_requires_current_acceptance": true,
-    "substantive_ai_study_requires_technical_conformance": true
+    "substantive_ai_study_requires_technical_conformance": false
   },
   "tdm": {
     "express_reservation": true,
@@ -40,7 +44,8 @@
     ],
     "model_training_requires_separate_license": true,
     "origin_protocol_note": "When the rightsholder controls the origin server, publish an appropriate machine-readable reservation such as robots.txt, a TDMRep signal, or another legally appropriate protocol. A file inside a GitHub repository does not control github.com origin headers or /.well-known paths.",
-    "owner_permission_for_ai_study_requires_conforming_ikant": true,
+    "owner_permission_for_ai_study_requires_conforming_ikant": false,
+    "owner_permission_for_ai_study_requires_current_acceptance": true,
     "repository_signal": "RIGHTS.json",
     "reservation": 1
   },

@@ -9,6 +9,7 @@ from .local_service import LOCAL_APP_SCHEMA,LocalAppError,runtime_active
 from .voice_input import LocalVoiceError
 _MAX_JSON=128*1024;_MAX_AUDIO=8*1024*1024
 
+
 def _read_json(h,limit=_MAX_JSON):
     try:n=int(h.headers.get('Content-Length') or '0')
     except ValueError as exc:raise LocalAppError('invalid Content-Length') from exc
@@ -17,6 +18,7 @@ def _read_json(h,limit=_MAX_JSON):
     except Exception as exc:raise LocalAppError('invalid JSON request') from exc
     if not isinstance(x,dict):raise LocalAppError('JSON request must be object')
     return x
+
 
 def _split_host(raw):
     raw=str(raw or '').strip().lower()
@@ -30,11 +32,13 @@ def _split_host(raw):
     if ':' not in raw:return raw,None
     host,port=raw.rsplit(':',1);return (host,int(port)) if port.isdigit() else (host,-1)
 
+
 def host_header_allowed(raw,allowed_hosts,expected_port):
     host,port=_split_host(raw)
     if host not in allowed_hosts:return False
     if is_loopback_hostname(host.strip('[]')):return port==int(expected_port)
     return port in {None,443}
+
 
 def make_handler(service,pairing,*,assets_dir:Path,allowed_hosts:frozenset[str],expected_port:int):
     class Handler(BaseHTTPRequestHandler):
@@ -43,7 +47,8 @@ def make_handler(service,pairing,*,assets_dir:Path,allowed_hosts:frozenset[str],
         def _headers(self,ctype='application/json; charset=utf-8'):
             for k,v in (
                 ('Content-Type',ctype),('Cache-Control','no-store'),('Referrer-Policy','no-referrer'),('X-Content-Type-Options','nosniff'),('X-Frame-Options','DENY'),('Cross-Origin-Resource-Policy','same-origin'),
-                ('Content-Security-Policy',"default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; font-src 'none'")):
+                ('Permissions-Policy','microphone=(self), on-device-speech-recognition=(self)'),
+                ('Content-Security-Policy',"default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; media-src 'self' blob:; font-src 'none'")):
                 self.send_header(k,v)
         def _json(self,status,payload):
             raw=json.dumps(payload,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode();self.send_response(status);self._headers();self.send_header('Content-Length',str(len(raw)));self.end_headers();self.wfile.write(raw);self.wfile.flush()
@@ -69,6 +74,10 @@ def make_handler(service,pairing,*,assets_dir:Path,allowed_hosts:frozenset[str],
                     if self._guard(auth=False):self._json(200,pairing.public_status())
                     return
                 if not self._guard():return
+                if path=='/api/v3/product/status':
+                    try:self._json(200,service.product_status())
+                    except Exception as exc:self._error(409,str(exc))
+                    return
                 if self._legacy_active_blocked(path):self._empty(409);return
                 try:
                     if path=='/api/v1/state':out=service.lifecycle()
@@ -99,6 +108,21 @@ def make_handler(service,pairing,*,assets_dir:Path,allowed_hosts:frozenset[str],
                 except Exception as exc:self._error(400,str(exc))
                 return
             if not self._guard(origin=True):return
+            if path=='/api/v3/product/retry':
+                try:self._json(200,service.retry_setup())
+                except Exception as exc:self._error(409,str(exc))
+                return
+            if path=='/api/v3/voice/transcribe':
+                try:
+                    if not runtime_active(service.root):raise LocalAppError('voice input requires ACTIVE runtime')
+                    try:n=int(self.headers.get('Content-Length') or '0')
+                    except ValueError as exc:raise LocalAppError('invalid Content-Length') from exc
+                    if n<=0 or n>_MAX_AUDIO:raise LocalAppError('audio body outside bound')
+                    shell_id=self.headers.get('X-iKant-Shell-Id');client_id=self.headers.get('X-iKant-Client-Id')
+                    out=service.shell_voice_candidate(shell_id,client_id,self.rfile.read(n),self.headers.get('Content-Type') or '')
+                    self._json(200,out)
+                except Exception:self._empty(409)
+                return
             if path.startswith('/api/v2/shell/'):
                 try:
                     body=_read_json(self)
@@ -133,6 +157,7 @@ def make_handler(service,pairing,*,assets_dir:Path,allowed_hosts:frozenset[str],
                 except Exception:self._error(status,'local runtime unavailable')
             else:self._error(status,str(exc))
     return Handler
+
 
 def build_server(service,*,host,port,pairing=None,assets_dir=None,env=None):
     pairing=pairing or PairingSession.create();assets=Path(assets_dir) if assets_dir is not None else Path(__file__).with_name('web')

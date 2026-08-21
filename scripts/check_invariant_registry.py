@@ -6,6 +6,7 @@ from ikant.invariants import registry_manifest,CONTRACT_SCHEMA,CONTRACT_VERSION,
 from ikant.rights_policy import validate_repository_rights,RIGHTS_SCHEMA
 from ikant.component_manifest import load_manifest,MODEL_RUNTIME_SCHEMA
 from ikant.advanced_web_shell import ADVANCED_WEB_SHELL_SCHEMA
+from ikant.product_experience import PRODUCT_EXPERIENCE_SCHEMA
 
 def fail(msg):raise SystemExit(msg)
 def contract_head(text):
@@ -19,14 +20,15 @@ contract=(ROOT/'IKANT_ACCESS_CONTRACT.md').read_text(encoding='utf-8');head=cont
 if head.get('schema')!=CONTRACT_SCHEMA or head.get('contract_version')!=CONTRACT_VERSION:fail('contract registry drift')
 if head.get('rights_policy_schema')!=RIGHTS_SCHEMA:fail('rights schema drift')
 product=json.loads((ROOT/'PRODUCT_CONTRACT.json').read_text(encoding='utf-8'))
-if product.get('schema')!='ikant-product-contract/v0.26-test' or product.get('product_version')!=PRODUCT_VERSION:fail('product contract drift')
+if product.get('schema')!='ikant-product-contract/v0.27-test' or product.get('product_version')!=PRODUCT_VERSION:fail('product contract drift')
 slice_ids=[x.get('id') for x in product.get('slices',[])]
-if slice_ids!=['S1','S2','S3','S4','S5','S6','S7','S8']:fail('product slice coverage drift')
-if product.get('constitutional_convergence')!='S8':fail('product convergence drift')
+if slice_ids!=['S1','S2','S3','S4','S5','S6','S7','S8','S9']:fail('product slice coverage drift')
+if product.get('constitutional_convergence')!='S9':fail('product convergence drift')
 model_runtime=load_manifest(ROOT/'MODEL_RUNTIME.json')
 if model_runtime.get('schema')!=MODEL_RUNTIME_SCHEMA or model_runtime.get('product_version')!='0.23.0a1':fail('historical S5 managed runtime manifest drift')
 
 expected_shell={'schema':ADVANCED_WEB_SHELL_SCHEMA,'single_writer':True,'runtime_session_bound':True,'monotonic_sequence':True,'whole_session_idempotency_keys':True,'exact_previous_frame_binding':True,'legacy_active_mutations_blocked_after_claim':True,'semantic_output_channel':'HSPV2_SEALED_DASHBOARD_ONLY','browser_is_authority':False,'shell_state_is_authority':False,'epistemic_authority':0.0,'execution_authority':0.0}
+expected_experience={'schema':PRODUCT_EXPERIENCE_SCHEMA,'setup_visible_before_model_ready':True,'browser_may_mark_ready':False,'single_semantic_viewport':True,'progressive_disclosure':True,'traditional_controls_on_demand':True,'remote_frontend_dependencies':False,'browser_model_transport':False,'voice_input_auto_submit':False,'voice_input_is_approval':False,'voice_output_requires_local_service':True,'voice_output_requires_post_ack_turn':True,'diagnostics_are_authority':False,'epistemic_authority':0.0,'execution_authority':0.0}
 for name in ('ADMISSION.json','BOOTSTRAP.json'):
  m=json.loads((ROOT/name).read_text(encoding='utf-8'))
  if m.get('contract_version')!=CONTRACT_VERSION:fail(f'{name} contract drift')
@@ -44,6 +46,9 @@ for name in ('ADMISSION.json','BOOTSTRAP.json'):
  shell=m.get('advanced_web_shell') or {}
  for key,value in expected_shell.items():
   if shell.get(key)!=value:fail(f'{name} advanced web shell {key} drift')
+ experience=m.get('product_experience') or {}
+ for key,value in expected_experience.items():
+  if experience.get(key)!=value:fail(f'{name} product experience {key} drift')
 rights_ok,rights_errors=validate_repository_rights(ROOT,contract)
 if not rights_ok:fail('rights policy drift: '+'; '.join(rights_errors))
 if f'version = "{PRODUCT_VERSION}"' not in (ROOT/'pyproject.toml').read_text():fail('package version drift')
@@ -54,6 +59,6 @@ for path in ('ikant/__main__.py','ikant/app_cli.py','ikant/session_host.py','ika
 for inv in registry_manifest()['invariants']:
  target=inv['machine_test'].replace('.','/')
  if inv['severity']=='CRITICAL' and not ((ROOT/(target+'.py')).exists() or inv['machine_test'].startswith('scripts.')):fail('missing critical machine test '+inv['id'])
-for path in ('ikant/agency_kernel.py','ikant/local_service.py','ikant/web_agency.py','ikant/native_agency.py','ikant/managed_runtime.py','ikant/temporal_autonomy.py','ikant/human_surface_protocol.py','ikant/advanced_web_shell.py'):
+for path in ('ikant/agency_kernel.py','ikant/local_service.py','ikant/web_agency.py','ikant/native_agency.py','ikant/managed_runtime.py','ikant/temporal_autonomy.py','ikant/human_surface_protocol.py','ikant/advanced_web_shell.py','ikant/product_experience.py'):
  if not (ROOT/path).is_file():fail('missing constitutional module '+path)
-print(json.dumps({'schema':'ikant-invariant-registry-check/v0.26-test','ok':True,'product_version':PRODUCT_VERSION,'critical_count':len([x for x in registry_manifest()['invariants'] if x['severity']=='CRITICAL']),'rights_policy':RIGHTS_SCHEMA,'slices':slice_ids},indent=2))
+print(json.dumps({'schema':'ikant-invariant-registry-check/v0.27-test','ok':True,'product_version':PRODUCT_VERSION,'critical_count':len([x for x in registry_manifest()['invariants'] if x['severity']=='CRITICAL']),'rights_policy':RIGHTS_SCHEMA,'slices':slice_ids},indent=2))

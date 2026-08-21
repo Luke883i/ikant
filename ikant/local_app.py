@@ -1,12 +1,11 @@
 from __future__ import annotations
 import argparse,os,sys,webbrowser
 from pathlib import Path
-from .advanced_web_shell import AdvancedWebShellService
 from .local_http import build_server
 from .local_service import operational_fallback
-from .managed_runtime import ManagedLocalRuntime,ManagedRuntimeError
+from .managed_runtime import ManagedLocalRuntime
+from .product_experience import ProductBootstrapCoordinator
 from .temporal_autonomy import TemporalAutonomyRunner
-from .voice_input import LocalVoiceInputBroker
 _operational_fallback=operational_fallback
 
 
@@ -21,23 +20,22 @@ def main(argv=None):
     codespaces=str(os.environ.get('CODESPACES') or '').lower()=='true';host=a.host or ('0.0.0.0' if codespaces else '127.0.0.1');root=Path.cwd()
     from .store import acquire_writer_lock
     lock=acquire_writer_lock(root/'.ikant'/'local-app.writer.lock')
-    server=None;runtime=None;temporal_runner=None
+    server=None;service=None;temporal_runner=None
     try:
         runtime=ManagedLocalRuntime(root,manifest_path=a.runtime_manifest,component_root=a.component_root)
-        model=runtime.start(progress=_progress,readiness_timeout=a.runtime_ready_timeout)
-        voice=LocalVoiceInputBroker(os.environ.get('IKANT_STT_ENDPOINT'));service=AdvancedWebShellService(root,model=model,voice=voice);server,pairing=build_server(service,host=host,port=a.port)
+        service=ProductBootstrapCoordinator(root,runtime=runtime,voice_endpoint=os.environ.get('IKANT_STT_ENDPOINT'),readiness_timeout=a.runtime_ready_timeout)
+        server,pairing=build_server(service,host=host,port=a.port)
+        service.start_async()
         temporal_runner=TemporalAutonomyRunner(root).start()
-        port=int(server.server_address[1]);url=f'http://localhost:{port}/';print(f'iKant Advanced Web Shell: {url}',flush=True);print(f'Pairing code: {pairing.code}',flush=True)
+        port=int(server.server_address[1]);url=f'http://localhost:{port}/';print(f'iKant Product Workspace: {url}',flush=True);print(f'Pairing code: {pairing.code}',flush=True)
         if codespaces:print('Codespaces: keep the forwarded port private and enter the one-time pairing code.',flush=True)
         elif not a.no_open:webbrowser.open(url+'#pair='+pairing.code,new=2)
         server.serve_forever(poll_interval=.2)
-    except ManagedRuntimeError as exc:
-        print(f'iKant managed runtime BLOCKED: {exc}',file=sys.stderr,flush=True);return 2
     except KeyboardInterrupt:pass
     finally:
         if temporal_runner is not None:temporal_runner.stop()
         if server is not None:server.server_close()
-        if runtime is not None:runtime.stop()
+        if service is not None:service.stop()
         lock.release()
     return 0
 if __name__=='__main__':raise SystemExit(main())

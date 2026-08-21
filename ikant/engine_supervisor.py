@@ -24,7 +24,9 @@ def _default_probe(endpoint:str,api_key:str,*,timeout:float=1.5)->dict[str,Any]|
  except Exception:return None
  return value if isinstance(value,dict) else None
 class EngineSupervisor:
- def __init__(self,state_dir:str|Path,*,popen_factory:Callable[...,Any]=subprocess.Popen,readiness_probe:Callable[[str,str],dict[str,Any]|None]|None=None,port_factory:Callable[[],int]=reserve_loopback_port):self.state_dir=Path(state_dir).resolve();self.popen_factory=popen_factory;self.readiness_probe=readiness_probe or _default_probe;self.port_factory=port_factory;self.process=None;self.api_key_file=None;self.api_key=None;self.endpoint=None
+ def __init__(self,state_dir:str|Path,*,popen_factory:Callable[...,Any]=subprocess.Popen,readiness_probe:Callable[[str,str],dict[str,Any]|None]|None=None,port_factory:Callable[[],int]=reserve_loopback_port):self.state_dir=Path(state_dir).resolve();self.popen_factory=popen_factory;self.readiness_probe=readiness_probe or _default_probe;self.port_factory=port_factory;self.process=None;self.api_key_file=None;self.api_key=None;self.endpoint=None;self.progress=None
+ def _emit(self,phase:str,target:str,detail:str)->None:
+  if callable(self.progress):self.progress({'phase':phase,'component':'ENGINE_PROCESS' if phase=='ENGINE_STARTING' else 'ENGINE_READINESS','target':target,'bytes':0,'detail':detail})
  def _write_api_key(self)->tuple[Path,str]:
   runtime_dir=self.state_dir/'runtime';runtime_dir.mkdir(parents=True,exist_ok=True)
   if runtime_dir.is_symlink():raise EngineSupervisorError('runtime key directory may not be a symlink')
@@ -40,16 +42,25 @@ class EngineSupervisor:
   finally:os.close(fd)
   return path,key
  def start(self,binding:dict[str,Any],*,timeout:float=45.0)->dict[str,Any]:
+  self._emit('ENGINE_STARTING','llama-server','preflighting and starting verified local engine process')
   if self.process is not None:raise EngineSupervisorError('llama-server already supervised')
   server=Path(binding['engine']['path']);model=Path(binding['model']['path'])
   if not server.is_file() or not os.access(server,os.X_OK) or not model.is_file():raise EngineSupervisorError('verified engine/model paths unavailable')
-  port=self.port_factory();key_file,key=self._write_api_key();command=build_server_command(server,model,port,key_file)
-  try:self.process=self.popen_factory(command,stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,cwd=str(server.parent),env=scrubbed_environment(),shell=False)
-  except Exception:key_file.unlink(missing_ok=True);raise
-  self.api_key_file,self.api_key=key_file,key;self.endpoint=f'http://127.0.0.1:{port}/v1/chat/completions';deadline=time.monotonic()+float(timeout)
+  key_file=None
+  try:
+   port=self.port_factory();key_file,key=self._write_api_key();command=build_server_command(server,model,port,key_file);self.process=self.popen_factory(command,stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,cwd=str(server.parent),env=scrubbed_environment(),shell=False)
+  except EngineSupervisorError:
+   if key_file is not None:key_file.unlink(missing_ok=True)
+   raise
+  except Exception as exc:
+   if key_file is not None:key_file.unlink(missing_ok=True)
+   raise EngineSupervisorError('llama-server process start failed') from exc
+  self.api_key_file,self.api_key=key_file,key;self.endpoint=f'http://127.0.0.1:{port}/v1/chat/completions';self._emit('ENGINE_PROBING','llama-server','process started; waiting for constrained loopback readiness');deadline=time.monotonic()+float(timeout)
   while time.monotonic()<deadline:
    if self.process.poll() is not None:self.stop();raise EngineSupervisorError('llama-server exited before readiness')
-   if self.readiness_probe(self.endpoint,key) is not None:return {'schema':ENGINE_SESSION_SCHEMA,'status':'READY','endpoint':self.endpoint,'api_key':key,'model_id':binding['model']['id'],'manifest_sha256':binding['manifest_sha256'],'browser_model_transport':False,'builtin_tools_enabled':False,'agent_mode_enabled':False,'webui_enabled':False,'model_output_is_authority':False,'epistemic_authority':0.0,'execution_authority':0.0}
+   try:ready=self.readiness_probe(self.endpoint,key)
+   except Exception as exc:self.stop();raise EngineSupervisorError('llama-server readiness probe failed') from exc
+   if ready is not None:self._emit('ENGINE_READY','llama-server','constrained loopback readiness probe passed');return {'schema':ENGINE_SESSION_SCHEMA,'status':'READY','endpoint':self.endpoint,'api_key':key,'model_id':binding['model']['id'],'manifest_sha256':binding['manifest_sha256'],'browser_model_transport':False,'builtin_tools_enabled':False,'agent_mode_enabled':False,'webui_enabled':False,'model_output_is_authority':False,'epistemic_authority':0.0,'execution_authority':0.0}
    time.sleep(.1)
   self.stop();raise EngineSupervisorError('llama-server readiness timeout')
  def stop(self)->None:

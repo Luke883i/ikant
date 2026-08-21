@@ -1,171 +1,51 @@
 from __future__ import annotations
-
-import hashlib
-import json
+import hashlib,json
 from pathlib import Path
-from typing import Any, Callable
-
+from typing import Any,Callable
 from .component_manifest import load_manifest
 from .component_store import atomic_json
 from .engine_supervisor import EngineSupervisor
-from .local_service import LocalAppError, LocalEmbodimentService
+from .local_service import LocalAppError,LocalEmbodimentService
 from .model_broker import LocalModelBroker
 from .model_manager import ModelManager
-
-MANAGED_RUNTIME_SCHEMA = "ikant-managed-local-runtime/v0.23-test"
-
-
-class ManagedRuntimeError(RuntimeError):
-    pass
-
-
-def _binding_digest(binding: dict[str, Any]) -> str:
-    material = {
-        "manifest_sha256": binding["manifest_sha256"],
-        "engine": {
-            "id": binding["engine"]["id"],
-            "version": binding["engine"]["version"],
-            "platform": binding["engine"]["platform"],
-            "artifact_sha256": binding["engine"]["artifact_sha256"],
-        },
-        "model": {
-            "id": binding["model"]["id"],
-            "revision": binding["model"]["revision"],
-            "sha256": binding["model"]["sha256"],
-        },
-    }
-    raw = json.dumps(material, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    return hashlib.sha256(raw).hexdigest()
-
-
+MANAGED_RUNTIME_SCHEMA="ikant-managed-local-runtime/v0.23-test"
+class ManagedRuntimeError(RuntimeError):pass
+def _binding_digest(binding:dict[str,Any])->str:
+ material={"manifest_sha256":binding["manifest_sha256"],"engine":{"id":binding["engine"]["id"],"version":binding["engine"]["version"],"platform":binding["engine"]["platform"],"artifact_sha256":binding["engine"]["artifact_sha256"]},"model":{"id":binding["model"]["id"],"revision":binding["model"]["revision"],"sha256":binding["model"]["sha256"]}};return hashlib.sha256(json.dumps(material,sort_keys=True,separators=(',',':')).encode()).hexdigest()
 class ManagedLocalRuntime:
-    def __init__(
-        self,
-        root: str | Path,
-        *,
-        manifest_path: str | Path | None = None,
-        component_root: str | Path | None = None,
-        manager_factory: Callable[..., ModelManager] = ModelManager,
-        supervisor_factory: Callable[..., EngineSupervisor] = EngineSupervisor,
-    ):
-        self.root = Path(root).resolve()
-        self.state_dir = self.root / ".ikant"
-        self.manifest_path = Path(manifest_path).resolve() if manifest_path else self.root / "MODEL_RUNTIME.json"
-        self.component_root = Path(component_root).resolve() if component_root else None
-        self.manager_factory = manager_factory
-        self.supervisor_factory = supervisor_factory
-        self.supervisor: EngineSupervisor | None = None
-        self.binding: dict[str, Any] | None = None
-        self.binding_digest: str | None = None
-
-    @property
-    def projection_path(self) -> Path:
-        return self.state_dir / "model-runtime.json"
-
-    def _persist(self, status: str, **extra: Any) -> None:
-        payload: dict[str, Any] = {
-            "schema": MANAGED_RUNTIME_SCHEMA,
-            "status": status,
-            "managed": True,
-            "browser_model_transport": False,
-            "api_key_persisted": False,
-            "model_output_is_authority": False,
-            "component_presence_is_authority": False,
-            "runtime_readiness_is_authority": False,
-            "epistemic_authority": 0.0,
-            "execution_authority": 0.0,
-        }
-        payload.update(extra)
-        atomic_json(self.projection_path, payload)
-
-    def start(self, *, progress=None, readiness_timeout: float = 45.0) -> LocalModelBroker:
-        if self.supervisor is not None:
-            raise ManagedRuntimeError("managed runtime already started")
-        try:
-            manifest = load_manifest(self.manifest_path)
-            self._persist("PREPARING", manifest_sha256=hashlib.sha256(self.manifest_path.read_bytes()).hexdigest())
-            if progress:
-                model = manifest["model"]
-                progress({"phase": "PLAN", "bytes": int(model["display_size_mb"]) * 1_000_000, "target": str(model["id"])})
-            manager = self.manager_factory(manifest, component_root=self.component_root)
-            binding = manager.ensure(progress=progress)
-            digest = _binding_digest(binding)
-            supervisor = self.supervisor_factory(self.state_dir)
-            session = supervisor.start(binding, timeout=readiness_timeout)
-            if session.get("status") != "READY" or session.get("browser_model_transport") is not False:
-                supervisor.stop()
-                raise ManagedRuntimeError("managed engine did not reach constrained readiness")
-            self.supervisor = supervisor
-            self.binding = binding
-            self.binding_digest = digest
-            self._persist(
-                "READY",
-                manifest_sha256=binding["manifest_sha256"],
-                binding_sha256=digest,
-                engine={
-                    "id": binding["engine"]["id"],
-                    "version": binding["engine"]["version"],
-                    "platform": binding["engine"]["platform"],
-                    "artifact_sha256": binding["engine"]["artifact_sha256"],
-                },
-                model={
-                    "id": binding["model"]["id"],
-                    "revision": binding["model"]["revision"],
-                    "sha256": binding["model"]["sha256"],
-                },
-            )
-            return LocalModelBroker(
-                str(session["endpoint"]),
-                model=str(session["model_id"]),
-                api_key=str(session["api_key"]),
-                runtime_binding_digest=digest,
-                managed_runtime=True,
-            )
-        except Exception as exc:
-            self._persist("BLOCKED", error=type(exc).__name__)
-            self.stop(persist=False)
-            if isinstance(exc, ManagedRuntimeError):
-                raise
-            raise ManagedRuntimeError("managed local runtime failed closed") from exc
-
-    def stop(self, *, persist: bool = True) -> None:
-        supervisor, self.supervisor = self.supervisor, None
-        if supervisor is not None:
-            supervisor.stop()
-        if persist and self.projection_path.exists():
-            extra: dict[str, Any] = {}
-            if self.binding_digest:
-                extra["binding_sha256"] = self.binding_digest
-            self._persist("STOPPED", **extra)
-
-
+ def __init__(self,root:str|Path,*,manifest_path:str|Path|None=None,component_root:str|Path|None=None,manager_factory:Callable[...,ModelManager]=ModelManager,supervisor_factory:Callable[...,EngineSupervisor]=EngineSupervisor):self.root=Path(root).resolve();self.state_dir=self.root/'.ikant';self.manifest_path=Path(manifest_path).resolve() if manifest_path else self.root/'MODEL_RUNTIME.json';self.component_root=Path(component_root).resolve() if component_root else None;self.manager_factory=manager_factory;self.supervisor_factory=supervisor_factory;self.supervisor=None;self.binding=None;self.binding_digest=None
+ @property
+ def projection_path(self)->Path:return self.state_dir/'model-runtime.json'
+ def _persist(self,status:str,**extra):
+  payload={'schema':MANAGED_RUNTIME_SCHEMA,'status':status,'managed':True,'browser_model_transport':False,'api_key_persisted':False,'model_output_is_authority':False,'component_presence_is_authority':False,'runtime_readiness_is_authority':False,'epistemic_authority':0.0,'execution_authority':0.0};payload.update(extra);atomic_json(self.projection_path,payload)
+ def start(self,*,progress=None,readiness_timeout:float=45.0)->LocalModelBroker:
+  if self.supervisor is not None:raise ManagedRuntimeError('managed runtime already started')
+  try:
+   manifest=load_manifest(self.manifest_path);self._persist('PREPARING',manifest_sha256=hashlib.sha256(self.manifest_path.read_bytes()).hexdigest())
+   if progress:
+    model=manifest['model'];progress({'phase':'PLAN','component':'MANIFEST','bytes':int(model['display_size_mb'])*1_000_000,'target':str(model['id']),'detail':'pinned managed-runtime manifest validated'})
+   manager=self.manager_factory(manifest,component_root=self.component_root);binding=manager.ensure(progress=progress);digest=_binding_digest(binding);supervisor=self.supervisor_factory(self.state_dir)
+   if hasattr(supervisor,'progress'):supervisor.progress=progress
+   session=supervisor.start(binding,timeout=readiness_timeout)
+   if session.get('status')!='READY' or session.get('browser_model_transport') is not False:supervisor.stop();raise ManagedRuntimeError('managed engine did not reach constrained readiness')
+   self.supervisor=supervisor;self.binding=binding;self.binding_digest=digest;self._persist('READY',manifest_sha256=binding['manifest_sha256'],binding_sha256=digest,engine={'id':binding['engine']['id'],'version':binding['engine']['version'],'platform':binding['engine']['platform'],'artifact_sha256':binding['engine']['artifact_sha256']},model={'id':binding['model']['id'],'revision':binding['model']['revision'],'sha256':binding['model']['sha256']});return LocalModelBroker(str(session['endpoint']),model=str(session['model_id']),api_key=str(session['api_key']),runtime_binding_digest=digest,managed_runtime=True)
+  except Exception as exc:
+   self._persist('BLOCKED',error=type(exc).__name__);self.stop(persist=False)
+   if isinstance(exc,ManagedRuntimeError):raise
+   raise ManagedRuntimeError('managed local runtime failed closed') from exc
+ def stop(self,*,persist=True):
+  supervisor,self.supervisor=self.supervisor,None
+  if supervisor is not None:supervisor.stop()
+  if persist and self.projection_path.exists():
+   extra={}
+   if self.binding_digest:extra['binding_sha256']=self.binding_digest
+   self._persist('STOPPED',**extra)
 class ManagedLocalEmbodimentService(LocalEmbodimentService):
-    """S2 embodiment with S5 readiness bound into PROBE and INITIALIZE."""
-
-    def _managed_model_check(self) -> dict[str, Any]:
-        managed = bool(getattr(self.model, "managed_runtime", False))
-        healthy = managed and self.model.health()
-        binding = str(getattr(self.model, "runtime_binding_digest", "") or "")
-        return {
-            "status": "AVAILABLE" if healthy and len(binding) == 64 else "UNAVAILABLE",
-            "detail": "verified managed engine reachable" if healthy and len(binding) == 64 else "managed engine unavailable or unbound",
-            "binding_sha256": binding if len(binding) == 64 else None,
-            "model_output_is_authority": False,
-            "epistemic_authority": 0.0,
-            "execution_authority": 0.0,
-        }
-
-    def probe(self):
-        with self._lock:
-            out = super().probe()
-            out["checks"]["MODEL_RUNTIME"] = self._managed_model_check()
-            out["overall"] = "READY" if all(x.get("status") == "AVAILABLE" for x in out["checks"].values()) else "BLOCKED"
-            from .admission import save_probe
-            save_probe(self.state_dir, out)
-            return out
-
-    def initialize(self):
-        check = self._managed_model_check()
-        if check["status"] != "AVAILABLE":
-            raise LocalAppError("INITIALIZE requires the verified managed language engine to remain READY")
-        return super().initialize()
+ def _managed_model_check(self):
+  managed=bool(getattr(self.model,'managed_runtime',False));healthy=managed and self.model.health();binding=str(getattr(self.model,'runtime_binding_digest','') or '');return {'status':'AVAILABLE' if healthy and len(binding)==64 else 'UNAVAILABLE','detail':'verified managed engine reachable' if healthy and len(binding)==64 else 'managed engine unavailable or unbound','binding_sha256':binding if len(binding)==64 else None,'model_output_is_authority':False,'epistemic_authority':0.0,'execution_authority':0.0}
+ def probe(self):
+  with self._lock:
+   out=super().probe();out['checks']['MODEL_RUNTIME']=self._managed_model_check();out['overall']='READY' if all(x.get('status')=='AVAILABLE' for x in out['checks'].values()) else 'BLOCKED';from .admission import save_probe;save_probe(self.state_dir,out);return out
+ def initialize(self):
+  if self._managed_model_check()['status']!='AVAILABLE':raise LocalAppError('INITIALIZE requires the verified managed language engine to remain READY')
+  return super().initialize()

@@ -18,9 +18,9 @@ class BootstrapObservabilityV29Tests(unittest.TestCase):
   class Runtime:
    called=False
    def start(self,**kwargs):self.called=True;raise AssertionError('must not start')
-   def stop(self):pass
+   def stop(self,*args,**kwargs):pass
   with tempfile.TemporaryDirectory() as td:
-   j=BootstrapJournal(td);aid='ATT-0000000000001-test';j.append(attempt_id=aid,attempt=1,step='WEB_APP',outcome='PASS',code='LOCAL_WEB_AVAILABLE');p=Path(td)/'.ikant'/'bootstrap-events.jsonl';p.write_text(p.read_text().replace('LOCAL_WEB_AVAILABLE','LOCAL_WEB_CHANGED'));r=Runtime();c=ObservableProductBootstrapCoordinator(td,runtime=r);out=c.start_async();self.assertFalse(r.called);self.assertEqual(out['stage'],'BLOCKED');self.assertEqual(out['diagnostics']['bootstrap_observability']['fallback_failure']['code'],'BOOTSTRAP_DIAGNOSTICS_CORRUPT')
+   j=BootstrapJournal(td);aid='ATT-0000000000001-test';j.append(attempt_id=aid,attempt=1,step='WEB_APP',outcome='PASS',code='LOCAL_WEB_AVAILABLE');p=Path(td)/'.ikant'/'bootstrap-events.jsonl';p.write_text(p.read_text().replace('LOCAL_WEB_AVAILABLE','LOCAL_WEB_CHANGED'));r=Runtime();c=ObservableProductBootstrapCoordinator(td,runtime=r,voice_endpoint=None);out=c.start_async();self.assertFalse(r.called);self.assertEqual(out['stage'],'BLOCKED');self.assertEqual(out['diagnostics']['bootstrap_observability']['fallback_failure']['code'],'BOOTSTRAP_DIAGNOSTICS_CORRUPT')
  def test_network_failure_has_stable_remediation(self):
   try:raise OSError('Temporary failure in name resolution')
   except OSError as cause:

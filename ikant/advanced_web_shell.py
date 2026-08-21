@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import OrderedDict
 from copy import deepcopy
 import hashlib
 import json
@@ -18,7 +17,7 @@ SHELL_ACK_SCHEMA = "ikant-advanced-web-shell-ack/v0.26-test"
 SHELL_OPS = frozenset({"SYNC", "TURN", "EXIT", "RESUME"})
 MAX_TURN_BYTES = 65536
 MAX_ID_BYTES = 160
-_HISTORY_LIMIT = 64
+MAX_SHELL_OPERATIONS = 4096
 _ID_RE = re.compile(r"^[A-Za-z0-9._~-]{16,160}$")
 _SHA_RE = re.compile(r"^[0-9a-f]{64}$")
 
@@ -92,8 +91,8 @@ def _validate_payload(op: str, payload: Any) -> dict[str, Any]:
 class AdvancedWebShellController:
     """Process-local, zero-authority single-writer protocol for the canonical PWA.
 
-    The shell never creates grants, leases or execution authority. Its only job is to make
-    browser delivery/retry semantics explicit around the existing S2/S7 service methods.
+    The shell never creates grants, leases or execution authority. It makes browser retry,
+    concurrency and exact-frame acknowledgement explicit around existing S2/S7 methods.
     """
 
     def __init__(self) -> None:
@@ -105,7 +104,7 @@ class AdvancedWebShellController:
         self._pending: dict[str, Any] | None = None
         self._last_acked_frame: dict[str, Any] | None = None
         self._last_ack: dict[str, Any] | None = None
-        self._used_keys: OrderedDict[str, str] = OrderedDict()
+        self._used_keys: dict[str, str] = {}
 
     @property
     def claimed(self) -> bool:
@@ -130,6 +129,7 @@ class AdvancedWebShellController:
             "client_id": self._client_id,
             "runtime_session_id": self._runtime_session_id,
             "next_seq": self._next_seq,
+            "max_operations": MAX_SHELL_OPERATIONS,
             "single_writer": True,
             "paired_transport_required": True,
             "expected_frame_binding_required": self._next_seq > 1,
@@ -205,8 +205,9 @@ class AdvancedWebShellController:
 
             if seq != self._next_seq:
                 raise AdvancedWebShellError("shell sequence drift")
-            previous = self._used_keys.get(idem)
-            if previous is not None:
+            if seq > MAX_SHELL_OPERATIONS:
+                raise AdvancedWebShellError("shell operation budget exhausted; restart runtime for a fresh shell session")
+            if idem in self._used_keys:
                 raise AdvancedWebShellError("idempotency key reuse")
             if self._next_seq == 1:
                 if op != "SYNC" or expected is not None:
@@ -217,10 +218,10 @@ class AdvancedWebShellController:
             frame = execute_fn(op, payload)
             if not isinstance(frame, dict):
                 raise AdvancedWebShellError("shell operation returned invalid response")
-            self._remember_key(idem, command_sha)
             if frame.get("released") is True:
                 if op != "SYNC":
                     raise AdvancedWebShellError("only SYNC may observe already released egress without a frame")
+                self._remember_key(idem, command_sha)
                 self._next_seq += 1
                 out = {
                     **self._base_projection(),
@@ -242,7 +243,10 @@ class AdvancedWebShellController:
                 "expected_ack": identity,
                 "frame": deepcopy(frame),
                 "released": False,
+                "pending_operation": True,
+                "pending_seq": seq,
             }
+            self._remember_key(idem, command_sha)
             self._pending = {
                 "seq": seq,
                 "idempotency_key": idem,
@@ -250,8 +254,6 @@ class AdvancedWebShellController:
                 "frame_identity": identity,
                 "response": deepcopy(response),
             }
-            response["pending_operation"] = True
-            response["pending_seq"] = seq
             return response
 
     def acknowledge(
@@ -309,13 +311,10 @@ class AdvancedWebShellController:
 
     def _remember_key(self, key: str, command_sha: str) -> None:
         self._used_keys[key] = command_sha
-        self._used_keys.move_to_end(key)
-        while len(self._used_keys) > _HISTORY_LIMIT:
-            self._used_keys.popitem(last=False)
 
 
 class AdvancedWebShellService(ManagedLocalEmbodimentService):
-    """S8 service adapter. S2/S5 behavior remains inherited; S8 only wraps canonical PWA operations."""
+    """S8 service adapter. S2/S5 behavior remains inherited; S8 wraps canonical PWA operations."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -326,7 +325,6 @@ class AdvancedWebShellService(ManagedLocalEmbodimentService):
 
     def _active_session_id(self) -> str:
         from .runtime import Runtime
-
         rt = Runtime(self.state_dir)
         try:
             rt.require_active()
@@ -359,11 +357,9 @@ class AdvancedWebShellService(ManagedLocalEmbodimentService):
             except AdvancedWebShellError:
                 raise
             except Exception as exc:
-                # If the underlying operation already sealed a frame, recover that exact frame.
                 try:
                     from .runtime import Runtime
                     from .session_egress import EgressState, existing_runtime_egress
-
                     rt = Runtime(self.state_dir)
                     try:
                         guard = existing_runtime_egress(rt)

@@ -61,7 +61,7 @@ def make_handler(service,pairing,*,assets_dir:Path,allowed_hosts:frozenset[str],
             try:return bool(check()) if callable(check) else False
             except Exception:return True
         def _legacy_active_blocked(self,path):
-            return runtime_active(service.root) and self._shell_claimed() and path in {'/api/v1/frame','/api/v1/frame/ack','/api/v1/turn','/api/v1/resume','/api/v1/initialize'}
+            return runtime_active(service.root) and self._shell_claimed() and path in {'/api/v1/frame','/api/v1/frame/ack','/api/v1/turn','/api/v1/resume','/api/v1/initialize','/api/v1/voice/transcribe'}
         def do_GET(self):
             path=self.path.split('?',1)[0]
             if path.startswith('/api/'):

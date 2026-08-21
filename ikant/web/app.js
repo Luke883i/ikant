@@ -8,16 +8,17 @@ const WEB_FRAME_SCHEMA='ikant-web-human-frame/v0.20-test';
 const WEB_ACK_SCHEMA='ikant-web-human-ack/v0.20-test';
 
 function randomId(prefix){
-  if(window.crypto&&crypto.randomUUID)return prefix+'-'+crypto.randomUUID();
+  if(!window.crypto||!crypto.getRandomValues)throw new Error('secure browser randomness unavailable');
+  if(crypto.randomUUID)return prefix+'-'+crypto.randomUUID();
   const bytes=new Uint8Array(18);crypto.getRandomValues(bytes);return prefix+'-'+Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
 }
 const clientId=sessionStorage.getItem('ikantShellClient')||randomId('client');sessionStorage.setItem('ikantShellClient',clientId);
-const state={token:sessionStorage.getItem('ikantBearer')||'',frame:null,shell:null,recording:false,recorder:null,chunks:[],recovering:false};
+const state={token:sessionStorage.getItem('ikantBearer')||'',frame:null,shell:null,recovering:false};
 
 function setError(id,message=''){const el=$(id);if(el)el.textContent=String(message||'');}
 function show(id,on=true){$(id).hidden=!on;}
-function freezeActive(){for(const id of ['intent','send-button','voice-button','exit-button','sync-button']){const el=$(id);if(el)el.disabled=true;}}
-function enableActive(){for(const id of ['intent','send-button','voice-button','exit-button','sync-button']){const el=$(id);if(el)el.disabled=false;}}
+function freezeActive(){for(const id of ['intent','send-button','exit-button','sync-button']){const el=$(id);if(el)el.disabled=true;}}
+function enableActive(){for(const id of ['intent','send-button','exit-button','sync-button']){const el=$(id);if(el)el.disabled=false;}}
 function shellStatus(label){const el=$('shell-status');if(el)el.textContent='LOCAL CONTROL · '+String(label);}
 function released(on){show('released-panel',on);if(on)freezeActive();}
 
@@ -29,7 +30,7 @@ async function api(path,{method='GET',body=null,raw=null,contentType='applicatio
   if(!response.ok)throw new Error(payload.error||('HTTP '+response.status));return payload;
 }
 
-async function apiRetry(path,options){try{return await api(path,options);}catch(first){return await api(path,options);}}
+async function apiRetry(path,options){try{return await api(path,options);}catch(_first){return api(path,options);}}
 
 async function pair(code){
   const payload=await api('/api/v1/pair',{method:'POST',body:{code}});state.token=payload.bearer_token;sessionStorage.setItem('ikantBearer',state.token);history.replaceState(null,'',location.pathname+location.search);show('pair-panel',false);show('pair-reset',true);await refresh();
@@ -92,7 +93,7 @@ async function loadActive(){show('admission-panel',false);show('active-panel',tr
 async function refresh(){
   if(!state.token){show('pair-panel',true);show('admission-panel',false);show('active-panel',false);return;}
   try{const lifecycle=await api('/api/v1/state');if(lifecycle.state==='ACTIVE')await loadActive();else await loadAdmission(lifecycle);}
-  catch(error){if(String(error.message).includes('pairing')){state.token='';sessionStorage.removeItem('ikantBearer');state.shell=null;show('pair-panel',true);show('admission-panel',false);show('active-panel',false);}else setError('pair-error',error.message);}
+  catch(error){if(String(error.message).includes('pairing')||String(error.message).includes('HTTP 401')){state.token='';sessionStorage.removeItem('ikantBearer');state.shell=null;show('pair-panel',true);show('admission-panel',false);show('active-panel',false);}else setError('pair-error',error.message);}
 }
 
 $('pair-form').addEventListener('submit',async event=>{event.preventDefault();setError('pair-error');try{await pair($('pair-code').value.trim());}catch(error){setError('pair-error',error.message);}});
@@ -106,12 +107,6 @@ $('exit-button').addEventListener('click',async()=>{try{await shellCommand('EXIT
 $('resume-button').addEventListener('click',async()=>{try{await shellCommand('RESUME',{});}catch(_error){await recoverShell();}});
 $('sync-button').addEventListener('click',async()=>{try{await shellCommand('SYNC',{});}catch(_error){await recoverShell();}});
 $('intent').addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();$('turn-form').requestSubmit();}});
-
-async function startVoice(){
-  if(!navigator.mediaDevices||!window.MediaRecorder)throw new Error('voice-unavailable');
-  const stream=await navigator.mediaDevices.getUserMedia({audio:true});state.chunks=[];state.recorder=new MediaRecorder(stream);state.recorder.ondataavailable=e=>{if(e.data&&e.data.size)state.chunks.push(e.data);};state.recorder.onstop=async()=>{stream.getTracks().forEach(t=>t.stop());const blob=new Blob(state.chunks,{type:state.recorder.mimeType||'audio/webm'});try{const out=await api('/api/v1/voice/transcribe',{method:'POST',raw:blob,contentType:blob.type||'audio/webm'});if(out&&out.schema===WEB_FRAME_SCHEMA){await shellCommand('SYNC',{});return;}$('intent').value=String(out.text||'');$('intent').focus();shellStatus('READY');enableActive();}catch(_error){await recoverShell();}finally{state.recording=false;$('voice-button').textContent='Voce input';}};state.recorder.start();state.recording=true;$('voice-button').textContent='Stop voce';
-}
-$('voice-button').addEventListener('click',async()=>{try{if(state.recording){state.recorder.stop();}else{freezeActive();shellStatus('VOICE INPUT');await startVoice();}}catch(_error){state.recording=false;$('voice-button').textContent='Voce input';await recoverShell();}});
 
 if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 const hash=new URLSearchParams(location.hash.replace(/^#/,''));const code=hash.get('pair');if(code){$('pair-code').value=code;pair(code).catch(error=>setError('pair-error',error.message));}else refresh();

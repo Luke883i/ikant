@@ -2,98 +2,167 @@
 <html lang="it">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#111111">
-  <title>iKant · Advanced Web Shell</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b0d12">
+  <meta name="color-scheme" content="dark light">
+  <title>iKant · Local Cognitive Workspace</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <main class="shell" aria-labelledby="brand">
+  <div class="ambient" aria-hidden="true"><span></span><span></span><span></span></div>
+  <main class="app-shell" aria-labelledby="brand">
     <header class="topbar">
-      <div>
-        <div class="eyebrow">ADVANCED LOCAL WEB SHELL · ZERO AUTHORITY</div>
-        <h1 id="brand">iKant</h1>
+      <button id="brand-button" class="brand" type="button" aria-label="Apri panoramica iKant">
+        <span class="brand-mark" aria-hidden="true">iK</span>
+        <span><strong id="brand">iKant</strong><small>local cognitive workspace</small></span>
+      </button>
+      <div class="top-actions">
+        <button id="command-button" class="icon-button" type="button" title="Comandi · Ctrl/Cmd+K" aria-label="Apri tavolozza comandi">⌘</button>
+        <button id="status-button" class="status-pill" type="button" aria-controls="inspector" aria-expanded="false">
+          <span id="status-dot" class="status-dot"></span><span id="status-label">Avvio</span>
+        </button>
+        <button id="pair-reset" class="icon-button" type="button" hidden aria-label="Disconnetti interfaccia">↗</button>
       </div>
-      <button id="pair-reset" class="ghost" type="button" hidden>Disconnetti UI</button>
     </header>
 
-    <section id="pair-panel" class="panel narrow" aria-labelledby="pair-title">
-      <p class="eyebrow">PAIRING LOCALE</p>
-      <h2 id="pair-title">Collega questa shell al runtime</h2>
-      <p>Inserisci il codice mostrato da <code>./ikant.sh</code>. Il pairing è monouso e non attribuisce autorità al browser.</p>
-      <form id="pair-form">
-        <label for="pair-code">Codice pairing</label>
-        <div class="row">
-          <input id="pair-code" autocomplete="off" spellcheck="false" required>
-          <button type="submit">Collega</button>
-        </div>
+    <section id="pair-panel" class="gate-stage" aria-labelledby="pair-title">
+      <div class="gate-copy">
+        <p class="kicker">LOCALE · PRIVATE-BY-DESIGN</p>
+        <h1 id="pair-title">Un workspace potente.<br><em>La complessità resta sotto controllo.</em></h1>
+        <p>iKant esegue il proprio runtime localmente, verifica i componenti e mantiene separati osservazione, decisione e autorità.</p>
+      </div>
+      <form id="pair-form" class="gate-card">
+        <div class="gate-orbit" aria-hidden="true"><span></span><span></span><span></span></div>
+        <label for="pair-code">Codice di pairing</label>
+        <input id="pair-code" autocomplete="one-time-code" inputmode="text" spellcheck="false" placeholder="Incolla il codice mostrato da ikant.sh" required>
+        <button type="submit" class="primary wide">Connetti questo browser</button>
+        <p class="microcopy">Pairing monouso. Il browser non riceve autorità operativa.</p>
+        <p id="pair-error" class="inline-error" role="alert"></p>
       </form>
-      <p id="pair-error" class="error" role="alert"></p>
     </section>
 
-    <section id="admission-panel" class="panel" hidden aria-labelledby="admission-title">
-      <p class="eyebrow">ADMISSION</p>
-      <h2 id="admission-title">T&amp;C → PROBE → INITIALIZE</h2>
-      <div class="steps" aria-label="Lifecycle">
-        <span id="step-accept">1 · T&amp;C</span><span id="step-probe">2 · PROBE</span><span id="step-init">3 · INITIALIZE</span>
+    <section id="setup-panel" class="gate-stage" hidden aria-labelledby="setup-title">
+      <div class="gate-copy">
+        <p class="kicker">PREPARAZIONE LOCALE</p>
+        <h1 id="setup-title">Sto preparando iKant.</h1>
+        <p id="setup-description">Verifica del runtime, modello locale e dipendenze. Puoi seguire i dettagli, ma nessun indicatore UI può dichiarare il sistema pronto.</p>
       </div>
-      <pre id="terms" class="terms" tabindex="0" aria-label="iKant access contract"></pre>
-      <p class="digest">SHA-256: <code id="terms-digest"></code></p>
-      <form id="accept-form">
-        <label for="accept-text">Per accettare, digita esattamente <code>I ACCEPT</code></label>
-        <div class="row">
-          <input id="accept-text" autocomplete="off" spellcheck="false">
-          <button type="submit">Accetta</button>
-        </div>
-      </form>
-      <div class="row actions">
-        <button id="probe-button" type="button">PROBE IKANT</button>
-        <button id="init-button" type="button">INITIALIZE IKANT</button>
-      </div>
-      <pre id="preactive-status" class="statusbox" aria-live="polite"></pre>
-    </section>
-
-    <section id="active-panel" class="active" hidden aria-label="iKant ACTIVE">
-      <aside class="shell-rail" aria-label="S8 local shell controls">
-        <div>
-          <p class="eyebrow">S8 · SINGLE WRITER</p>
-          <div id="shell-status" class="shell-status" aria-live="polite">LOCAL CONTROL · BINDING</div>
-        </div>
-        <dl class="shell-contract">
-          <div><dt>Output</dt><dd>HSPv2 sealed viewport</dd></div>
-          <div><dt>Delivery</dt><dd>exact visible-text ACK</dd></div>
-          <div><dt>Retry</dt><dd>idempotent / frame-bound</dd></div>
-          <div><dt>Model</dt><dd>no direct browser transport</dd></div>
-          <div><dt>Authority</dt><dd>shell = 0</dd></div>
-        </dl>
-        <button id="sync-button" class="ghost rail-action" type="button">SYNC FRAME</button>
-      </aside>
-
-      <div class="workspace">
-        <div class="dashboard-wrap">
-          <div class="dashboard-head">
-            <span>CANONICAL HUMAN FRAME</span>
-            <span>HSPv2 · VERBATIM</span>
+      <div class="gate-card setup-card">
+        <div id="setup-ring" class="setup-ring" aria-hidden="true"><span id="setup-ring-value"></span></div>
+        <div class="setup-main">
+          <div class="setup-title-row"><strong id="setup-phase">Preparazione</strong><span id="setup-percent">—</span></div>
+          <p id="setup-target">Runtime locale verificato</p>
+          <div class="progress-track" aria-hidden="true"><i id="setup-bar"></i></div>
+          <div class="setup-facts">
+            <span>Modello <b>locale</b></span><span>Browser → modello <b>no</b></span><span>Authority UI <b>0</b></span>
           </div>
+          <button id="setup-retry" class="secondary" type="button" hidden>Riprova preparazione</button>
+          <details class="disclosure"><summary>Dettagli diagnostici</summary><pre id="setup-diagnostics"></pre></details>
+        </div>
+      </div>
+    </section>
+
+    <section id="admission-panel" class="gate-stage" hidden aria-labelledby="admission-title">
+      <div class="gate-copy">
+        <p class="kicker">ADMISSION</p>
+        <h1 id="admission-title">Prima l'accordo, poi l'azione.</h1>
+        <p>Tre passaggi tradizionali, espliciti e verificabili: T&amp;C → PROBE → INITIALIZE.</p>
+        <ol class="journey" aria-label="Percorso di inizializzazione">
+          <li id="step-accept"><span>1</span><strong>Accordo</strong><small>vincolo contrattuale</small></li>
+          <li id="step-probe"><span>2</span><strong>Probe</strong><small>diagnostica reale</small></li>
+          <li id="step-init"><span>3</span><strong>Initialize</strong><small>apertura runtime</small></li>
+        </ol>
+      </div>
+      <div class="gate-card admission-card">
+        <div class="admission-head"><strong>Contratto di accesso</strong><button id="terms-toggle" class="text-button" type="button">Mostra testo</button></div>
+        <pre id="terms" class="terms" tabindex="0" hidden></pre>
+        <p class="digest-line">SHA-256 <code id="terms-digest"></code></p>
+        <form id="accept-form" class="accept-row">
+          <label class="sr-only" for="accept-text">Frase di accettazione</label>
+          <input id="accept-text" autocomplete="off" spellcheck="false" placeholder="Digita esattamente: I ACCEPT">
+          <button type="submit" class="primary">Accetta</button>
+        </form>
+        <div class="admission-actions">
+          <button id="probe-button" class="secondary" type="button">Esegui PROBE</button>
+          <button id="init-button" class="primary" type="button">INITIALIZE</button>
+        </div>
+        <details class="disclosure"><summary>Diagnostica e stato</summary><pre id="preactive-status"></pre></details>
+      </div>
+    </section>
+
+    <section id="active-panel" class="workspace-shell" hidden aria-label="iKant ACTIVE">
+      <nav class="orbit-rail" aria-label="Workspace">
+        <button class="orbit-item active" data-view="conversation" type="button"><span>◉</span><small>Chat</small></button>
+        <button class="orbit-item" data-view="artifacts" type="button"><span>◇</span><small>Artefatti</small></button>
+        <button class="orbit-item" data-view="inspect" type="button"><span>◎</span><small>Inspect</small></button>
+        <button class="orbit-item" data-view="system" type="button"><span>⌁</span><small>Sistema</small></button>
+        <button id="sync-button" class="orbit-item traditional-only" type="button"><span>↻</span><small>Sync</small></button>
+      </nav>
+
+      <section class="conversation-stage" aria-label="Conversazione">
+        <div class="conversation-head">
+          <div><p class="kicker">SESSIONE LOCALE</p><h2>Conversazione</h2></div>
+          <div class="head-chips"><span id="shell-status" class="chip">binding</span><button id="voice-output-toggle" class="chip-button" type="button" aria-pressed="false">Voce output: off</button></div>
+        </div>
+
+        <div class="semantic-window">
+          <div class="semantic-meta"><span>HSPv2 · frame sigillato</span><span>testo verbatim · exact ACK</span></div>
           <pre id="dashboard" class="dashboard" tabindex="0" aria-live="polite" aria-atomic="true"></pre>
+          <div id="empty-state" class="empty-state" aria-hidden="true"><span class="pulse-glyph">◌</span><p>iKant è pronto. Scrivi o usa la voce.</p></div>
         </div>
 
         <form id="turn-form" class="composer">
-          <label class="sr-only" for="intent">Messaggio a iKant</label>
-          <textarea id="intent" rows="3" maxlength="65536" placeholder="Scrivi a iKant… · Ctrl/Cmd+Enter per inviare"></textarea>
-          <div class="composer-actions">
-            <button id="exit-button" class="ghost" type="button">EXIT IKANT</button>
-            <button id="send-button" type="submit">Invia</button>
+          <div class="composer-box">
+            <textarea id="intent" rows="1" maxlength="65536" placeholder="Chiedi, esplora, pianifica…" aria-label="Messaggio a iKant"></textarea>
+            <div class="composer-toolbar">
+              <div class="left-tools">
+                <button id="voice-button" class="tool-button" type="button" aria-pressed="false" title="Dettatura locale">◌ <span>Voce</span></button>
+                <button id="inspector-button" class="tool-button" type="button" aria-controls="inspector" aria-expanded="false">⌁ <span>Dettagli</span></button>
+              </div>
+              <div class="right-tools">
+                <button id="exit-button" class="text-button traditional-only" type="button">EXIT IKANT</button>
+                <button id="send-button" class="send-button" type="submit" aria-label="Invia">↑</button>
+              </div>
+            </div>
           </div>
+          <p id="composer-hint" class="composer-hint">Invio con Ctrl/Cmd+Enter · La voce non invia né approva automaticamente.</p>
         </form>
-        <div id="released-panel" class="released" hidden>
-          <p>Canale iKant rilasciato dopo ACK esatto.</p>
-          <button id="resume-button" type="button">RESUME IKANT</button>
+
+        <div id="released-panel" class="release-card" hidden>
+          <div><strong>Canale iKant rilasciato.</strong><p>Il frame di uscita è stato confermato con ACK esatto.</p></div>
+          <button id="resume-button" class="primary" type="button">RESUME IKANT</button>
         </div>
-      </div>
+      </section>
+
+      <aside id="inspector" class="inspector" aria-label="Inspector" aria-hidden="true">
+        <div class="inspector-head"><div><p class="kicker">PROGRESSIVE DISCLOSURE</p><h3 id="inspector-title">Stato</h3></div><button id="inspector-close" class="icon-button" type="button" aria-label="Chiudi inspector">×</button></div>
+        <div id="inspector-overview" class="inspector-section">
+          <div class="metric-grid"><article><small>Runtime</small><strong id="metric-runtime">ACTIVE</strong></article><article><small>Writer</small><strong>S8 · single</strong></article><article><small>Authority UI</small><strong>0</strong></article><article><small>Output</small><strong>1 frame</strong></article></div>
+          <details class="disclosure" open><summary>Perché è sicuro</summary><p>La UI presenta e coordina. Non crea evidence, approval, grant, lease o execution authority.</p></details>
+          <details class="disclosure"><summary>Voce</summary><pre id="voice-diagnostics"></pre></details>
+          <details class="disclosure traditional-only"><summary>Controlli tradizionali</summary><div class="traditional-controls"><button id="traditional-sync" class="secondary" type="button">SYNC FRAME</button><button id="traditional-exit" class="secondary danger" type="button">EXIT IKANT</button></div></details>
+        </div>
+        <div id="inspector-artifacts" class="inspector-section" hidden><p class="inspector-copy">Surface B e artefatti restano legati allo stesso ciclo del frame. La navigazione ricca degli artefatti sarà estesa nella slice successiva.</p><button class="secondary" type="button" disabled>Apri Surface B quando disponibile</button></div>
+        <div id="inspector-inspect" class="inspector-section" hidden><p class="inspector-copy">Il reticolo epistemico è disponibile on-demand: stato, provenienza, conflitti e binding senza trasformare la vista in autorità.</p><pre id="frame-inspect"></pre></div>
+        <div id="inspector-system" class="inspector-section" hidden><pre id="system-diagnostics"></pre></div>
+      </aside>
     </section>
   </main>
+
+  <dialog id="command-palette" class="command-palette">
+    <form method="dialog" class="palette-card">
+      <div class="palette-search"><span>⌘</span><input id="command-search" autocomplete="off" placeholder="Cerca un comando…" aria-label="Cerca comando"><button value="cancel" class="icon-button" aria-label="Chiudi">×</button></div>
+      <div id="command-list" class="command-list" role="listbox">
+        <button type="button" data-command="focus">Scrivi un messaggio <kbd>G</kbd></button>
+        <button type="button" data-command="voice">Dettatura locale <kbd>V</kbd></button>
+        <button type="button" data-command="inspect">Apri inspector <kbd>I</kbd></button>
+        <button type="button" data-command="system">Diagnostica sistema <kbd>D</kbd></button>
+        <button type="button" data-command="sync">Sincronizza frame <kbd>S</kbd></button>
+        <button type="button" data-command="exit">EXIT IKANT <kbd>E</kbd></button>
+      </div>
+    </form>
+  </dialog>
   <script src="/app.js" defer></script>
 </body>
 </html>

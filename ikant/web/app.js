@@ -1,112 +1,68 @@
 'use strict';
-
 const $=id=>document.getElementById(id);
 const SHELL_SCHEMA='ikant-advanced-web-shell/v0.26-test';
 const SHELL_COMMAND_SCHEMA='ikant-advanced-web-shell-command/v0.26-test';
 const SHELL_ACK_SCHEMA='ikant-advanced-web-shell-ack/v0.26-test';
 const WEB_FRAME_SCHEMA='ikant-web-human-frame/v0.20-test';
 const WEB_ACK_SCHEMA='ikant-web-human-ack/v0.20-test';
-
-function randomId(prefix){
-  if(!window.crypto||!crypto.getRandomValues)throw new Error('secure browser randomness unavailable');
-  if(crypto.randomUUID)return prefix+'-'+crypto.randomUUID();
-  const bytes=new Uint8Array(18);crypto.getRandomValues(bytes);return prefix+'-'+Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
-}
+const PRODUCT_SCHEMA='ikant-product-experience/v0.27-test';
+const PRODUCT_VOICE_SCHEMA='ikant-product-voice-candidate/v0.27-test';
 const clientId=sessionStorage.getItem('ikantShellClient')||randomId('client');sessionStorage.setItem('ikantShellClient',clientId);
-const state={token:sessionStorage.getItem('ikantBearer')||'',frame:null,shell:null,recovering:false};
-
-function setError(id,message=''){const el=$(id);if(el)el.textContent=String(message||'');}
-function show(id,on=true){$(id).hidden=!on;}
-function freezeActive(){for(const id of ['intent','send-button','exit-button','sync-button']){const el=$(id);if(el)el.disabled=true;}}
-function enableActive(){for(const id of ['intent','send-button','exit-button','sync-button']){const el=$(id);if(el)el.disabled=false;}}
-function shellStatus(label){const el=$('shell-status');if(el)el.textContent='LOCAL CONTROL · '+String(label);}
-function released(on){show('released-panel',on);if(on)freezeActive();}
-
-async function api(path,{method='GET',body=null,raw=null,contentType='application/json'}={}){
-  const headers={};if(state.token)headers.Authorization='Bearer '+state.token;
-  if(raw!==null)headers['Content-Type']=contentType;else if(body!==null)headers['Content-Type']='application/json';
-  const response=await fetch(path,{method,headers,body:raw!==null?raw:(body!==null?JSON.stringify(body):undefined),cache:'no-store'});
-  const type=response.headers.get('content-type')||'';const payload=type.includes('application/json')?await response.json():{error:await response.text()};
-  if(!response.ok)throw new Error(payload.error||('HTTP '+response.status));return payload;
-}
-
+const state={token:sessionStorage.getItem('ikantBearer')||'',frame:null,shell:null,recovering:false,product:null,view:'conversation',voiceOutput:false,recognition:null,recording:null,setupTimer:null};
+function randomId(prefix){if(!window.crypto||!crypto.getRandomValues)throw new Error('secure browser randomness unavailable');if(crypto.randomUUID)return prefix+'-'+crypto.randomUUID();const bytes=new Uint8Array(18);crypto.getRandomValues(bytes);return prefix+'-'+Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');}
+function show(id,on=true){const el=$(id);if(el)el.hidden=!on;}
+function text(id,value){const el=$(id);if(el)el.textContent=String(value??'');}
+function setStatus(label,mode=''){text('status-label',label);$('status-dot').className='status-dot'+(mode?' '+mode:'');}
+function api(path,{method='GET',body=null,raw=null,contentType='application/json',headers={}}={}){const h={...headers};if(state.token)h.Authorization='Bearer '+state.token;if(raw!==null)h['Content-Type']=contentType;else if(body!==null)h['Content-Type']='application/json';return fetch(path,{method,headers:h,body:raw!==null?raw:(body!==null?JSON.stringify(body):undefined),cache:'no-store'}).then(async response=>{const type=response.headers.get('content-type')||'';const payload=type.includes('application/json')?await response.json():{error:await response.text()};if(!response.ok)throw new Error(payload.error||('HTTP '+response.status));return payload;});}
 async function apiRetry(path,options){try{return await api(path,options);}catch(_first){return api(path,options);}}
-
-async function pair(code){
-  const payload=await api('/api/v1/pair',{method:'POST',body:{code}});state.token=payload.bearer_token;sessionStorage.setItem('ikantBearer',state.token);history.replaceState(null,'',location.pathname+location.search);show('pair-panel',false);show('pair-reset',true);await refresh();
-}
-
-function updateSteps(lifecycle){
-  const s=lifecycle.state;$('step-accept').classList.toggle('done',['ACCEPTED','PROBED','ACTIVE'].includes(s));$('step-probe').classList.toggle('done',['PROBED','ACTIVE'].includes(s));$('step-init').classList.toggle('done',s==='ACTIVE');$('probe-button').disabled=!['ACCEPTED','PROBED'].includes(s);$('init-button').disabled=s!=='PROBED';$('accept-text').disabled=s!=='AWAITING_ACCEPTANCE';
-}
-
-async function loadAdmission(lifecycle){
-  state.shell=null;show('active-panel',false);show('admission-panel',true);show('released-panel',false);const admission=await api('/api/v1/admission');$('terms').textContent=admission.terms;$('terms-digest').textContent=admission.terms_sha256;updateSteps(lifecycle);$('preactive-status').textContent=JSON.stringify({state:lifecycle.state,model:lifecycle.model,voice:lifecycle.voice},null,2);
-}
-
-function buildWebAck(frame){
-  const r=frame.receipt||{};const visible=$('dashboard').textContent;return {schema:WEB_ACK_SCHEMA,runtime_session_id:r.runtime_session_id,epoch:r.epoch,frame_seq:r.frame_seq,frame_sha256:r.frame_sha256,visible_text:visible,visible_text_sha256:r.frame_sha256,epistemic_authority:0.0,execution_authority:0.0};
-}
-
-async function renderLegacyFrame(frame){
-  if(!frame||frame.schema!==WEB_FRAME_SCHEMA)throw new Error('Unexpected activation frame schema');state.frame=frame;$('dashboard').textContent=frame.text;await apiRetry('/api/v1/frame/ack',{method:'POST',body:buildWebAck(frame)});
-}
-
-function bindShell(opened){
-  if(!opened||opened.schema!==SHELL_SCHEMA||opened.client_id!==clientId||!opened.shell_id)throw new Error('Advanced web shell binding failed');
-  state.shell={shell_id:opened.shell_id,client_id:clientId,next_seq:opened.next_seq,last_acked_frame:opened.last_acked_frame||null};
-}
-
-async function renderShellResponse(response){
-  if(!response||response.schema!==SHELL_SCHEMA)throw new Error('Unexpected S8 shell response');
-  if(response.status==='RELEASED'&&response.frame===null){state.shell.next_seq=response.next_seq;state.shell.last_acked_frame=response.last_acked_frame||state.shell.last_acked_frame;shellStatus('RELEASED');released(true);return response;}
-  const frame=response.frame;if(!frame||frame.schema!==WEB_FRAME_SCHEMA)throw new Error('S8 response missing canonical frame');
-  state.frame=frame;$('dashboard').textContent=frame.text;released(false);
-  const op=response.operation||{};const ack={schema:SHELL_ACK_SCHEMA,shell_id:state.shell.shell_id,client_id:clientId,seq:op.seq,idempotency_key:op.idempotency_key,frame_ack:buildWebAck(frame)};
-  const confirmed=await apiRetry('/api/v2/shell/ack',{method:'POST',body:ack});
-  if(!confirmed||confirmed.schema!==SHELL_SCHEMA||confirmed.acknowledged!==true)throw new Error('S8 exact ACK failed');
-  state.shell.next_seq=confirmed.next_seq;state.shell.last_acked_frame=confirmed.last_acked_frame||null;
-  if(confirmed.status==='RELEASED'){shellStatus('RELEASED');released(true);}else{shellStatus('READY');released(false);enableActive();}
-  return confirmed;
-}
-
-async function shellCommand(op,payload={}){
-  if(!state.shell)throw new Error('S8 shell not open');freezeActive();shellStatus('BUSY');
-  const command={schema:SHELL_COMMAND_SCHEMA,shell_id:state.shell.shell_id,client_id:clientId,seq:state.shell.next_seq,op,idempotency_key:randomId('op'),expected_frame:state.shell.last_acked_frame,payload};
-  const response=await apiRetry('/api/v2/shell/command',{method:'POST',body:command});return renderShellResponse(response);
-}
-
-async function openShell({synchronize=true}={}){
-  freezeActive();shellStatus('BINDING');const opened=await apiRetry('/api/v2/shell/open',{method:'POST',body:{client_id:clientId}});bindShell(opened);
-  if(opened.pending_response){shellStatus('RECOVERING');await renderShellResponse(opened.pending_response);return;}
-  if(synchronize)await shellCommand('SYNC',{});else{shellStatus('READY');enableActive();}
-}
-
-async function recoverShell(){
-  if(state.recovering)return;state.recovering=true;freezeActive();shellStatus('RECOVERING');
-  try{await openShell({synchronize:true});}catch(_error){shellStatus('TRANSPORT BLOCKED');}
-  finally{state.recovering=false;}
-}
-
-async function loadActive(){show('admission-panel',false);show('active-panel',true);show('pair-reset',true);await openShell({synchronize:true});}
-
-async function refresh(){
-  if(!state.token){show('pair-panel',true);show('admission-panel',false);show('active-panel',false);return;}
-  try{const lifecycle=await api('/api/v1/state');if(lifecycle.state==='ACTIVE')await loadActive();else await loadAdmission(lifecycle);}
-  catch(error){if(String(error.message).includes('pairing')||String(error.message).includes('HTTP 401')){state.token='';sessionStorage.removeItem('ikantBearer');state.shell=null;show('pair-panel',true);show('admission-panel',false);show('active-panel',false);}else setError('pair-error',error.message);}
-}
-
-$('pair-form').addEventListener('submit',async event=>{event.preventDefault();setError('pair-error');try{await pair($('pair-code').value.trim());}catch(error){setError('pair-error',error.message);}});
+function pairedUI(on){show('pair-panel',!on);show('pair-reset',on);}
+async function pair(code){const payload=await api('/api/v1/pair',{method:'POST',body:{code}});state.token=payload.bearer_token;sessionStorage.setItem('ikantBearer',state.token);history.replaceState(null,'',location.pathname+location.search);pairedUI(true);await productLoop(true);}
+async function productStatus(){const out=await api('/api/v3/product/status');if(!out||out.schema!==PRODUCT_SCHEMA)throw new Error('invalid product status');state.product=out;renderProduct(out);return out;}
+function renderProduct(out){const stage=String(out.stage||'STARTING');const busy=['STARTING','PREPARING'].includes(stage);setStatus(stage==='READY'?'Locale · pronto':stage==='BLOCKED'?'Setup bloccato':'Preparazione',stage==='READY'?'ready':stage==='BLOCKED'?'blocked':'busy');const p=out.progress||{};const frac=typeof p.fraction==='number'?Math.max(0,Math.min(1,p.fraction)):null;const pct=frac===null?null:Math.round(frac*100);text('setup-phase',stage==='BLOCKED'?'Preparazione bloccata':stage==='READY'?'Runtime pronto':String(p.phase||'PREPARING').replaceAll('_',' '));text('setup-target',p.target||'verified local runtime');text('setup-percent',pct===null?'—':pct+'%');$('setup-bar').style.width=(pct===null?(busy?18:0):pct)+'%';$('setup-ring').style.setProperty('--progress',(pct===null?(busy?18:0):pct)+'%');text('setup-diagnostics',JSON.stringify({stage,attempt:out.attempt,progress:p,diagnostics:out.diagnostics,voice:out.voice},null,2));show('setup-retry',stage==='BLOCKED');if(stage!=='READY'){show('setup-panel',true);show('admission-panel',false);show('active-panel',false);}text('voice-diagnostics',JSON.stringify(out.voice||{},null,2));text('system-diagnostics',JSON.stringify(out,null,2));}
+async function productLoop(immediate=false){clearTimeout(state.setupTimer);try{const out=await productStatus();if(out.runtime_ready){show('setup-panel',false);await refreshReady();return;}}catch(error){if(!state.token){pairedUI(false);return;}text('setup-diagnostics',error.message);}state.setupTimer=setTimeout(()=>productLoop(),immediate?350:900);}
+async function refreshReady(){try{const lifecycle=await api('/api/v1/state');if(lifecycle.state==='ACTIVE')await loadActive();else await loadAdmission(lifecycle);}catch(error){show('setup-panel',true);text('setup-diagnostics',error.message);state.setupTimer=setTimeout(()=>productLoop(),900);}}
+function updateSteps(lifecycle){const s=lifecycle.state;for(const [id,done] of [['step-accept',['ACCEPTED','PROBED','ACTIVE'].includes(s)],['step-probe',['PROBED','ACTIVE'].includes(s)],['step-init',s==='ACTIVE']])$(id).classList.toggle('done',done);$('probe-button').disabled=!['ACCEPTED','PROBED'].includes(s);$('init-button').disabled=s!=='PROBED';$('accept-text').disabled=s!=='AWAITING_ACCEPTANCE';}
+async function loadAdmission(lifecycle){state.shell=null;show('active-panel',false);show('setup-panel',false);show('admission-panel',true);show('released-panel',false);const admission=await api('/api/v1/admission');text('terms',admission.terms);text('terms-digest',admission.terms_sha256);updateSteps(lifecycle);text('preactive-status',JSON.stringify({state:lifecycle.state,model:lifecycle.model,voice:lifecycle.voice},null,2));setStatus('Admission','ready');}
+function buildWebAck(frame){const r=frame.receipt||{};const visible=$('dashboard').textContent;return {schema:WEB_ACK_SCHEMA,runtime_session_id:r.runtime_session_id,epoch:r.epoch,frame_seq:r.frame_seq,frame_sha256:r.frame_sha256,visible_text:visible,visible_text_sha256:r.frame_sha256,epistemic_authority:0.0,execution_authority:0.0};}
+async function renderLegacyFrame(frame){if(!frame||frame.schema!==WEB_FRAME_SCHEMA)throw new Error('unexpected activation frame');state.frame=frame;text('dashboard',frame.text);syncEmpty();await apiRetry('/api/v1/frame/ack',{method:'POST',body:buildWebAck(frame)});}
+function bindShell(opened){if(!opened||opened.schema!==SHELL_SCHEMA||opened.client_id!==clientId||!opened.shell_id)throw new Error('shell binding failed');state.shell={shell_id:opened.shell_id,client_id:clientId,next_seq:opened.next_seq,last_acked_frame:opened.last_acked_frame||null};}
+function freezeActive(on=true){for(const id of ['intent','send-button','exit-button','sync-button','voice-button']){const el=$(id);if(el)el.disabled=on;}}
+function shellStatus(label){text('shell-status',String(label).toLowerCase());}
+function released(on){show('released-panel',on);if(on)freezeActive(true);}
+function syncEmpty(){show('empty-state',!$('dashboard').textContent.trim());}
+function extractSurfaceA(frame){if(!frame||frame.receipt?.kind!=='TURN')return '';const raw=String(frame.text||'');const lines=raw.split('\n');const out=[];let capture=false;for(const line of lines){if(line.includes('SUPERFICIE A')){capture=true;continue;}if(capture&&line.includes('SUPERFICIE B'))break;if(capture){const m=line.match(/^\|\s*> iKant:\s?(.*?)\s*\|$/);if(m)out.push(m[1].trimEnd());else{const c=line.match(/^\|\s{10,}(.*?)\s*\|$/);if(c&&out.length)out.push(c[1].trimEnd());}}}return out.join(' ').trim();}
+function localVoices(){return speechSynthesis.getVoices().filter(v=>v.localService===true);}
+function maybeSpeak(frame){if(!state.voiceOutput||!('speechSynthesis'in window)||frame?.receipt?.kind!=='TURN')return;const spoken=extractSurfaceA(frame);if(!spoken)return;const voices=localVoices();if(!voices.length)return;const u=new SpeechSynthesisUtterance(spoken);const lang=(navigator.language||'it-IT').toLowerCase();u.voice=voices.find(v=>String(v.lang||'').toLowerCase().startsWith(lang.split('-')[0]))||voices[0];speechSynthesis.cancel();speechSynthesis.speak(u);}
+async function renderShellResponse(response){if(!response||response.schema!==SHELL_SCHEMA)throw new Error('unexpected shell response');if(response.status==='RELEASED'&&response.frame===null){state.shell.next_seq=response.next_seq;state.shell.last_acked_frame=response.last_acked_frame||state.shell.last_acked_frame;shellStatus('released');released(true);return response;}const frame=response.frame;if(!frame||frame.schema!==WEB_FRAME_SCHEMA)throw new Error('shell response missing canonical frame');state.frame=frame;text('dashboard',frame.text);syncEmpty();released(false);const op=response.operation||{};const ack={schema:SHELL_ACK_SCHEMA,shell_id:state.shell.shell_id,client_id:clientId,seq:op.seq,idempotency_key:op.idempotency_key,frame_ack:buildWebAck(frame)};const confirmed=await apiRetry('/api/v2/shell/ack',{method:'POST',body:ack});if(!confirmed||confirmed.schema!==SHELL_SCHEMA||confirmed.acknowledged!==true)throw new Error('exact ACK failed');state.shell.next_seq=confirmed.next_seq;state.shell.last_acked_frame=confirmed.last_acked_frame||null;text('frame-inspect',JSON.stringify({receipt:frame.receipt,render_contract:frame.render_contract,shell:{next_seq:confirmed.next_seq,last_acked_frame:confirmed.last_acked_frame}},null,2));if(confirmed.status==='RELEASED'){shellStatus('released');released(true);}else{shellStatus('ready');released(false);freezeActive(false);}maybeSpeak(frame);return confirmed;}
+async function shellCommand(op,payload={}){if(!state.shell)throw new Error('shell not open');freezeActive(true);shellStatus('busy');const command={schema:SHELL_COMMAND_SCHEMA,shell_id:state.shell.shell_id,client_id:clientId,seq:state.shell.next_seq,op,idempotency_key:randomId('op'),expected_frame:state.shell.last_acked_frame,payload};const response=await apiRetry('/api/v2/shell/command',{method:'POST',body:command});return renderShellResponse(response);}
+async function openShell({synchronize=true}={}){freezeActive(true);shellStatus('binding');const opened=await apiRetry('/api/v2/shell/open',{method:'POST',body:{client_id:clientId}});bindShell(opened);if(opened.pending_response){shellStatus('recovering');await renderShellResponse(opened.pending_response);return;}if(synchronize)await shellCommand('SYNC',{});else{shellStatus('ready');freezeActive(false);}}
+async function recoverShell(){if(state.recovering)return;state.recovering=true;freezeActive(true);shellStatus('recovering');try{await openShell({synchronize:true});}catch(_error){shellStatus('transport blocked');}finally{state.recovering=false;}}
+async function loadActive(){show('setup-panel',false);show('admission-panel',false);show('active-panel',true);show('pair-panel',false);show('pair-reset',true);setStatus('ACTIVE · locale','ready');await openShell({synchronize:true});$('intent').focus();}
+function openInspector(view='conversation'){state.view=view;const shell=$('active-panel');shell.classList.add('inspector-open');$('inspector').setAttribute('aria-hidden','false');$('inspector-button').setAttribute('aria-expanded','true');$('status-button').setAttribute('aria-expanded','true');for(const el of document.querySelectorAll('.orbit-item[data-view]'))el.classList.toggle('active',el.dataset.view===view);for(const id of ['overview','artifacts','inspect','system'])show('inspector-'+id,(view==='conversation'?'overview':view)===id);text('inspector-title',({conversation:'Stato',artifacts:'Artefatti',inspect:'Inspector',system:'Sistema'})[view]||'Stato');}
+function closeInspector(){$('active-panel').classList.remove('inspector-open');$('inspector').setAttribute('aria-hidden','true');$('inspector-button').setAttribute('aria-expanded','false');$('status-button').setAttribute('aria-expanded','false');}
+async function nativeSpeechInput(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return false;try{if(typeof SR.available==='function'){const availability=await SR.available({langs:[navigator.language||'it-IT'],processLocally:true});if(availability==='downloadable'&&typeof SR.install==='function'){const installed=await SR.install({langs:[navigator.language||'it-IT']});if(installed!==true)return false;}else if(availability!=='available')return false;}const rec=new SR();rec.lang=navigator.language||'it-IT';if('processLocally'in rec)rec.processLocally=true;rec.continuous=false;rec.interimResults=true;state.recognition=rec;rec.onresult=e=>{let value='';for(let i=e.resultIndex;i<e.results.length;i++)value+=e.results[i][0].transcript;text('intent',value);$('intent').value=value;resizeComposer();};rec.onerror=()=>{$('voice-button').setAttribute('aria-pressed','false');};rec.onend=()=>{$('voice-button').setAttribute('aria-pressed','false');state.recognition=null;};rec.start();$('voice-button').setAttribute('aria-pressed','true');return true;}catch(_e){return false;}}
+async function loopbackVoiceInput(){if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'||!state.shell)throw new Error('voice input unavailable');const stream=await navigator.mediaDevices.getUserMedia({audio:true});const chunks=[];const rec=new MediaRecorder(stream);state.recording=rec;$('voice-button').setAttribute('aria-pressed','true');rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};rec.onstop=async()=>{for(const t of stream.getTracks())t.stop();$('voice-button').setAttribute('aria-pressed','false');state.recording=null;try{const blob=new Blob(chunks,{type:rec.mimeType||'audio/webm'});const out=await api('/api/v3/voice/transcribe',{method:'POST',raw:blob,contentType:blob.type||'audio/webm',headers:{'X-iKant-Shell-Id':state.shell.shell_id,'X-iKant-Client-Id':clientId}});if(!out||out.schema!==PRODUCT_VOICE_SCHEMA||out.auto_submit!==false)throw new Error('invalid local voice candidate');$('intent').value=out.text;resizeComposer();$('intent').focus();}catch(_e){shellStatus('voice unavailable');}};rec.start();setTimeout(()=>{if(state.recording===rec&&rec.state==='recording')rec.stop();},8000);}
+async function toggleVoice(){if(state.recording){state.recording.stop();return;}if(state.recognition){state.recognition.stop();return;}if(await nativeSpeechInput())return;await loopbackVoiceInput();}
+function resizeComposer(){const el=$('intent');el.style.height='auto';el.style.height=Math.min(180,Math.max(44,el.scrollHeight))+'px';}
+function openPalette(){const d=$('command-palette');if(!d.open)d.showModal();$('command-search').value='';$('command-search').focus();filterCommands('');}
+function filterCommands(q){q=String(q||'').toLowerCase();for(const b of document.querySelectorAll('#command-list button'))b.hidden=!b.textContent.toLowerCase().includes(q);}
+async function runCommand(cmd){$('command-palette').close();if(cmd==='focus')$('intent').focus();if(cmd==='voice')await toggleVoice();if(cmd==='inspect')openInspector('inspect');if(cmd==='system')openInspector('system');if(cmd==='sync')try{await shellCommand('SYNC',{});}catch(_e){await recoverShell();}if(cmd==='exit')try{await shellCommand('EXIT',{});}catch(_e){await recoverShell();}}
+$('pair-form').addEventListener('submit',async e=>{e.preventDefault();text('pair-error','');try{await pair($('pair-code').value.trim());}catch(error){text('pair-error',error.message);}});
 $('pair-reset').addEventListener('click',()=>{state.token='';state.shell=null;sessionStorage.removeItem('ikantBearer');location.reload();});
-$('accept-form').addEventListener('submit',async event=>{event.preventDefault();setError('pair-error');try{await api('/api/v1/accept',{method:'POST',body:{phrase:$('accept-text').value,presented_terms_sha256:$('terms-digest').textContent}});await refresh();}catch(error){$('preactive-status').textContent=error.message;}});
-$('probe-button').addEventListener('click',async()=>{try{const out=await api('/api/v1/probe',{method:'POST',body:{}});$('preactive-status').textContent=JSON.stringify(out,null,2);await refresh();}catch(error){$('preactive-status').textContent=error.message;}});
-$('init-button').addEventListener('click',async()=>{try{const frame=await api('/api/v1/initialize',{method:'POST',body:{}});show('admission-panel',false);show('active-panel',true);try{await renderLegacyFrame(frame);}catch(_ack){}await openShell({synchronize:true});}catch(_error){await refresh();}});
-
-$('turn-form').addEventListener('submit',async event=>{event.preventDefault();const text=$('intent').value;if(!text.trim())return;try{await shellCommand('TURN',{text});$('intent').value='';$('intent').focus();}catch(_error){await recoverShell();}});
-$('exit-button').addEventListener('click',async()=>{try{await shellCommand('EXIT',{});}catch(_error){await recoverShell();}});
-$('resume-button').addEventListener('click',async()=>{try{await shellCommand('RESUME',{});}catch(_error){await recoverShell();}});
-$('sync-button').addEventListener('click',async()=>{try{await shellCommand('SYNC',{});}catch(_error){await recoverShell();}});
-$('intent').addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();$('turn-form').requestSubmit();}});
-
+$('setup-retry').addEventListener('click',async()=>{try{await api('/api/v3/product/retry',{method:'POST',body:{}});await productLoop(true);}catch(error){text('setup-diagnostics',error.message);}});
+$('terms-toggle').addEventListener('click',()=>{const t=$('terms');t.hidden=!t.hidden;text('terms-toggle',t.hidden?'Mostra testo':'Nascondi testo');});
+$('accept-form').addEventListener('submit',async e=>{e.preventDefault();try{await api('/api/v1/accept',{method:'POST',body:{phrase:$('accept-text').value,presented_terms_sha256:$('terms-digest').textContent}});await refreshReady();}catch(error){text('preactive-status',error.message);}});
+$('probe-button').addEventListener('click',async()=>{try{const out=await api('/api/v1/probe',{method:'POST',body:{}});text('preactive-status',JSON.stringify(out,null,2));await refreshReady();}catch(error){text('preactive-status',error.message);}});
+$('init-button').addEventListener('click',async()=>{try{const frame=await api('/api/v1/initialize',{method:'POST',body:{}});show('admission-panel',false);show('active-panel',true);try{await renderLegacyFrame(frame);}catch(_ack){}await openShell({synchronize:true});}catch(_e){await refreshReady();}});
+$('turn-form').addEventListener('submit',async e=>{e.preventDefault();const value=$('intent').value;if(!value.trim())return;try{await shellCommand('TURN',{text:value});$('intent').value='';resizeComposer();$('intent').focus();}catch(_e){await recoverShell();}});
+$('intent').addEventListener('input',resizeComposer);$('intent').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();$('turn-form').requestSubmit();}});
+$('voice-button').addEventListener('click',()=>toggleVoice().catch(()=>shellStatus('voice unavailable')));
+$('voice-output-toggle').addEventListener('click',()=>{state.voiceOutput=!state.voiceOutput;$('voice-output-toggle').setAttribute('aria-pressed',String(state.voiceOutput));text('voice-output-toggle','Voce output: '+(state.voiceOutput?'on':'off'));if(!state.voiceOutput&&'speechSynthesis'in window)speechSynthesis.cancel();});
+for(const [id,op] of [['exit-button','EXIT'],['sync-button','SYNC'],['traditional-sync','SYNC'],['traditional-exit','EXIT']])$(id).addEventListener('click',async()=>{try{await shellCommand(op,{});}catch(_e){await recoverShell();}});
+$('resume-button').addEventListener('click',async()=>{try{await shellCommand('RESUME',{});}catch(_e){await recoverShell();}});
+$('inspector-button').addEventListener('click',()=>$('active-panel').classList.contains('inspector-open')?closeInspector():openInspector('conversation'));$('status-button').addEventListener('click',()=>openInspector('system'));$('inspector-close').addEventListener('click',closeInspector);$('brand-button').addEventListener('click',()=>{if(!$('active-panel').hidden)openInspector('conversation');});
+for(const b of document.querySelectorAll('.orbit-item[data-view]'))b.addEventListener('click',()=>b.dataset.view==='conversation'?closeInspector():openInspector(b.dataset.view));
+$('command-button').addEventListener('click',openPalette);$('command-search').addEventListener('input',e=>filterCommands(e.target.value));for(const b of document.querySelectorAll('#command-list button'))b.addEventListener('click',()=>runCommand(b.dataset.command));document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openPalette();}if(e.key==='Escape'&&$('active-panel').classList.contains('inspector-open'))closeInspector();});
+if('speechSynthesis'in window)speechSynthesis.onvoiceschanged=()=>{};
 if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
-const hash=new URLSearchParams(location.hash.replace(/^#/,''));const code=hash.get('pair');if(code){$('pair-code').value=code;pair(code).catch(error=>setError('pair-error',error.message));}else refresh();
+const hash=new URLSearchParams(location.hash.replace(/^#/,''));const code=hash.get('pair');if(code){$('pair-code').value=code;pair(code).catch(error=>text('pair-error',error.message));}else if(state.token){pairedUI(true);productLoop(true);}else{pairedUI(false);setStatus('Pairing','');}

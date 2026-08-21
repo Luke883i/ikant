@@ -1,7 +1,8 @@
 from __future__ import annotations
 import argparse,os,sys,webbrowser
 from pathlib import Path
-from .local_http import build_server
+from .epistemic_workspace import EpistemicWorkspaceCoordinator
+from .epistemic_http import build_server
 from .local_service import operational_fallback
 from .managed_runtime import ManagedLocalRuntime
 from .product_experience import ProductBootstrapCoordinator
@@ -23,11 +24,12 @@ def main(argv=None):
     server=None;service=None;temporal_runner=None
     try:
         runtime=ManagedLocalRuntime(root,manifest_path=a.runtime_manifest,component_root=a.component_root)
-        service=ProductBootstrapCoordinator(root,runtime=runtime,voice_endpoint=os.environ.get('IKANT_STT_ENDPOINT'),readiness_timeout=a.runtime_ready_timeout)
+        product=ProductBootstrapCoordinator(root,runtime=runtime,voice_endpoint=os.environ.get('IKANT_STT_ENDPOINT'),readiness_timeout=a.runtime_ready_timeout)
+        service=EpistemicWorkspaceCoordinator(product)
         server,pairing=build_server(service,host=host,port=a.port)
         service.start_async()
         temporal_runner=TemporalAutonomyRunner(root).start()
-        port=int(server.server_address[1]);url=f'http://localhost:{port}/';print(f'iKant Product Workspace: {url}',flush=True);print(f'Pairing code: {pairing.code}',flush=True)
+        port=int(server.server_address[1]);url=f'http://localhost:{port}/';print(f'iKant Epistemic Workspace: {url}',flush=True);print(f'Pairing code: {pairing.code}',flush=True)
         if codespaces:print('Codespaces: keep the forwarded port private and enter the one-time pairing code.',flush=True)
         elif not a.no_open:webbrowser.open(url+'#pair='+pairing.code,new=2)
         server.serve_forever(poll_interval=.2)

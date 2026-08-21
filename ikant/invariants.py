@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, asdict
 from typing import Any
 
-PRODUCT_VERSION = "0.24.0a1"
+PRODUCT_VERSION = "0.25.0a1"
 CONTRACT_VERSION = "0.12.0"
 CONTRACT_SCHEMA = "ikant-access-contract/v0.12"
 ADMISSION_POLICY_SCHEMA = "ikant-pre-admission-firewall/v0.9-test"
@@ -13,7 +13,7 @@ FRAME_SCHEMA = "ikant-dashboard-frame/v0.11-test"
 JOURNAL_SCHEMA = "ikant-dashboard-egress-journal/v0.11-test"
 LEGACY_JOURNAL_SCHEMA = "ikant-dashboard-egress-journal/v0.10-test"
 TRANSPORT_ATTESTATION_SCHEMA = "ikant-host-transport-attestation/v0.11-test"
-INVARIANT_REGISTRY_SCHEMA = "ikant-invariant-registry/v0.24-test"
+INVARIANT_REGISTRY_SCHEMA = "ikant-invariant-registry/v0.25-test"
 MAX_FRAME_BYTES = 128 * 1024
 EXIT_COMMAND = "EXIT IKANT"
 RESUME_COMMAND = "RESUME IKANT"
@@ -83,6 +83,9 @@ _INVARIANTS = (
     Invariant("TMP-001","temporal_autonomy","Elapsed time, due state, scheduler state and wake envelopes carry zero epistemic and execution authority; a wake never becomes permission, approval, grant, lease, host revalidation or execution.","CRITICAL","tests.test_temporal_autonomy_v24"),
     Invariant("TMP-002","temporal_autonomy","Temporal tasks are exact current-session human-confirmed controls; missed recurrences coalesce, clock rollback blocks, journal/session drift fails closed, and cancellation terminalizes pending control work.","CRITICAL","tests.test_temporal_autonomy_v24"),
     Invariant("TMP-003","temporal_autonomy","Future material work after a wake requires a new human interaction and fresh grant, lease and host revalidation; stale wake retry is control-only and temporal polling stops outside locked iKant egress.","CRITICAL","tests.test_temporal_autonomy_v24"),
+    Invariant("HSP-001","human_surface","After ACTIVE every semantic iKant human output is carried by exactly one HSPv2 envelope inside the sealed dashboard frame; raw model tokens, parallel notices and textual DOM error channels are forbidden.","CRITICAL","tests.test_human_surface_protocol_v25"),
+    Invariant("HSP-002","human_surface","HSPv2 frame kinds have one exclusive typed payload; TURN requires validated Surface A plus same-cycle bound Surface B, while progress, error, degraded and recovery projections remain zero-authority control state.","CRITICAL","tests.test_human_surface_protocol_v25"),
+    Invariant("HSP-003","human_surface","APPROVAL_REQUEST may project only a valid current-session HumanFrame and never records a decision or issues authority; presentation remains distinct from authorization and EXIT remains release-after-exact-ACK.","CRITICAL","tests.test_human_surface_protocol_v25"),
     Invariant("CRC-001","epistemic","CRC causal diagnostics are executable node/source ablations with explicit intervention sensitivity and must never be presented as ontological causality, consciousness or proof of closure.","CRITICAL","tests.test_epistemic_core_v13"),
     Invariant("PSY-001","psyche","Functional psyche may preserve or increase caution but cannot relax a practical/horizon block.","CRITICAL","tests.test_psyche_v05"),
     Invariant("SUR-001","surface","Validated Surface A and Surface B must be same-session/same-cycle and Surface B DOCX is mandatory for substantive human turns.","CRITICAL","tests.test_incarnate_v07"),

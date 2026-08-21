@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ikant"
-version = "0.24.0a1"
-description = "Governed local epistemic agent runtime with temporal autonomy, managed local inference and capability-bound agency"
+version = "0.25.0a1"
+description = "Governed local epistemic agent runtime with typed single-frame human surface, temporal autonomy and capability-bound agency"
 readme = "README.md"
 requires-python = ">=3.11"
 

@@ -1,0 +1,64 @@
+name: iKant Unit Diagnostic
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: ikant-unit-diagnostic-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  full-unit-diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Run exact full-unit gate
+        id: unit
+        shell: bash
+        run: |
+          set +e
+          python -W error::ResourceWarning -m unittest discover -s tests -v > unit-diagnostic.log 2>&1
+          rc=$?
+          cat unit-diagnostic.log
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          exit "$rc"
+      - name: Publish bounded unit diagnostic receipt
+        if: ${{ always() && github.event_name == 'pull_request' }}
+        uses: actions/github-script@v7
+        env:
+          UNIT_EXIT_CODE: ${{ steps.unit.outputs.exit_code }}
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- ikant-unit-diagnostic -->';
+            const ok = process.env.UNIT_EXIT_CODE === '0';
+            let tail = '';
+            if (!ok && fs.existsSync('unit-diagnostic.log')) {
+              const raw = fs.readFileSync('unit-diagnostic.log','utf8').replace(/```/g,'` ` `');
+              tail = raw.slice(-10000);
+            }
+            const body = [
+              marker,
+              '## iKant full-unit diagnostic',
+              '',
+              `UNIT_DIAGNOSTIC: ${ok ? 'PASS' : 'FAIL'}`,
+              `HEAD_SHA: ${context.sha}`,
+              ...(ok ? [] : ['', '```text', tail, '```']),
+              '',
+              'Diagnostic projection only; it grants no authority and does not weaken the full-unit gate.'
+            ].join('\n');
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments,{owner,repo,issue_number,per_page:100});
+            const previous = comments.find((c) => c.body && c.body.includes(marker));
+            if (previous) await github.rest.issues.updateComment({owner,repo,comment_id:previous.id,body});
+            else await github.rest.issues.createComment({owner,repo,issue_number,body});

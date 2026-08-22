@@ -1,0 +1,112 @@
+name: Surface A generation probe
+
+on:
+  push:
+    branches:
+      - agent/surface-a-generation-convergence-v29
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download pinned runtime and model
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ikant-surface-probe
+          curl -L --fail --retry 3 -o /tmp/ikant-surface-probe/engine.tar.gz https://github.com/ggml-org/llama.cpp/releases/download/b10344/llama-b10344-bin-ubuntu-x64.tar.gz
+          echo '01b90b0764821d0e53b985730eea3837e29a976ee00e783e18837937b93fc3f1  /tmp/ikant-surface-probe/engine.tar.gz' | sha256sum -c -
+          curl -L --fail --retry 3 -o /tmp/ikant-surface-probe/model.gguf https://huggingface.co/ggml-org/Qwen3.5-0.8B-GGUF/resolve/9447f74101aeb4e93621884dfa36ee8effb8831b/Qwen3.5-0.8B-Q4_0.gguf
+          echo '57d1997790d1744fba5b40a7317df71ea5e2acee28c47e78f0cce39c0703f8cf  /tmp/ikant-surface-probe/model.gguf' | sha256sum -c -
+          tar -xzf /tmp/ikant-surface-probe/engine.tar.gz -C /tmp/ikant-surface-probe
+          find /tmp/ikant-surface-probe -type f -name llama-server -perm -u+x -print -quit > /tmp/ikant-surface-probe/server.path
+          test -s /tmp/ikant-surface-probe/server.path
+          printf 'probe-key\n' > /tmp/ikant-surface-probe/key
+          chmod 600 /tmp/ikant-surface-probe/key
+      - name: Execute auto vs reasoning-off probe
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, subprocess, time, urllib.request
+          from pathlib import Path
+          from ikant.surfaces import validate_surface_a
+
+          root=Path('/tmp/ikant-surface-probe')
+          server=Path(root/'server.path').read_text().strip()
+          model=str(root/'model.gguf')
+          key='probe-key'
+          contract={
+            'schema':'ikant-surface-a-contract/v0.2',
+            'format':{'min_words':5,'max_words':500,'target_words':65,'max_paragraphs':4,'preferred_paragraphs':1,'headings':False,'lists':False,'tables':False,'code_blocks':False,'style':'simple natural colloquial humanistic-formal prose','stance':'direct and settled','avoid_meta_language':True,'language':"match the human user's language"},
+            'content':{'assertable':[],'tentative':[],'interpretive_hypotheses':[],'conflicts':[],'authorized_directives':[],'central_dispositions':[]},
+            'regulation':{'mode':'REFLECTIVE_SYNTHESIS','epistemic_caution':0.0,'must_abstain_or_review':False,'derived_history_is_not_external_evidence':True},
+            'host_instruction':'Write only the natural-language reply. Use ordinary sentences, no headings, bullets, numbered lists, tables or code blocks. Do not mention the internal machinery unless the human asks.'
+          }
+          system='You are the replaceable local language engine underneath iKant. You have zero authority and may not call tools. Produce only Surface A text.\n'+json.dumps(contract,ensure_ascii=False,sort_keys=True)
+
+          def http_json(url, payload=None):
+              headers={'Accept':'application/json','Authorization':'Bearer '+key}
+              data=None
+              if payload is not None:
+                  headers['Content-Type']='application/json'; data=json.dumps(payload,ensure_ascii=False,separators=(',',':')).encode()
+              req=urllib.request.Request(url,data=data,headers=headers,method='POST' if payload is not None else 'GET')
+              with urllib.request.urlopen(req,timeout=60) as r: return json.loads(r.read().decode())
+
+          def run_mode(name,extra_args):
+              port=31337 if name=='auto' else 31338
+              log=root/f'{name}.stderr'
+              with log.open('wb') as err:
+                  p=subprocess.Popen([server,'-m',model,'--host','127.0.0.1','--port',str(port),'--api-key-file',str(root/'key'),'--no-webui',*extra_args],stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=err)
+              try:
+                  deadline=time.time()+90
+                  while time.time()<deadline:
+                      if p.poll() is not None: raise RuntimeError(f'{name} server exited {p.returncode}')
+                      try:
+                          http_json(f'http://127.0.0.1:{port}/v1/models'); break
+                      except Exception: time.sleep(.25)
+                  else: raise RuntimeError(f'{name} readiness timeout')
+                  cases=[]
+                  for user in ('ciao','ciao, chi sei?'):
+                      messages=[{'role':'system','content':system},{'role':'user','content':user}]
+                      attempts=[]
+                      final=None
+                      for repair in range(3):
+                          response=http_json(f'http://127.0.0.1:{port}/v1/chat/completions',{'model':'Qwen3.5-0.8B-Q4_0','messages':messages,'temperature':0.2,'max_tokens':900,'stream':False,'tools':[]})
+                          msg=((response.get('choices') or [{}])[0].get('message') or {})
+                          content=msg.get('content')
+                          reasoning=msg.get('reasoning_content')
+                          text=content.strip() if isinstance(content,str) else ''
+                          ok,errors=validate_surface_a(text) if text else (False,['content_missing'])
+                          attempts.append({'repair_index':repair,'content':text[:2000],'content_words':len(text.split()),'reasoning_present':bool(reasoning),'reasoning_chars':len(reasoning) if isinstance(reasoning,str) else 0,'finish_reason':(response.get('choices') or [{}])[0].get('finish_reason'),'valid':ok,'errors':errors})
+                          if ok:
+                              final=text; break
+                          messages.append({'role':'assistant','content':text})
+                          messages.append({'role':'user','content':'Repair only the response text. Validation errors: '+'; '.join(errors)})
+                      cases.append({'user':user,'valid':final is not None,'final':final,'attempts':attempts})
+                  return {'mode':name,'server_args':extra_args,'cases':cases}
+              finally:
+                  if p.poll() is None: p.terminate()
+                  try:p.wait(timeout=5)
+                  except Exception:p.kill();p.wait(timeout=2)
+
+          modes=[]
+          for name,args in [('auto',[]),('reasoning_off',['--reasoning','off'])]:
+              try:modes.append(run_mode(name,args))
+              except Exception as exc:modes.append({'mode':name,'server_args':args,'probe_error':type(exc).__name__+': '+str(exc)})
+          receipt={'schema':'ikant-surface-a-generation-probe/v0.29-test','engine_release':'b10344','engine_backend':'cpu','model':'Qwen3.5-0.8B-Q4_0','epistemic_authority':0.0,'execution_authority':0.0,'modes':modes}
+          Path('backlog/surface_a_generation_probe_v29.json').write_text(json.dumps(receipt,ensure_ascii=False,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(receipt,ensure_ascii=False,indent=2))
+          PY
+      - name: Commit probe receipt
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add backlog/surface_a_generation_probe_v29.json
+          git commit -m 'probe: record real Surface A generation modes'
+          git push

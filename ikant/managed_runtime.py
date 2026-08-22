@@ -5,6 +5,7 @@ from typing import Any,Callable
 from .component_manifest import load_manifest
 from .component_store import atomic_json
 from .engine_supervisor import EngineSupervisor
+from .foundation import ExperimentModelProxy
 from .local_service import LocalAppError,LocalEmbodimentService
 from .model_broker import LocalModelBroker
 from .model_manager import ModelManager
@@ -28,7 +29,7 @@ class ManagedLocalRuntime:
    if hasattr(supervisor,'progress'):supervisor.progress=progress
    session=supervisor.start(binding,timeout=readiness_timeout)
    if session.get('status')!='READY' or session.get('browser_model_transport') is not False:supervisor.stop();raise ManagedRuntimeError('managed engine did not reach constrained readiness')
-   self.supervisor=supervisor;self.binding=binding;self.binding_digest=digest;self._persist('READY',manifest_sha256=binding['manifest_sha256'],binding_sha256=digest,engine={'id':binding['engine']['id'],'version':binding['engine']['version'],'platform':binding['engine']['platform'],'artifact_sha256':binding['engine']['artifact_sha256']},model={'id':binding['model']['id'],'revision':binding['model']['revision'],'sha256':binding['model']['sha256']});return LocalModelBroker(str(session['endpoint']),model=str(session['model_id']),api_key=str(session['api_key']),runtime_binding_digest=digest,managed_runtime=True)
+   self.supervisor=supervisor;self.binding=binding;self.binding_digest=digest;self._persist('READY',manifest_sha256=binding['manifest_sha256'],binding_sha256=digest,engine={'id':binding['engine']['id'],'version':binding['engine']['version'],'platform':binding['engine']['platform'],'artifact_sha256':binding['engine']['artifact_sha256']},model={'id':binding['model']['id'],'revision':binding['model']['revision'],'sha256':binding['model']['sha256']});broker=LocalModelBroker(str(session['endpoint']),model=str(session['model_id']),api_key=str(session['api_key']),runtime_binding_digest=digest,managed_runtime=True);return ExperimentModelProxy(self.root,broker)
   except Exception as exc:
    self._persist('BLOCKED',error=type(exc).__name__);self.stop(persist=False)
    if isinstance(exc,ManagedRuntimeError):raise

@@ -5,6 +5,7 @@ from pathlib import Path
 from urllib.parse import parse_qs,urlsplit
 from .epistemic_http import make_epistemic_handler
 from .experience_projection import runtime_projection
+from .foundation import FoundationConfigError,foundation_projection,load_experiment_config,update_experiment_config
 from .local_http import _MAX_AUDIO,_read_json
 from .local_security import PairingSession,allowed_hostnames
 from .local_web_host import LocalWebHostAdapter
@@ -37,6 +38,16 @@ def make_bootstrap_handler(service,pairing,*,assets_dir:Path,allowed_hosts:froze
     try:self._json(200,runtime_projection(service.root))
     except Exception as exc:self._json(409,transport_diagnostic(path,exc))
     return
+   if path=='/api/v7/foundation':
+    if not self._guard():return
+    try:self._json(200,foundation_projection(service))
+    except Exception as exc:self._json(409,transport_diagnostic(path,exc))
+    return
+   if path=='/api/v7/config':
+    if not self._guard():return
+    try:self._json(200,load_experiment_config(service.root))
+    except Exception as exc:self._json(409,transport_diagnostic(path,exc))
+    return
    if not path.startswith('/api/v5/bootstrap/'):return super().do_GET()
    if not self._guard():return
    query=parse_qs(split.query,keep_blank_values=False)
@@ -49,6 +60,12 @@ def make_bootstrap_handler(service,pairing,*,assets_dir:Path,allowed_hosts:froze
    except Exception:self._empty(409)
   def do_POST(self):
    path=urlsplit(self.path).path
+   if path=='/api/v7/config':
+    if not self._guard(origin=True):return
+    try:self._json(200,update_experiment_config(service,_read_json(self)))
+    except FoundationConfigError as exc:self._json(409,transport_diagnostic(path,exc))
+    except Exception as exc:self._json(409,transport_diagnostic(path,exc))
+    return
    if path.startswith('/api/v2/shell/'):
     if not self._guard(origin=True):return
     try:

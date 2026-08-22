@@ -1,0 +1,54 @@
+{
+  "candidate_head": "7a8f453d95f11529f46e519fb9729f042245336a",
+  "compile_exit": 0,
+  "compile_tail": "",
+  "epistemic_authority": 0.0,
+  "execution_authority": 0.0,
+  "falsifier": {
+    "baseline_failures": 0,
+    "baseline_seconds": 10.448,
+    "candidate_source_gate": {
+      "empty_http_safe": true,
+      "mime_negotiation": true,
+      "no_webkit_remote": true,
+      "pending": true,
+      "post_install_recheck": true,
+      "process_local": true,
+      "redaction": true,
+      "semantic_409_no_retry": true,
+      "structured_server_diag": true,
+      "sw_fresh": true,
+      "turn_watchdog": true,
+      "user_edit_race": true,
+      "voiceschanged": true
+    },
+    "elapsed_seconds": 34.661,
+    "epistemic_authority": 0.0,
+    "execution_authority": 0.0,
+    "fully_killed": 72,
+    "min_hits": 277777,
+    "min_kills": 277777,
+    "mutation_classes": 72,
+    "mutation_seconds": 24.211,
+    "mutation_trials": 20000000,
+    "no_novelty_tail": 1000,
+    "rejected_runs": [
+      {
+        "reason": "receipt serializer referenced novel instead of novelty; runtime unchanged",
+        "run": "source-bound-1"
+      }
+    ],
+    "schema": "ikant-interactive-liveness-falsification/v0.29-test",
+    "semantic_signatures": 4096,
+    "survivors": [],
+    "tail_novelty": 0,
+    "trajectories": 10000000
+  },
+  "falsifier_exit": 0,
+  "node_check_exit": 0,
+  "node_tail": "",
+  "schema": "ikant-pr38-hosted-verifier/v0.29-test",
+  "unit_exit": 0,
+  "unit_tail": "----------------------------------------------------------------------\nRan 545 tests in 4.114s\n\nOK\n",
+  "workflow_head": "c674d560e4e35ca512e0ab936eff14133a3c97a3"
+}

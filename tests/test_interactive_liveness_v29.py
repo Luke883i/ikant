@@ -16,10 +16,11 @@ class InteractiveLivenessSourceTests(unittest.TestCase):
   self.assertNotIn('addEventListener',self.compat)
   self.assertIn('ECF1.3',self.compat)
  def test_http_decoder_preserves_errors_and_does_not_retry_semantic_409(self):
-  self.assertIn('const rawText=await response.text()',self.js);self.assertIn('JSON.parse(rawText)',self.js)
-  self.assertIn('HTTP_ERROR',self.js);self.assertIn('HTTP_RETRY',self.js)
-  for code in ('status===408','status===425','status===429'):self.assertIn(code,self.js)
-  self.assertNotIn('status===409',self.js)
+  api=self.js.split('async function api(',1)[1].split('function retryable',1)[0]
+  self.assertRegex(api,r'const\s+rawText\s*=\s*await\s+\w+\.text\(\)');self.assertIn('JSON.parse(rawText)',api)
+  self.assertIn('HTTP_ERROR',api);self.assertIn('HTTP_RETRY',self.js)
+  for code in ('s===408','s===425','s===429'):self.assertIn(code,self.js)
+  self.assertNotIn('s===409',self.js);self.assertNotIn('status===409',self.js)
  def test_on_device_voice_is_local_only_and_has_loopback_fallback_boundary(self):
   self.assertIn('const SR=window.SpeechRecognition',self.js);self.assertNotIn('webkitSpeechRecognition',self.js)
   self.assertIn('SR.available({langs:[lang],processLocally:true})',self.js);self.assertIn('SR.install({langs:[lang],processLocally:true})',self.js)

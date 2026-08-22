@@ -1,0 +1,73 @@
+name: PR38 interactive liveness verifier
+on:
+  push:
+    branches:
+      - diag/pr38-interactive-liveness
+permissions:
+  contents: write
+jobs:
+  verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify exact candidate
+        id: verify
+        shell: bash
+        run: |
+          set +e
+          python -m compileall -q ikant tests scripts > compile.log 2>&1
+          COMPILE=$?
+          node --check ikant/web/conversation.js > node.log 2>&1
+          NODE=$?
+          python -m unittest discover -s tests -q > unit.log 2>&1
+          UNIT=$?
+          python scripts/interactive_liveness_falsification_v29.py > falsifier.json 2> falsifier.err
+          FALSIFIER=$?
+          export COMPILE NODE UNIT FALSIFIER
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          def tail(name, n=5000):
+              p=Path(name)
+              return p.read_text(errors='replace')[-n:] if p.exists() else ''
+          try:
+              falsifier=json.loads(Path('falsifier.json').read_text())
+          except Exception:
+              falsifier={'parse_error': True, 'stdout_tail': tail('falsifier.json'), 'stderr_tail': tail('falsifier.err')}
+          out={
+              'schema':'ikant-pr38-hosted-verifier/v0.29-test',
+              'head_sha':os.environ.get('GITHUB_SHA'),
+              'compile_exit':int(os.environ['COMPILE']),
+              'node_check_exit':int(os.environ['NODE']),
+              'unit_exit':int(os.environ['UNIT']),
+              'falsifier_exit':int(os.environ['FALSIFIER']),
+              'unit_tail':tail('unit.log'),
+              'node_tail':tail('node.log'),
+              'compile_tail':tail('compile.log'),
+              'falsifier':falsifier,
+              'epistemic_authority':0.0,
+              'execution_authority':0.0,
+          }
+          Path('backlog/pr38-hosted-verifier.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          PY
+          if [ "$COMPILE" -ne 0 ] || [ "$NODE" -ne 0 ] || [ "$UNIT" -ne 0 ] || [ "$FALSIFIER" -ne 0 ]; then
+            echo "VERIFIER_STATUS=FAIL" >> "$GITHUB_ENV"
+          else
+            echo "VERIFIER_STATUS=PASS" >> "$GITHUB_ENV"
+          fi
+      - name: Persist diagnostic receipt
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backlog/pr38-hosted-verifier.json
+          git commit -m "ci: record PR38 hosted verifier $VERIFIER_STATUS"
+          git push
+      - name: Enforce verifier
+        shell: bash
+        run: test "$VERIFIER_STATUS" = PASS

@@ -1,0 +1,20 @@
+{
+  "backend": "cpu",
+  "engine_asset": "llama-b10344-bin-ubuntu-x64.tar.gz",
+  "engine_asset_sha256": "01b90b0764821d0e53b985730eea3837e29a976ee00e783e18837937b93fc3f1",
+  "engine_asset_size_bytes": 16512385,
+  "engine_release": "b10344",
+  "engine_tree_sha256": "3ca1b97cb59865453b0d675c47c44d6a23605b8b7e429946a77898c1f7d5804c",
+  "epistemic_authority": 0.0,
+  "execution_authority": 0.0,
+  "model": "Qwen3.5-0.8B-Q4_0",
+  "model_sha256": "57d1997790d1744fba5b40a7317df71ea5e2acee28c47e78f0cce39c0703f8cf",
+  "model_size_bytes": 563036064,
+  "platform": "linux-x86_64",
+  "ready": true,
+  "returncode_before_cleanup": null,
+  "schema": "ikant-runtime-compat-proof/v0.29-test",
+  "server_relative_path": "llama-b10344/llama-server",
+  "status": "PASS",
+  "stderr_tail": "model loaded; listening on http://127.0.0.1:31337"
+}

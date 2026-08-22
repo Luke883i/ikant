@@ -11,9 +11,28 @@ class JournalState:seq:int;tail_sha256:str;integrity:str
 def new_attempt_id()->str:return f'ATT-{time.time_ns()//1_000_000:013d}-{secrets.token_hex(6)}'
 def safe_text(v:Any,limit:int=1024)->str:
  s=str(v or '').replace('\x00','').replace('\r',' ').replace('\n',' ').strip();s=_REDACT.sub(lambda m:m.group(1)+'[REDACTED]',s);s=_QUERY.sub(r'\1?[REDACTED]',s);return s[:limit]
-def exception_chain(exc:BaseException,limit:int=6)->list[dict[str,str]]:
+def _safe_process_exit(value:Any)->dict[str,Any]|None:
+ if not isinstance(value,dict):return None
+ kind=str(value.get('kind') or '')
+ rc=value.get('returncode');sig=value.get('signal')
+ if kind=='UNKNOWN':
+  if rc is not None or sig is not None:return None
+ elif kind=='EXIT_STATUS':
+  if type(rc) is not int or rc<0 or sig is not None:return None
+ elif kind=='SIGNAL':
+  if type(rc) is not int or rc>=0 or type(sig) is not int or sig<=0 or sig!=-rc:return None
+ else:return None
+ return {'kind':kind,'returncode':rc,'signal':sig,'stderr_tail':safe_text(value.get('stderr_tail'),4096)}
+def _safe_cause_entry(value:Any)->dict[str,Any]:
+ src=value if isinstance(value,dict) else {};out={'type':safe_text(src.get('type'),96),'message':safe_text(src.get('message'),768)};diag=_safe_process_exit(src.get('process_exit'))
+ if diag is not None:out['process_exit']=diag
+ return out
+def exception_chain(exc:BaseException,limit:int=6)->list[dict[str,Any]]:
  out=[];seen=set();cur:BaseException|None=exc
- while cur is not None and len(out)<limit and id(cur) not in seen:seen.add(id(cur));out.append({'type':type(cur).__name__,'message':safe_text(cur,768)});cur=cur.__cause__ or cur.__context__
+ while cur is not None and len(out)<limit and id(cur) not in seen:
+  seen.add(id(cur));entry={'type':type(cur).__name__,'message':safe_text(cur,768)};diag=_safe_process_exit(getattr(cur,'process_exit',None))
+  if diag is not None:entry['process_exit']=diag
+  out.append(entry);cur=cur.__cause__ or cur.__context__
  return out
 def classify_failure(step:str,exc:BaseException):
  chain=exception_chain(exc);names={x['type'] for x in chain};msg=' '.join(x['message'].lower() for x in chain)
@@ -60,7 +79,7 @@ class BootstrapJournal:
   if step not in STEP_IDS or outcome not in OUTCOMES or not str(attempt_id).startswith('ATT-'):raise BootstrapDiagnosticError('invalid bootstrap event')
   with self._lock:
    if self._integrity!='OK':raise BootstrapDiagnosticError('bootstrap journal integrity unavailable')
-   e={'schema':EVENT_SCHEMA,'seq':self._seq+1,'timestamp_ms':time.time_ns()//1_000_000,'attempt_id':safe_text(attempt_id,64),'attempt':max(1,int(attempt)),'step':step,'outcome':outcome,'code':safe_text(code,96),'target':safe_text(target,192),'detail':safe_text(detail,1024),'bytes':max(0,int(bytes_count)) if isinstance(bytes_count,int) and not isinstance(bytes_count,bool) else None,'total_bytes':max(0,int(total_bytes)) if isinstance(total_bytes,int) and not isinstance(total_bytes,bool) else None,'remediation':{'id':safe_text((remediation or {}).get('id'),96),'label':safe_text((remediation or {}).get('label'),240),'action':safe_text((remediation or {}).get('action'),32)} if remediation else None,'cause_chain':[{'type':safe_text(x.get('type'),96),'message':safe_text(x.get('message'),768)} for x in (cause_chain or [])[:6]],'previous_sha256':self._tail,'epistemic_authority':0.0,'execution_authority':0.0};digest=hashlib.sha256(_canon(e)).hexdigest();e['event_sha256']=digest;raw=_canon(e)+b'\n'
+   e={'schema':EVENT_SCHEMA,'seq':self._seq+1,'timestamp_ms':time.time_ns()//1_000_000,'attempt_id':safe_text(attempt_id,64),'attempt':max(1,int(attempt)),'step':step,'outcome':outcome,'code':safe_text(code,96),'target':safe_text(target,192),'detail':safe_text(detail,1024),'bytes':max(0,int(bytes_count)) if isinstance(bytes_count,int) and not isinstance(bytes_count,bool) else None,'total_bytes':max(0,int(total_bytes)) if isinstance(total_bytes,int) and not isinstance(total_bytes,bool) else None,'remediation':{'id':safe_text((remediation or {}).get('id'),96),'label':safe_text((remediation or {}).get('label'),240),'action':safe_text((remediation or {}).get('action'),32)} if remediation else None,'cause_chain':[_safe_cause_entry(x) for x in (cause_chain or [])[:6]],'previous_sha256':self._tail,'epistemic_authority':0.0,'execution_authority':0.0};digest=hashlib.sha256(_canon(e)).hexdigest();e['event_sha256']=digest;raw=_canon(e)+b'\n'
    if len(raw)>MAX_EVENT_BYTES:raise BootstrapDiagnosticError('bootstrap event outside bound')
    fd=os.open(self.path,os.O_WRONLY|os.O_CREAT|os.O_APPEND,0o600)
    try:os.write(fd,raw);os.fsync(fd)
@@ -89,5 +108,5 @@ class BootstrapJournal:
   for e in self._scan(attempt_id):latest[str(e.get('step') or '')]=e
   rows=[];passed=failed=running=0
   for sid,label in STEPS:
-   e=latest.get(sid);st=str(e.get('outcome')) if e else 'PENDING';passed+=st=='PASS';failed+=st=='FAIL';running+=st in {'START','PROGRESS','INFO'};rows.append({'id':sid,'label':label,'status':st,'code':e.get('code') if e else None,'target':e.get('target') if e else None,'detail':e.get('detail') if e else None,'bytes':e.get('bytes') if e else None,'total_bytes':e.get('total_bytes') if e else None,'remediation':e.get('remediation') if e else None,'seq':e.get('seq') if e else None})
+   e=latest.get(sid);st=str(e.get('outcome')) if e else 'PENDING';passed+=st=='PASS';failed+=st=='FAIL';running+=st in {'START','PROGRESS','INFO'};rows.append({'id':sid,'label':label,'status':st,'code':e.get('code') if e else None,'target':e.get('target') if e else None,'detail':e.get('detail') if e else None,'bytes':e.get('bytes') if e else None,'total_bytes':e.get('total_bytes') if e else None,'remediation':e.get('remediation') if e else None,'cause_chain':e.get('cause_chain') if e else [],'seq':e.get('seq') if e else None})
   overall='BLOCKED' if failed else 'READY' if passed==len(STEPS) else 'PREPARING' if running or latest else 'STARTING';raw_ok=self.path.is_file() and self.path.stat().st_size<=MAX_RAW_BYTES;return {'schema':STATUS_SCHEMA,'attempt_id':str(attempt_id),'attempt':max(1,int(attempt)),'overall':overall,'steps':rows,'summary':{'passed':passed,'failed':failed,'running':running,'total':len(STEPS)},'journal':{'path':'.ikant/bootstrap-events.jsonl','integrity':self._integrity,'last_seq':self._seq,'tail_sha256':self._tail,'raw_available':raw_ok},'silent_failure':bool(overall=='BLOCKED' and failed==0),'presentation_is_authority':False,'epistemic_authority':0.0,'execution_authority':0.0}

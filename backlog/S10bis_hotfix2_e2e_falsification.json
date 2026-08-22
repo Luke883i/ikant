@@ -1,0 +1,17 @@
+{
+  "baseline_failures": 0,
+  "concrete_os_fixtures": 17,
+  "elapsed_seconds": 13.571,
+  "iterations": 10000000,
+  "killed_mutants": 32,
+  "mutant_min_hits": 249537,
+  "mutant_min_kills": 13141,
+  "mutants": 32,
+  "real_journal_seeds": 2,
+  "schema": "ikant-s10bis-hotfix2-e2e-falsification/v0.2",
+  "seed": 20260822,
+  "semantic_signatures_observed": 48,
+  "survivors": [],
+  "tail": 1000,
+  "tail_novelty": 0
+}

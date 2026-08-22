@@ -12,18 +12,37 @@ from .local_security import require_loopback_url
 MODEL_BROKER_SCHEMA = "ikant-local-model-broker/v0.20-test"
 _ITALIAN_WORDS = frozenset({"ciao","chi","sei","cosa","che","come","puoi","vorrei","grazie","perche","perché","italiano","italiana","spiegami","dimmi","fammi"})
 _ENGLISH_WORDS = frozenset({"hello","hi","who","what","how","can","could","please","thanks","explain","tell"})
+_ITALIAN_RESPONSE_WORDS = frozenset({"ciao","sono","posso","puoi","aiutarti","aiuto","oggi","cosa","come","che","con","per","il","lo","la","un","una","e","di","ti","tu","vuoi","serve","risposta","locale"})
+_ENGLISH_RESPONSE_WORDS = frozenset({"hello","hi","i","you","your","we","the","a","an","and","to","with","how","can","could","help","today","what","who","are","is","want","need","answer","local"})
 
 
 class LocalModelError(RuntimeError):
     pass
 
 
+def _tokens(text: str) -> list[str]:
+    return re.findall(r"[a-zà-ÿ']+", str(text).casefold())
+
+
 def _reply_language(user_text: str) -> str:
-    words=set(re.findall(r"[a-zà-ÿ']+",str(user_text).casefold()))
+    words=set(_tokens(user_text))
     it=len(words&_ITALIAN_WORDS);en=len(words&_ENGLISH_WORDS)
     if it>en and it>0:return "Italian"
     if en>it and en>0:return "English"
     return "the same language as the user"
+
+
+def _language_error(user_text: str, reply_text: str) -> str | None:
+    target=_reply_language(user_text)
+    words=_tokens(reply_text)
+    if not words or target not in {"Italian","English"}:return None
+    it=sum(1 for word in words if word in _ITALIAN_RESPONSE_WORDS)
+    en=sum(1 for word in words if word in _ENGLISH_RESPONSE_WORDS)
+    # Only reject a clear lexical drift. Proper nouns and technical English terms
+    # do not trigger this guard unless ordinary words overwhelmingly switch language.
+    if target=="Italian" and en>=3 and en>it+1:return "reply language differs from the human turn: expected Italian"
+    if target=="English" and it>=3 and it>en+1:return "reply language differs from the human turn: expected English"
+    return None
 
 
 def _compact_generation_contract(contract:dict[str,Any],interaction:dict[str,Any],user_text:str)->dict[str,Any]:
@@ -195,7 +214,7 @@ class LocalModelBroker:
             except LocalModelError:
                 request_ms.append(self._last_request_ms);self._record_metrics(status="ERROR",started=started,request_ms=request_ms,attempts=repairs+1,max_tokens=max_tokens,system_chars=len(system));raise
             request_ms.append(self._last_request_ms);last_response=response
-            text=self._extract_text(response);ok,errors=validator(text);iok,ierrors=validate_interaction_surface(text,interaction);errors=list(dict.fromkeys(list(errors)+list(ierrors)));ok=bool(ok and iok)
+            text=self._extract_text(response);ok,errors=validator(text);iok,ierrors=validate_interaction_surface(text,interaction);language_error=_language_error(str(user_text),text);errors=list(dict.fromkeys(list(errors)+list(ierrors)+([language_error] if language_error else [])));ok=bool(ok and iok and not language_error)
             if ok:
                 self._record_metrics(status="VALIDATED",started=started,request_ms=request_ms,attempts=repairs+1,max_tokens=max_tokens,system_chars=len(system),response=response);return text
             if repairs>=int(max_repairs):

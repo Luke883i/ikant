@@ -1,0 +1,34 @@
+name: hotfix6 final2
+on:
+  push:
+    branches: [diag/hotfix6-final2]
+permissions: {contents: write}
+jobs:
+  verify:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Verify candidate
+        shell: bash
+        run: |
+          set +e
+          python -m compileall -q ikant tests scripts > /tmp/compile.log 2>&1; c=$?
+          python -W error::ResourceWarning -m unittest discover -s tests -v > /tmp/unit.log 2>&1; u=$?
+          python scripts/conversation_runtime_hotfix6_falsify.py --mutations 10000000 --tail 1000 > /tmp/falsify.log 2>&1; f=$?
+          python - "$c" "$u" "$f" <<'PY'
+          import json,pathlib,sys
+          def tail(p,n=12000):
+              try:return pathlib.Path(p).read_text(errors='replace')[-n:]
+              except:return ''
+          out={'schema':'ikant-hotfix6-final2-verifier/v0.29-test','compile_exit':int(sys.argv[1]),'unit_exit':int(sys.argv[2]),'falsifier_exit':int(sys.argv[3]),'unit_tail':tail('/tmp/unit.log'),'falsifier_tail':tail('/tmp/falsify.log'),'epistemic_authority':0.0,'execution_authority':0.0}
+          pathlib.Path('backlog/hotfix6_final2_verifier.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          PY
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add backlog/hotfix6_final2_verifier.json
+          git commit -m 'diag: record hotfix6 final2 verifier' || true
+          git push
+          test "$c" = 0 && test "$u" = 0 && test "$f" = 0

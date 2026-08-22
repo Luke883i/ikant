@@ -1,0 +1,145 @@
+{
+  "engine_backend": "cpu",
+  "engine_release": "b10344",
+  "epistemic_authority": 0.0,
+  "execution_authority": 0.0,
+  "model": "Qwen3.5-0.8B-Q4_0",
+  "modes": [
+    {
+      "cases": [
+        {
+          "attempts": [
+            {
+              "content": "",
+              "content_words": 0,
+              "errors": [
+                "content_missing"
+              ],
+              "finish_reason": "length",
+              "reasoning_chars": 3951,
+              "reasoning_present": true,
+              "repair_index": 0,
+              "valid": false
+            },
+            {
+              "content": "",
+              "content_words": 0,
+              "errors": [
+                "content_missing"
+              ],
+              "finish_reason": "length",
+              "reasoning_chars": 3711,
+              "reasoning_present": true,
+              "repair_index": 1,
+              "valid": false
+            },
+            {
+              "content": "",
+              "content_words": 0,
+              "errors": [
+                "content_missing"
+              ],
+              "finish_reason": "length",
+              "reasoning_chars": 3892,
+              "reasoning_present": true,
+              "repair_index": 2,
+              "valid": false
+            }
+          ],
+          "final": null,
+          "user": "ciao",
+          "valid": false
+        },
+        {
+          "attempts": [
+            {
+              "content": "",
+              "content_words": 0,
+              "errors": [
+                "content_missing"
+              ],
+              "finish_reason": "length",
+              "reasoning_chars": 3814,
+              "reasoning_present": true,
+              "repair_index": 0,
+              "valid": false
+            },
+            {
+              "content": "ciao, chi sei?",
+              "content_words": 3,
+              "errors": [
+                "word count 3 outside 5..500"
+              ],
+              "finish_reason": "stop",
+              "reasoning_chars": 1487,
+              "reasoning_present": true,
+              "repair_index": 1,
+              "valid": false
+            },
+            {
+              "content": "",
+              "content_words": 0,
+              "errors": [
+                "content_missing"
+              ],
+              "finish_reason": "length",
+              "reasoning_chars": 3471,
+              "reasoning_present": true,
+              "repair_index": 2,
+              "valid": false
+            }
+          ],
+          "final": null,
+          "user": "ciao, chi sei?",
+          "valid": false
+        }
+      ],
+      "mode": "auto",
+      "server_args": []
+    },
+    {
+      "cases": [
+        {
+          "attempts": [
+            {
+              "content": "Ciao! How can I help you today?",
+              "content_words": 7,
+              "errors": [],
+              "finish_reason": "stop",
+              "reasoning_chars": 0,
+              "reasoning_present": false,
+              "repair_index": 0,
+              "valid": true
+            }
+          ],
+          "final": "Ciao! How can I help you today?",
+          "user": "ciao",
+          "valid": true
+        },
+        {
+          "attempts": [
+            {
+              "content": "Ciao! Sono io, l'IA. Come posso aiutarti oggi?",
+              "content_words": 8,
+              "errors": [],
+              "finish_reason": "stop",
+              "reasoning_chars": 0,
+              "reasoning_present": false,
+              "repair_index": 0,
+              "valid": true
+            }
+          ],
+          "final": "Ciao! Sono io, l'IA. Come posso aiutarti oggi?",
+          "user": "ciao, chi sei?",
+          "valid": true
+        }
+      ],
+      "mode": "reasoning_off",
+      "server_args": [
+        "--reasoning",
+        "off"
+      ]
+    }
+  ],
+  "schema": "ikant-surface-a-generation-probe/v0.29-test"
+}

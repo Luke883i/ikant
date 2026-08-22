@@ -1,0 +1,95 @@
+{
+  "baseline": {
+    "first_cycle_ms": 804.6,
+    "mean_ms": 744.4,
+    "name": "baseline",
+    "requests": [
+      {
+        "chars": 5,
+        "i": 0,
+        "ms": 621.1,
+        "prompt": "ciao"
+      },
+      {
+        "chars": 175,
+        "i": 1,
+        "ms": 1017.3,
+        "prompt": "ciao, chi sei?"
+      },
+      {
+        "chars": 100,
+        "i": 2,
+        "ms": 775.4,
+        "prompt": "spiegami in una frase che cosa puoi fare"
+      },
+      {
+        "chars": 31,
+        "i": 3,
+        "ms": 408.6,
+        "prompt": "ciao"
+      },
+      {
+        "chars": 117,
+        "i": 4,
+        "ms": 890.8,
+        "prompt": "ciao, chi sei?"
+      },
+      {
+        "chars": 89,
+        "i": 5,
+        "ms": 753.2,
+        "prompt": "spiegami in una frase che cosa puoi fare"
+      }
+    ],
+    "second_cycle_ms": 684.2,
+    "startup_ms": 3737.7
+  },
+  "mean_speedup": 1.063,
+  "runner_cpu_count": 4,
+  "schema": "ikant-hotfix6-latency-bench/v0.29-test",
+  "tuned": {
+    "first_cycle_ms": 745.0,
+    "mean_ms": 700.1,
+    "name": "tuned",
+    "requests": [
+      {
+        "chars": 4,
+        "i": 0,
+        "ms": 592.2,
+        "prompt": "ciao"
+      },
+      {
+        "chars": 76,
+        "i": 1,
+        "ms": 737.6,
+        "prompt": "ciao, chi sei?"
+      },
+      {
+        "chars": 127,
+        "i": 2,
+        "ms": 905.1,
+        "prompt": "spiegami in una frase che cosa puoi fare"
+      },
+      {
+        "chars": 31,
+        "i": 3,
+        "ms": 411.5,
+        "prompt": "ciao"
+      },
+      {
+        "chars": 91,
+        "i": 4,
+        "ms": 733.0,
+        "prompt": "ciao, chi sei?"
+      },
+      {
+        "chars": 122,
+        "i": 5,
+        "ms": 821.4,
+        "prompt": "spiegami in una frase che cosa puoi fare"
+      }
+    ],
+    "second_cycle_ms": 655.3,
+    "startup_ms": 1515.8
+  }
+}

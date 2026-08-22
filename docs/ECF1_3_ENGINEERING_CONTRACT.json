@@ -1,0 +1,144 @@
+{
+  "schema": "ikant-ecf-engineering-contract/v1.3",
+  "foundation": "ECF1.3",
+  "base_main": "4583483e3e3668a127e2de72ae3bf75f6bddab72",
+  "base_pr": 39,
+  "scope": {
+    "implementation_target": "LOCAL_WEBAPP conversational foundation",
+    "future_supply_defined_not_implemented": [
+      "FLOATING_SHELL",
+      "AUTHENTICATED_BROWSER_COMPANION",
+      "PROVIDER_CONNECTORS",
+      "OS_SEMANTIC_ADAPTERS"
+    ],
+    "definition_of_100_percent": "All ECF1.3 implementation invariants ECF13-001..ECF13-030 pass on the exact PR head. Future-supply entries are required as typed interfaces and test fixtures, not as activated product capabilities."
+  },
+  "thesis": "Expose state, evidence and governed effects; never expose private chain-of-thought. Preserve the current runtime and replace only the critical-path projection and human shell where evidence shows debt.",
+  "canonical_turn": [
+    "HUMAN_INTENT",
+    "INTENTION_BINDING",
+    "SEMANTIC_RETRIEVAL",
+    "EPISTEMIC_CHECK",
+    "PRACTICAL_GOVERNANCE",
+    "GENERATION_CONTRACT",
+    "LOCAL_LLM_OR_FALLBACK",
+    "SURFACE_VALIDATION",
+    "SEALED_FRAME",
+    "PRIMARY_PROJECTION",
+    "EXACT_ACK",
+    "ZERO_EVIDENCE_RESPONSE_MEMORY"
+  ],
+  "public_cognitive_path": [
+    {"id": "UNDERSTAND", "it": "Capisco", "source": "intention/provenance binding"},
+    {"id": "CONNECT", "it": "Collego", "source": "semantic slice, retrieval and temporal context"},
+    {"id": "CHECK", "it": "Verifico", "source": "CRC, grounding, conflicts, horizon and calibration"},
+    {"id": "GOVERN", "it": "Valuto", "source": "central projection and practical/action governance"},
+    {"id": "FORMULATE", "it": "Formulo", "source": "bounded local generation contract and model/fallback"},
+    {"id": "INTEGRATE", "it": "Integro", "source": "validated reply persisted as zero-evidence response memory"}
+  ],
+  "model_reticulum_feedback": {
+    "reticulum_to_model": "The deterministic cognitive runtime selects/downgrades content, preserves conflicts, sets caution and material-action gates, then compiles a bounded generation contract. The local LLM is a replaceable zero-authority text generator under that contract.",
+    "model_to_reticulum": "Only a validated emitted reply is ingested as RESPONSE/MEMORY with evidence=0.0 and runtime_derived provenance. It may affect later retrieval, activation and temporal continuity, but never becomes external evidence, permission or authority.",
+    "forbidden": [
+      "raw model reasoning as product evidence",
+      "private chain-of-thought display or persistence",
+      "model text upgrading its own evidence score",
+      "model output granting permission/approval/grant/lease",
+      "using public cognitive-stage copy to imply consciousness"
+    ]
+  },
+  "critical_path": {
+    "formula": "T_visible_reply = T_intake + T_cognitive + T_generation + T_validation + T_frame + T_transport",
+    "excluded_from_critical_path": ["DOCX_EXPORT", "FULL_TRACE_RENDER", "HISTORY_INDEX_REFRESH"],
+    "required_spans": [
+      "TURN_ACCEPTED",
+      "COGNITIVE_START",
+      "SEMANTIC_SLICE_DONE",
+      "CRC_DONE",
+      "GOVERNANCE_DONE",
+      "SNAPSHOT_JSON_DONE",
+      "MODEL_START",
+      "MODEL_DONE",
+      "VALIDATION_DONE",
+      "FRAME_SEALED",
+      "PRIMARY_DELIVERED",
+      "ACK_DONE"
+    ],
+    "performance_policy": "Never claim a speedup from model-server timing alone. Phase-2 must record reproducible end-to-end spans on baseline and candidate. Artifact generation must have zero membership in the pre-primary critical path."
+  },
+  "public_ui_grammar": "STATE -> TASK? -> CTA? -> CONVERSATION -> COMPOSER -> DETAILS?",
+  "idle_persistent_components": ["Entity", "State", "Conversation", "Composer", "Details"],
+  "ordinary_ui_forbidden_labels": [
+    "Surface A",
+    "Surface B",
+    "HSPv2",
+    "S8",
+    "S9",
+    "S10",
+    "S10bis",
+    "ACK",
+    "Authority UI",
+    "Writer",
+    "PROGRESSIVE DISCLOSURE",
+    "ADMISSION",
+    "PROBE",
+    "INITIALIZE",
+    "CRC",
+    "proto_self",
+    "psychodynamic_hypothesis",
+    "archetypal_hypothesis",
+    "kant_oracle"
+  ],
+  "invariants": [
+    {"id":"ECF13-001","rule":"Structured primary text is the live conversation source; ASCII/dashboard parsing is compatibility-only."},
+    {"id":"ECF13-002","rule":"The current exact-ACK single-writer transport remains authoritative and unchanged in semantics."},
+    {"id":"ECF13-003","rule":"ExperienceProjection is derivative, bounded, cycle/session-bound and has epistemic_authority=0 and execution_authority=0."},
+    {"id":"ECF13-004","rule":"CognitiveTraceProjection is derived only from deterministic persisted runtime state/events; it contains no private chain-of-thought or hidden model rationale."},
+    {"id":"ECF13-005","rule":"The normal UI exposes only public cognitive stage labels; internal ring/taxonomy names require explicit expert Trace disclosure."},
+    {"id":"ECF13-006","rule":"The local LLM remains replaceable, tool-less and zero-authority; generation metrics never become evidence."},
+    {"id":"ECF13-007","rule":"Validated model output re-enters the reticulum only as runtime_derived RESPONSE memory with evidence=0.0."},
+    {"id":"ECF13-008","rule":"Response memory may modulate future retrieval/activation but can never self-corroborate or upgrade to external evidence."},
+    {"id":"ECF13-009","rule":"Every turn has causal phase timing that distinguishes cognitive, generation, validation, frame and transport time."},
+    {"id":"ECF13-010","rule":"DOCX generation is outside the pre-primary conversational critical path; JSON cognitive snapshot remains synchronous and cycle-bound."},
+    {"id":"ECF13-011","rule":"No duplicate DOCX export occurs for one cycle/version of a snapshot."},
+    {"id":"ECF13-012","rule":"An artifact control is visible only if the runtime can fulfill it now; unavailable future features are absent, not disabled placeholders."},
+    {"id":"ECF13-013","rule":"Idle ACTIVE chrome contains no hero claim, marketing copy, internal protocol label or persistent helper paragraph."},
+    {"id":"ECF13-014","rule":"Runtime state is represented by one concise state location; liveness prose does not create a parallel narrative channel."},
+    {"id":"ECF13-015","rule":"A CTA is emitted from server-projected actionable state and is bound to projection/session/cycle identity; UI placement never grants authority."},
+    {"id":"ECF13-016","rule":"Material actions surface target, account/provider, scope, cost/irreversibility and approval state before commit."},
+    {"id":"ECF13-017","rule":"Pairing, acceptance, verification and start retain existing admission semantics while public labels are concise and non-jargon."},
+    {"id":"ECF13-018","rule":"Voice remains transcript-only until explicit Send and output remains post-ACK local-service TTS."},
+    {"id":"ECF13-019","rule":"Browser liveness diagnostics remain bounded/redacted and live under Details; they do not clutter the normal composer."},
+    {"id":"ECF13-020","rule":"The browser frontend does not duplicate authoritative runtime state; reload/recovery is derived from server state and exact shell binding."},
+    {"id":"ECF13-021","rule":"The Phase-2 frontend has one controller ownership path; legacy app.js/conversation.js global override duplication is removed or isolated behind one compatibility adapter."},
+    {"id":"ECF13-022","rule":"Service-worker cache upgrades cannot preserve obsolete UI/controller assets across the ECF1.3 release boundary."},
+    {"id":"ECF13-023","rule":"Keyboard, focus order, screen-reader labels and reduced-motion semantics are parity features, not optional polish."},
+    {"id":"ECF13-024","rule":"The dynamic entity/avatar can reflect only attested runtime stage/state; no mood, confidence or completion is invented by animation."},
+    {"id":"ECF13-025","rule":"Future Chrome companion treats content-script/page data as untrusted; privileged operations stay in service worker/native host and use exact capability schemas."},
+    {"id":"ECF13-026","rule":"Future native messaging uses exact extension allowed_origins, bounded typed messages and no raw credential transport."},
+    {"id":"ECF13-027","rule":"Future OS capture/control uses platform-mediated permission surfaces and semantic APIs before pixel/input fallbacks."},
+    {"id":"ECF13-028","rule":"Future floating shell is a zero-authority projection of the same local runtime and never owns cognition, grants, scheduler or receipts."},
+    {"id":"ECF13-029","rule":"Updates and component supply are pinned/signed/verified and cannot silently widen runtime capabilities."},
+    {"id":"ECF13-030","rule":"ECF1.3 is complete only when source-bound tests, real browser E2E, accessibility checks, baseline-vs-candidate phase timings and the registered mutation harness pass on the exact PR head."}
+  ],
+  "phase2_pr_boundary": {
+    "include": [
+      "ExperienceProjection and CognitiveTraceProjection",
+      "causal end-to-end turn timing",
+      "remove DOCX from pre-primary critical path and prevent duplicate export",
+      "compact current web shell using existing endpoints/transport",
+      "public label normalization and taxonomy hiding",
+      "runtime-backed Details/Trace and current artifact path",
+      "frontend ownership convergence",
+      "tests, E2E, accessibility, cache upgrade, falsification evidence",
+      "PRODUCT_CONTRACT registration of the new semantic slice"
+    ],
+    "exclude": [
+      "new browser automation authority",
+      "new provider OAuth integrations",
+      "native floating shell executable",
+      "new OS control privileges",
+      "new material transaction power"
+    ]
+  }
+}

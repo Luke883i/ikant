@@ -1,6 +1,6 @@
 from __future__ import annotations
 import json,os
-from .cognitive import compile_cognitive_turn, record_surface_a
+from .cognitive import record_surface_a
 from .interaction import build_interaction_contract, validate_interaction_surface
 
 
@@ -35,27 +35,22 @@ def _bind_engine(runtime, engine_label: str | None) -> str:
 
 
 def conforming_turn(runtime, intent: str, *, engine_label: str | None = None, limit: int = 12, horizon=None, atoms=None, docx_path=None) -> dict:
-    runtime.require_active();engine=_bind_engine(runtime,engine_label)
-    cognitive=runtime.runtime.setdefault('cognitive',{})
-    pending=cognitive.get('pending_surface_a_cycle_id')
-    if pending:
-        raise RuntimeError(f'pending Surface A emission must close before next conforming turn: {pending}')
-    out=compile_cognitive_turn(runtime,intent,limit=limit,horizon=horizon,atoms=atoms,export_docx=True,docx_path=docx_path)
-    contract=build_interaction_contract(intent,engine_label=engine)
-    out['interaction_contract']=contract
-    out['surface_b_snapshot'].setdefault('dynamic_state',{})['interaction_contract']=contract
-    out['surface_b_snapshot']['dynamic_state']['host_binding']=dict(runtime.runtime.get('host',{}))
-    if out.get('surface_b_json'):
-        from pathlib import Path
-        from .store import atomic_json_write
-        atomic_json_write(Path(out['surface_b_json']),out['surface_b_snapshot'])
-        if out.get('surface_b_docx'):
-            from .surfaces import export_surface_b_docx
-            export_surface_b_docx(out['surface_b_snapshot'],out['surface_b_docx'])
-    cognitive['pending_surface_a_cycle_id']=out['cycle']['cycle_id']
-    cognitive['pending_interaction_contract']=contract
-    runtime._write_runtime();runtime._event('INTERACTION_CONTRACT',out['cycle']['cycle_id'],{'profile':contract['profile']['kind'],'engine_label':engine})
-    return out
+    """Compatibility entrypoint delegated to the single canonical runtime host loop.
+
+    The canonical loop persists the same-cycle JSON snapshot synchronously while
+    keeping DOCX rendering outside the pre-primary path.  This function must not
+    reintroduce a second cognitive compiler or artifact timing policy.
+    """
+    from .runtime_host import conforming_turn as _canonical_conforming_turn
+    return _canonical_conforming_turn(
+        runtime,
+        intent,
+        engine_label=engine_label,
+        limit=limit,
+        horizon=horizon,
+        atoms=atoms,
+        docx_path=docx_path,
+    )
 
 
 def emit_conforming_surface_a(runtime, cycle_id: str, text: str, *, intention_node_id: str | None = None) -> dict:

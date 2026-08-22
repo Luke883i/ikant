@@ -54,11 +54,12 @@ class HostV03Tests(unittest.TestCase):
                 emit_conforming_surface_a(rt,out['cycle']['cycle_id'],text,intention_node_id=out['intention_node_id'])
             rt.close()
 
-    def test_surface_b_is_mandatory_for_conforming_turn(self):
+    def test_surface_b_json_is_mandatory_and_docx_is_not_preprimary(self):
         with tempfile.TemporaryDirectory() as td:
             rt=active_runtime(Path(td),durable=True)
             out=conforming_turn(rt,'valuta questo punto',engine_label='GPT-5.6 Sol')
-            self.assertTrue(Path(out['surface_b_json']).exists());self.assertTrue(Path(out['surface_b_docx']).exists())
+            self.assertTrue(Path(out['surface_b_json']).exists());self.assertNotIn('surface_b_docx',out)
+            cycle=out['cycle']['cycle_id'];self.assertFalse((rt.state_dir/'artifacts'/f'CRC_SNAPSHOT_{cycle}.docx').exists())
             snap=json.loads(Path(out['surface_b_json']).read_text());self.assertIn('interaction_contract',snap['dynamic_state']);self.assertEqual(snap['dynamic_state']['host_binding']['interface_identity'],'iKant');rt.close()
 
 if __name__=='__main__':unittest.main()

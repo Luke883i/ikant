@@ -14,14 +14,16 @@ def code_audit()->list[str]:
  if html.count('id="dashboard"')!=1:e.append('semantic_viewport_count')
  for forbidden in ('https://','http://cdn','unpkg','jsdelivr','fonts.googleapis'):
   if forbidden in html or forbidden in css:e.append('remote_frontend_asset:'+forbidden)
- for marker in ('command-palette','inspector','voice-button','setup-panel','orbit-rail'):
+ # S11 compresses the historical orbit rail into one Details inspector while preserving
+ # S9's progressive-disclosure invariant and the same single semantic viewport.
+ for marker in ('command-palette','inspector','inspector-button','voice-button','setup-panel'):
   if marker not in html:e.append('ui_marker:'+marker)
  for marker in ('PRODUCT_EXPERIENCE_SCHEMA','browser_may_mark_ready','voice_output_source','traditional_controls_on_demand'):
   if marker not in product:e.append('product_contract:'+marker)
  if "frame?.receipt?.kind!=='TURN'" not in js:e.append('tts_turn_gate')
- if 'maybeSpeak(frame)' not in js or js.rindex('maybeSpeak(frame)')<js.index('confirmed=await apiRetry'):e.append('tts_post_ack_order')
+ if 'maybeSpeak(f)' not in js or 'acknowledged!==true' not in js or js.rindex('maybeSpeak(f)')<js.index('acknowledged!==true'):e.append('tts_post_ack_order')
  if 'localService===true' not in js:e.append('tts_local_only')
- if 'processLocally:true' not in js or 'rec.processLocally=true' not in js:e.append('stt_local_gate')
+ if 'processLocally:true' not in js or 'r.processLocally=true' not in js:e.append('stt_local_gate')
  if 'auto_submit!==false' not in js:e.append('voice_auto_submit_guard')
  if "'/api/v3/product/status'" not in http or "'/api/v3/voice/transcribe'" not in http:e.append('http_surface')
  if 'ProductBootstrapCoordinator' not in launcher:e.append('bootstrap_coordinator')

@@ -1,12 +1,12 @@
 {
   "baseline_failures": 0,
-  "elapsed_seconds": 15.435,
+  "elapsed_seconds": 16.375,
   "epistemic_authority": 0.0,
   "execution_authority": 0.0,
-  "fully_killed": 49,
-  "min_hits": 204081,
-  "min_kills": 204081,
-  "mutation_classes": 49,
+  "fully_killed": 52,
+  "min_hits": 192307,
+  "min_kills": 192307,
+  "mutation_classes": 52,
   "mutation_trials": 10000000,
   "no_novelty_tail": 1000,
   "schema": "ikant-surface-a-ux-falsification/v0.29-test",
@@ -15,20 +15,9 @@
   "tail_novelty": 0,
   "trajectories": 10000000,
   "rejected_runs": [
-    {
-      "run": 1,
-      "reason": "mutants were counted outside their applicability domain",
-      "survivors": ["DROP_IDENTITY_FIRST","DROP_ENGINE_DISCLOSURE","FALLBACK_CLAIMS_ACTION","FALLBACK_IDENTITY_INVALID","FALLBACK_EMPTY","FALLBACK_OVER_BUDGET","PRIMARY_EMPTY_WHEN_PENDING","PRIMARY_DROP_IKANT_PREFIX","PENDING_AFTER_VALID","VALID_BEFORE_REPLY","ERROR_HIDDEN_BY_PENDING","EXIT_HIDDEN_BY_PENDING"]
-    },
-    {
-      "run": 2,
-      "reason": "primary identity prefix was not invariant across control output",
-      "survivors": ["PRIMARY_DROP_IKANT_PREFIX"]
-    },
-    {
-      "run": 3,
-      "reason": "pending and validated cycle state were not independent variables in the model",
-      "survivors": ["PENDING_AFTER_VALID","VALID_BEFORE_REPLY"]
-    }
+    {"run":1,"reason":"mutants counted outside applicability domains","survivor_count":12},
+    {"run":2,"reason":"primary identity prefix not invariant across control output","survivors":["PRIMARY_DROP_IKANT_PREFIX"]},
+    {"run":3,"reason":"pending and validated cycle state not modeled independently","survivors":["PENDING_AFTER_VALID","VALID_BEFORE_REPLY"]},
+    {"run":4,"reason":"accepted before delivery/cache/presentation edge families were modeled","added_kill_classes":["PRIMARY_ASSET_UNSERVED","STALE_PRIMARY_CACHE","TERMINAL_PRIMARY_STYLE"]}
   ]
 }

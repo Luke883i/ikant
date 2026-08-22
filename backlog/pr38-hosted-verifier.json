@@ -1,0 +1,53 @@
+{
+  "compile_exit": 0,
+  "compile_tail": "",
+  "epistemic_authority": 0.0,
+  "execution_authority": 0.0,
+  "falsifier": {
+    "baseline_failures": 0,
+    "baseline_seconds": 9.044,
+    "candidate_source_gate": {
+      "empty_http_safe": true,
+      "mime_negotiation": true,
+      "no_webkit_remote": true,
+      "pending": true,
+      "post_install_recheck": true,
+      "process_local": true,
+      "redaction": true,
+      "semantic_409_no_retry": true,
+      "structured_server_diag": true,
+      "sw_fresh": true,
+      "turn_watchdog": true,
+      "user_edit_race": true,
+      "voiceschanged": true
+    },
+    "elapsed_seconds": 30.347,
+    "epistemic_authority": 0.0,
+    "execution_authority": 0.0,
+    "fully_killed": 72,
+    "min_hits": 277777,
+    "min_kills": 277777,
+    "mutation_classes": 72,
+    "mutation_seconds": 21.302,
+    "mutation_trials": 20000000,
+    "no_novelty_tail": 1000,
+    "rejected_runs": [
+      {
+        "reason": "receipt serializer referenced novel instead of novelty; runtime unchanged",
+        "run": "source-bound-1"
+      }
+    ],
+    "schema": "ikant-interactive-liveness-falsification/v0.29-test",
+    "semantic_signatures": 4096,
+    "survivors": [],
+    "tail_novelty": 0,
+    "trajectories": 10000000
+  },
+  "falsifier_exit": 0,
+  "head_sha": "bf62cd622e613f46098d64880bf10c814b819aa9",
+  "node_check_exit": 0,
+  "node_tail": "",
+  "schema": "ikant-pr38-hosted-verifier/v0.29-test",
+  "unit_exit": 1,
+  "unit_tail": "======================================================================\nFAIL: test_primary_asset_is_served_cached_and_conversational (test_surface_a_delivery_v29.SurfaceADeliveryTests.test_primary_asset_is_served_cached_and_conversational)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/runner/work/ikant/ikant/tests/test_surface_a_delivery_v29.py\", line 14, in test_primary_asset_is_served_cached_and_conversational\n    self.assertIn('surface-a-hotfix4',sw)\nAssertionError: 'surface-a-hotfix4' not found in \"const CACHE='ikant-s10bis-bootstrap-v1-interactive-liveness-hotfix5';\\nconst ASSETS=['/','/styles.css','/app.js','/conversation.js','/manifest.webmanifest'];\\nself.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));\\nself.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));\\nself.addEventListener('fetch',event=>{const url=new URL(event.request.url);if(event.request.method!=='GET'||url.pathname.startsWith('/api/'))return;event.respondWith(fetch(event.request).then(response=>{if(!response||!response.ok)return response;const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(event.request,copy));return response;}).catch(()=>caches.match(event.request)));});\\n\"\n\n----------------------------------------------------------------------\nRan 545 tests in 4.905s\n\nFAILED (failures=1)\n"
+}

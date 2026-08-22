@@ -123,12 +123,15 @@ class PrimaryProjectionTests(unittest.TestCase):
     def test_web_client_keeps_canonical_frame_in_inspector(self):
         js = (ROOT / "ikant" / "web" / "conversation.js").read_text(encoding="utf-8")
         html = (ROOT / "ikant" / "web" / "index.html").read_text(encoding="utf-8")
+        sw = (ROOT / "ikant" / "web" / "sw.js").read_text(encoding="utf-8")
         self.assertIn("text('dashboard',primaryText(frame))", js)
         self.assertIn("text('frame-inspect',detail", js)
         self.assertIn("IKANT_PENDING_PRIMARY", js)
         self.assertIn("visible_text:canonical", js)
         self.assertLess(html.index('/app.js'), html.index('/conversation.js'))
         self.assertIn("HSPv2 · dettagli on demand", html)
+        self.assertIn("/conversation.js", sw)
+        self.assertIn("ikant-s10bis-bootstrap-v1", sw)
 
 
 if __name__ == "__main__":

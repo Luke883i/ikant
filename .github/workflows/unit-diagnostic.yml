@@ -28,6 +28,21 @@ jobs:
           set +e
           python -W error::ResourceWarning -m unittest discover -s tests -v > unit-diagnostic.log 2>&1
           rc=$?
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          raw=Path('unit-diagnostic.log').read_text(encoding='utf-8',errors='replace')
+          blocks=[]
+          pat=re.compile(r'={70}\n(FAIL|ERROR): ([^\n]+)\n-{70}\n(.*?)(?=\n={70}\n(?:FAIL|ERROR):|\n-{70}\nRan |\Z)',re.S)
+          for kind,name,detail in pat.findall(raw):
+              clean=[]
+              for line in detail.splitlines():
+                  clean.append(line if len(line)<=600 else '[long assertion payload omitted]')
+              blocks.append(f'{kind}: {name}\n'+'\n'.join(clean[:24]))
+          final=re.search(r'FAILED \([^\n]+\)|OK$',raw,re.M)
+          if final: blocks.append(final.group(0))
+          Path('unit-summary.txt').write_text('\n\n'.join(blocks)[:12000],encoding='utf-8')
+          PY
           cat unit-diagnostic.log
           echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
           exit "$rc"
@@ -41,18 +56,15 @@ jobs:
             const fs = require('fs');
             const marker = '<!-- ikant-unit-diagnostic -->';
             const ok = process.env.UNIT_EXIT_CODE === '0';
-            let tail = '';
-            if (!ok && fs.existsSync('unit-diagnostic.log')) {
-              const raw = fs.readFileSync('unit-diagnostic.log','utf8').replace(/```/g,'` ` `');
-              tail = raw.slice(-10000);
-            }
+            let detail = '';
+            if (!ok && fs.existsSync('unit-summary.txt')) detail = fs.readFileSync('unit-summary.txt','utf8').replace(/```/g,'` ` `');
             const body = [
               marker,
               '## iKant full-unit diagnostic',
               '',
               `UNIT_DIAGNOSTIC: ${ok ? 'PASS' : 'FAIL'}`,
               `HEAD_SHA: ${context.sha}`,
-              ...(ok ? [] : ['', '```text', tail, '```']),
+              ...(ok ? [] : ['', '```text', detail, '```']),
               '',
               'Diagnostic projection only; it grants no authority and does not weaken the full-unit gate.'
             ].join('\n');

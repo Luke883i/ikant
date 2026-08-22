@@ -1,10 +1,25 @@
 from __future__ import annotations
+import re
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs,urlsplit
 from .epistemic_http import make_epistemic_handler
+from .local_http import _MAX_AUDIO,_read_json
 from .local_security import PairingSession,allowed_hostnames
 from .local_web_host import LocalWebHostAdapter
+
+TRANSPORT_DIAGNOSTIC_SCHEMA='ikant-interactive-transport-diagnostic/v0.29-test'
+_SECRET_PATTERNS=(
+ re.compile(r'(?i)Bearer\s+[A-Za-z0-9._~+\/-]+'),
+ re.compile(r'(?i)((?:token|password|secret|api[_-]?key)\s*[:=]\s*)[^\s,;]+'),
+)
+
+def transport_diagnostic(path,exc):
+ message=str(exc or 'local transport failure').replace('\x00',' ')
+ for pattern in _SECRET_PATTERNS:
+  message=pattern.sub(lambda m:('Bearer [REDACTED]' if m.group(0).lower().startswith('bearer ') else m.group(1)+'[REDACTED]'),message)
+ message=' '.join(message.split())[:240] or 'local transport failure'
+ return {'schema':TRANSPORT_DIAGNOSTIC_SCHEMA,'path':str(path)[:120],'code':type(exc).__name__[:80],'message':message,'retryable':False,'presentation_is_authority':False,'epistemic_authority':0.0,'execution_authority':0.0}
 
 def make_bootstrap_handler(service,pairing,*,assets_dir:Path,allowed_hosts:frozenset[str],expected_port:int):
  Base=make_epistemic_handler(service,pairing,assets_dir=assets_dir,allowed_hosts=allowed_hosts,expected_port=expected_port)
@@ -30,6 +45,31 @@ def make_bootstrap_handler(service,pairing,*,assets_dir:Path,allowed_hosts:froze
      raw,ctype=service.bootstrap_raw();self._bytes(200,raw,ctype,name='ikant-bootstrap-events.jsonl')
     else:self._empty(404)
    except Exception:self._empty(409)
+  def do_POST(self):
+   path=urlsplit(self.path).path
+   if path.startswith('/api/v2/shell/'):
+    if not self._guard(origin=True):return
+    try:
+     body=_read_json(self)
+     if path=='/api/v2/shell/open':out=service.shell_open(body.get('client_id'))
+     elif path=='/api/v2/shell/command':out=service.shell_command(body)
+     elif path=='/api/v2/shell/ack':out=service.shell_ack(body)
+     else:self._json(404,transport_diagnostic(path,LookupError('unknown shell route')));return
+     self._json(200,out)
+    except Exception as exc:self._json(409,transport_diagnostic(path,exc))
+    return
+   if path=='/api/v3/voice/transcribe':
+    if not self._guard(origin=True):return
+    try:
+     try:n=int(self.headers.get('Content-Length') or '0')
+     except ValueError as exc:raise ValueError('invalid Content-Length') from exc
+     if n<=0 or n>_MAX_AUDIO:raise ValueError('audio body outside bound')
+     shell_id=self.headers.get('X-iKant-Shell-Id');client_id=self.headers.get('X-iKant-Client-Id')
+     out=service.shell_voice_candidate(shell_id,client_id,self.rfile.read(n),self.headers.get('Content-Type') or '')
+     self._json(200,out)
+    except Exception as exc:self._json(409,transport_diagnostic(path,exc))
+    return
+   return super().do_POST()
  return Handler
 
 def build_server(service,*,host,port,pairing=None,assets_dir=None,env=None):

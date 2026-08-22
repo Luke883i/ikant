@@ -1,0 +1,44 @@
+name: PR38 interactive liveness verifier v2
+on:
+  push:
+    branches: [diag/pr38-interactive-liveness-v2]
+permissions:
+  contents: write
+jobs:
+  verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Verify exact candidate
+        shell: bash
+        run: |
+          set +e
+          python -m compileall -q ikant tests scripts > compile.log 2>&1; COMPILE=$?
+          node --check ikant/web/conversation.js > node.log 2>&1; NODE=$?
+          python -m unittest discover -s tests -q > unit.log 2>&1; UNIT=$?
+          python scripts/interactive_liveness_falsification_v29.py > falsifier.json 2> falsifier.err; FALSIFIER=$?
+          export COMPILE NODE UNIT FALSIFIER
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          def tail(name,n=6000):
+              p=Path(name); return p.read_text(errors='replace')[-n:] if p.exists() else ''
+          try:f=json.loads(Path('falsifier.json').read_text())
+          except Exception:f={'parse_error':True,'stdout_tail':tail('falsifier.json'),'stderr_tail':tail('falsifier.err')}
+          out={'schema':'ikant-pr38-hosted-verifier/v0.29-test','candidate_head':'7a8f453d95f11529f46e519fb9729f042245336a','workflow_head':os.environ.get('GITHUB_SHA'),'compile_exit':int(os.environ['COMPILE']),'node_check_exit':int(os.environ['NODE']),'unit_exit':int(os.environ['UNIT']),'falsifier_exit':int(os.environ['FALSIFIER']),'unit_tail':tail('unit.log'),'node_tail':tail('node.log'),'compile_tail':tail('compile.log'),'falsifier':f,'epistemic_authority':0.0,'execution_authority':0.0}
+          Path('backlog/pr38-hosted-verifier-v2.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          PY
+          if [ "$COMPILE" -eq 0 ] && [ "$NODE" -eq 0 ] && [ "$UNIT" -eq 0 ] && [ "$FALSIFIER" -eq 0 ]; then echo VERIFIER_STATUS=PASS >> "$GITHUB_ENV"; else echo VERIFIER_STATUS=FAIL >> "$GITHUB_ENV"; fi
+      - name: Persist receipt
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backlog/pr38-hosted-verifier-v2.json
+          git commit -m "ci: record PR38 verifier v2 $VERIFIER_STATUS"
+          git push
+      - name: Enforce
+        run: test "$VERIFIER_STATUS" = PASS

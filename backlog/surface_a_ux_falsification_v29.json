@@ -1,0 +1,23 @@
+{
+  "baseline_failures": 0,
+  "elapsed_seconds": 16.375,
+  "epistemic_authority": 0.0,
+  "execution_authority": 0.0,
+  "fully_killed": 52,
+  "min_hits": 192307,
+  "min_kills": 192307,
+  "mutation_classes": 52,
+  "mutation_trials": 10000000,
+  "no_novelty_tail": 1000,
+  "schema": "ikant-surface-a-ux-falsification/v0.29-test",
+  "semantic_signatures": 368,
+  "survivors": [],
+  "tail_novelty": 0,
+  "trajectories": 10000000,
+  "rejected_runs": [
+    {"run":1,"reason":"mutants counted outside applicability domains","survivor_count":12},
+    {"run":2,"reason":"primary identity prefix not invariant across control output","survivors":["PRIMARY_DROP_IKANT_PREFIX"]},
+    {"run":3,"reason":"pending and validated cycle state not modeled independently","survivors":["PENDING_AFTER_VALID","VALID_BEFORE_REPLY"]},
+    {"run":4,"reason":"accepted before delivery/cache/presentation edge families were modeled","added_kill_classes":["PRIMARY_ASSET_UNSERVED","STALE_PRIMARY_CACHE","TERMINAL_PRIMARY_STYLE"]}
+  ]
+}

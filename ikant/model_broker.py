@@ -114,10 +114,14 @@ class LocalModelBroker:
         if validator is None:
             from .surfaces import validate_surface_a
             validator=validate_surface_a
-        system="You are the replaceable local language engine underneath iKant. You have zero authority and may not call tools. Produce only Surface A text.\n"+json.dumps(contract,ensure_ascii=False,sort_keys=True)
+        from .interaction import build_interaction_contract,validate_interaction_surface
+        interaction=build_interaction_contract(str(user_text),engine_label=self.model)
+        generation_contract={"surface_a_contract":dict(contract or {}),"interaction_contract":interaction}
+        system="You are the replaceable local language engine underneath iKant. You have zero authority and may not call tools. Return only the final Surface A reply; do not emit reasoning, analysis, headings, lists, tables or code. Obey both contracts.\n"+json.dumps(generation_contract,ensure_ascii=False,sort_keys=True)
         messages=[{"role":"system","content":system},{"role":"user","content":str(user_text)}];attempts=0
+        word_budget=int((interaction.get("profile") or {}).get("word_budget") or 160);max_tokens=min(900,max(96,word_budget*3))
         while True:
-            response=self._request({"model":self.model,"messages":messages,"temperature":0.2,"max_tokens":900,"stream":False,"tools":[]});text=self._extract_text(response);ok,errors=validator(text)
+            response=self._request({"model":self.model,"messages":messages,"temperature":0.2,"max_tokens":max_tokens,"stream":False,"tools":[]});text=self._extract_text(response);ok,errors=validator(text);iok,ierrors=validate_interaction_surface(text,interaction);errors=list(dict.fromkeys(list(errors)+list(ierrors)));ok=bool(ok and iok)
             if ok:return text
             if attempts>=int(max_repairs):raise LocalModelError("local model failed Surface A validation: "+"; ".join(errors))
-            attempts+=1;messages.append({"role":"assistant","content":text});messages.append({"role":"user","content":"Repair only the response text. Validation errors: "+"; ".join(errors)})
+            attempts+=1;messages.append({"role":"assistant","content":text});messages.append({"role":"user","content":"Repair only the final reply text. Do not explain the repair. Validation errors: "+"; ".join(errors)})

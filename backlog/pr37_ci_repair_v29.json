@@ -1,0 +1,15 @@
+{
+  "schema": "ikant-pr37-ci-repair/v0.29-test",
+  "pr": 37,
+  "diagnostic_head": "1b1bc8612ab051956b19bdf9d3060e16ccd2ce65",
+  "diagnostic_runner": "github-hosted ubuntu-latest python-3.12",
+  "unit_tests_run": 534,
+  "unit_failures": 1,
+  "failure": "test_surface_a_convergence_v29.PrimaryProjectionTests.test_web_client_keeps_canonical_frame_in_inspector",
+  "cause": "fragile test asserted a superseded direct JavaScript call after renderPrimaryValue encapsulation",
+  "runtime_semantics_changed_by_repair": false,
+  "repair_commit": "c08e676725fe7ef4867d24e2f618ad6e406c0571",
+  "repair": "bind the regression test to the observable primary projection flow, canonical inspector disclosure, pending transition, and exact canonical ACK",
+  "epistemic_authority": 0.0,
+  "execution_authority": 0.0
+}

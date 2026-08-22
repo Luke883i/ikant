@@ -38,7 +38,7 @@ class ProductExperienceV27Tests(unittest.TestCase):
  def test_ui_is_chat_first_progressive_and_single_semantic_viewport(self):
   html=(ROOT/'ikant/web/index.html').read_text(encoding='utf-8');js=(ROOT/'ikant/web/app.js').read_text(encoding='utf-8');css=(ROOT/'ikant/web/styles.css').read_text(encoding='utf-8')
   self.assertEqual(html.count('id="dashboard"'),1);self.assertIn('command-palette',html);self.assertIn('inspector',html);self.assertIn('setup-panel',html);self.assertIn('inspector-button',html);self.assertNotIn('orbit-rail',html);self.assertNotIn('https://',html);self.assertNotIn('https://',css);self.assertIn('prefers-reduced-motion',css)
-  self.assertIn("frame?.receipt?.kind!=='TURN'",js);self.assertIn('localService===true',js);self.assertIn('processLocally:true',js);self.assertIn('auto_submit!==false',js);self.assertLess(js.index('confirmed=await apiRetry'),js.rindex('maybeSpeak(f)'))
+  self.assertIn("frame?.receipt?.kind!=='TURN'",js);self.assertIn('localService===true',js);self.assertIn('processLocally:true',js);self.assertIn('auto_submit!==false',js);self.assertLess(js.index('acknowledged!==true'),js.rindex('maybeSpeak(f)'))
  def test_product_status_declares_progressive_disclosure_and_post_ack_voice(self):
   c=ProductBootstrapCoordinator(ROOT,runtime=FakeRuntime(),voice_endpoint=None,readiness_timeout=.1);c.start_async();s=self.wait(c);x=s['experience'];self.assertTrue(x['progressive_disclosure']);self.assertTrue(x['traditional_controls_on_demand']);self.assertFalse(x['epistemic_inspector_default_open']);self.assertEqual(x['voice_output_source'],'POST_ACK_SEALED_SURFACE_A_ONLY');c.stop()
 if __name__=='__main__':unittest.main()

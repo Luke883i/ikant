@@ -1,0 +1,53 @@
+name: hotfix6 final verifier
+on:
+  push:
+    branches: [diag/hotfix6-final-verifier]
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Compile and unit suite
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p /tmp/hotfix6
+          python -m compileall -q ikant tests scripts 2>&1 | tee /tmp/hotfix6/compile.log
+          echo ${PIPESTATUS[0]} > /tmp/hotfix6/compile.exit
+          python -W error::ResourceWarning -m unittest discover -s tests -v 2>&1 | tee /tmp/hotfix6/unit.log
+          echo ${PIPESTATUS[0]} > /tmp/hotfix6/unit.exit
+          python scripts/conversation_runtime_hotfix6_falsify.py --mutations 10000000 --tail 1000 2>&1 | tee /tmp/hotfix6/falsifier.log
+          echo ${PIPESTATUS[0]} > /tmp/hotfix6/falsifier.exit
+      - name: Write receipt
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          p=pathlib.Path('/tmp/hotfix6')
+          def code(name):
+              try:return int((p/f'{name}.exit').read_text().strip())
+              except:return 99
+          def tail(name,n=5000):
+              try:return (p/f'{name}.log').read_text(errors='replace')[-n:]
+              except:return ''
+          out={'schema':'ikant-hotfix6-hosted-verifier/v0.29-test','compile_exit':code('compile'),'unit_exit':code('unit'),'falsifier_exit':code('falsifier'),'unit_tail':tail('unit'),'falsifier_tail':tail('falsifier'),'epistemic_authority':0.0,'execution_authority':0.0}
+          pathlib.Path('backlog/hotfix6_hosted_verifier.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          PY
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add backlog/hotfix6_hosted_verifier.json
+          git commit -m 'diag: record hotfix6 final verifier' || true
+          git push
+      - name: Fail verifier when candidate fails
+        if: always()
+        shell: bash
+        run: |
+          test "$(cat /tmp/hotfix6/compile.exit)" = 0
+          test "$(cat /tmp/hotfix6/unit.exit)" = 0
+          test "$(cat /tmp/hotfix6/falsifier.exit)" = 0

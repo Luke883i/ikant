@@ -29,12 +29,10 @@ def operational_fallback(user_text:str,*,engine_label:str='local-engine')->str:
     return 'The local language engine did not produce a valid reply for this turn; no material action was executed, and you can retry.'
 
 def _structured_primary_from_chat(rt,*,cycle_id:str|None=None)->str|None:
-    """Recover Surface A from the hash-chained chat record, never presentation ASCII."""
     from .chat_session import ChatLog
     session_id=str((rt.runtime or {}).get('session_id') or '')
     if not session_id:return None
-    log=ChatLog(Path(rt.state_dir)/'chat'/'transcript.jsonl',runtime_session_id=session_id)
-    log.verify()
+    log=ChatLog(Path(rt.state_dir)/'chat'/'transcript.jsonl',runtime_session_id=session_id);log.verify()
     for row in reversed(log.rows()):
         if row.get('role')!='ikant':continue
         if cycle_id is not None and str(row.get('cycle_id') or '')!=str(cycle_id):continue
@@ -117,8 +115,7 @@ class LocalEmbodimentService:
                 if g.state in {EgressState.FRAME_PENDING,EgressState.RELEASE_PENDING}:
                     p=recover_prepared_frame(rt)
                     if not p:raise LocalAppError('pending egress has no recoverable frame')
-                    receipt=dict(p.get('receipt') or {})
-                    primary=_structured_primary_from_chat(rt,cycle_id=receipt.get('cycle_id')) if str(receipt.get('kind') or '').upper()=='TURN' else None
+                    receipt=dict(p.get('receipt') or {});primary=_structured_primary_from_chat(rt,cycle_id=receipt.get('cycle_id')) if str(receipt.get('kind') or '').upper()=='TURN' else None
                     return wrap_prepared_frame(p,primary_text=primary)
                 if g.state==EgressState.RELEASED:return {'schema':LOCAL_APP_SCHEMA,'released':True,'state':'RELEASED'}
                 g.require_locked();p=prepare_human_frame(rt,persist_dashboard(rt),kind='WEB_DASHBOARD');return wrap_prepared_frame(p,primary_text=_structured_primary_from_chat(rt))
@@ -156,13 +153,13 @@ class LocalEmbodimentService:
                 out=begin['machine'];cycle=str(out['cycle']['cycle_id']);intent=out.get('intention_node_id');contract=out['surface_a_contract'];source='MODEL'
                 interaction=out.get('interaction_contract') or build_interaction_contract(text,engine_label=self.model.model)
                 try:
-                    if not self.model.health():raise LocalModelError('local model server unavailable')
                     surface=self.model.complete_surface_a(contract,text,validator=validate_surface_a)
                 except LocalModelError:
                     source='OPERATIONAL_FALLBACK';surface=operational_fallback(text,engine_label=self.model.model);ok,e=validate_surface_a(surface);iok,ie=validate_interaction_surface(surface,interaction);errors=list(dict.fromkeys(list(e)+list(ie)))
                     if not (ok and iok):raise LocalAppError('operational fallback failed: '+'; '.join(errors))
                 prepared=s.finalize(cycle,surface,intention_node_id=intent)
-                generation={'cycle_id':cycle,'source':source,'model_generation_valid':source=='MODEL','epistemic_authority':0.0,'execution_authority':0.0};cog=rt.runtime.setdefault('cognitive',{});cog['last_surface_a_generation']=generation;rt._write_runtime();rt._event('SURFACE_A_GENERATION',cycle,dict(generation))
+                metrics=dict(getattr(self.model,'last_completion_metrics',{}) or {})
+                generation={'cycle_id':cycle,'source':source,'model_generation_valid':source=='MODEL','model_metrics':metrics,'epistemic_authority':0.0,'execution_authority':0.0};cog=rt.runtime.setdefault('cognitive',{});cog['last_surface_a_generation']=generation;rt._write_runtime();rt._event('SURFACE_A_GENERATION',cycle,dict(generation))
                 frame=wrap_prepared_frame(prepared,primary_text='iKant: '+surface);frame['generation']=generation;return frame
             finally:rt.close()
     def notice(self,message,*,kind='LOCAL_WEB_NOTICE'):

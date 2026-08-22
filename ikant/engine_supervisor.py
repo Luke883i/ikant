@@ -15,7 +15,7 @@ def scrubbed_environment(source:dict[str,str]|None=None)->dict[str,str]:
  src=os.environ if source is None else source;allow=('HOME','PATH','TMPDIR','TEMP','TMP','LANG','LC_ALL','LC_CTYPE');return {key:str(src[key]) for key in allow if src.get(key)}
 def build_server_command(server:str|Path,model:str|Path,port:int,api_key_file:str|Path)->list[str]:
  if not (1<=int(port)<=65535):raise EngineSupervisorError('invalid llama-server port')
- return [str(server),'-m',str(model),'--host','127.0.0.1','--port',str(int(port)),'--api-key-file',str(api_key_file),'--no-webui','--reasoning','off']
+ return [str(server),'-m',str(model),'--host','127.0.0.1','--port',str(int(port)),'--api-key-file',str(api_key_file),'--no-webui','--reasoning','off','--ctx-size','4096','--parallel','1','--cache-prompt']
 def _default_probe(endpoint:str,api_key:str,*,timeout:float=1.5)->dict[str,Any]|None:
  url=endpoint.rsplit('/v1/chat/completions',1)[0]+'/v1/models';req=Request(url,method='GET',headers={'Accept':'application/json','Authorization':'Bearer '+api_key})
  try:

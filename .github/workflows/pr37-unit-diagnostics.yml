@@ -1,0 +1,38 @@
+name: PR37 unit diagnostics
+
+on:
+  push:
+    branches: ['agent/pr37-unit-diagnostics-2']
+    paths-ignore:
+      - 'backlog/pr37-unit-diagnostics.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run full unit suite and persist tail
+        shell: bash
+        run: |
+          set +e
+          python -W error::ResourceWarning -m unittest discover -s tests -v > /tmp/pr37-unit.log 2>&1
+          status=$?
+          mkdir -p backlog
+          {
+            echo "exit_code=${status}"
+            echo "head_sha=${GITHUB_SHA}"
+            echo "--- tail ---"
+            tail -n 600 /tmp/pr37-unit.log
+          } > backlog/pr37-unit-diagnostics.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backlog/pr37-unit-diagnostics.txt
+          git commit -m 'diagnostic: capture PR37 unit result [skip ci]' || true
+          git push

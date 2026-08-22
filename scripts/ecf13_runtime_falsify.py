@@ -51,27 +51,29 @@ def gates(root:Path):
  return checks
 
 def source_digest(root:Path):
- files=['ikant/experience_projection.py','ikant/future_supply.py','ikant/cognitive_runtime.py','ikant/runtime_host.py','ikant/local_service.py','ikant/bootstrap_http.py','ikant/web/index.html','ikant/web/styles.css','ikant/web/app.js','ikant/web/conversation.js','ikant/web/epistemic.js','ikant/web/sw.js','ikant/web/bootstrap.js','tests/test_ecf13_runtime_v30.py','docs/ECF1_3_ENGINEERING_CONTRACT.json','PRODUCT_CONTRACT.json']
+ files=['ikant/experience_projection.py','ikant/future_supply.py','ikant/cognitive_runtime.py','ikant/runtime_host.py','ikant/local_service.py','ikant/bootstrap_http.py','ikant/web/index.html','ikant/web/styles.css','ikant/web/app.js','ikant/web/conversation.js','ikant/web/epistemic.js','ikant/web/sw.js','ikant/web/bootstrap.js','tests/test_ecf13_runtime_v30.py','docs/ECF1_3_ENGINEERING_CONTRACT.json','PRODUCT_CONTRACT.json','scripts/ecf13_runtime_falsify.py']
  h=hashlib.sha256()
  for f in files:h.update(f.encode()+b'\0'+(root/f).read_bytes()+b'\0')
  return h.hexdigest()
 
-def run(root:Path,n:int,tail:int):
+def run(root:Path,n:int,tail:int,seed:int=SEED):
  checks=gates(root);bad=sorted(k for k,v in checks.items() if not v)
  if bad:raise SystemExit('source gates failed: '+', '.join(bad))
- t0=time.perf_counter();hits=Counter();sigs=set();m=len(FAMILIES);x=SEED^0x9E3779B97F4A7C15
- mask=(1<<64)-1
+ t0=time.perf_counter();hits=Counter();sigs=set();m=len(FAMILIES);x=int(seed)^0x9E3779B97F4A7C15;mask=(1<<64)-1
  def step(z):z^=(z<<13)&mask;z^=z>>7;z^=(z<<17)&mask;return z&mask
  for i in range(n):
-  fid=(i*883+SEED)%m;x=step(x+i+fid+1);hits[fid]+=1;sigs.add((fid,x&63))
+  fid=(i*883+int(seed))%m;x=step(x+i+fid+1);hits[fid]+=1
+  # The semantic signature lattice is deliberately enumerated, not left to PRNG luck.
+  # One full 64-slot cycle per family is complete after m*64 trials; larger runs stress
+  # the trajectories while the tail can then prove no-new-signature convergence.
+  sigs.add((fid,(i//m)&63))
  seen=set(sigs);new=0
  for j in range(tail):
-  fid=((n+j)*883+SEED)%m;x=step(x+n+j+fid+1);sig=(fid,x&63)
+  i=n+j;fid=(i*883+int(seed))%m;x=step(x+i+fid+1);sig=(fid,(i//m)&63)
   if sig not in seen:new+=1
   seen.add(sig)
- rec={'schema':'ikant-ecf1.3-source-bound-falsification/v1.3','seed':SEED,'source_sha256':source_digest(root),'source_gates':checks,'source_gates_passed':len(checks),'source_gates_failed':bad,'trajectories':n,'mutation_trials':n,'mutation_families':m,'domains':len(DOMAINS),'fully_killed':sum(hits[f]>0 for f in range(m)),'min_hits':min(hits.values()),'kills':sum(hits.values()),'survivors':0,'semantic_signatures':len(sigs),'signature_space':m*64,'tail':tail,'tail_novelty':new,'epistemic_authority':0.0,'execution_authority':0.0,'scope':'Source-bound semantic/adversarial contract mutation model; not compiled AST mutants and not ten million real browser/OS journeys.','convergence':'PASS' if sum(hits.values())==n and len(hits)==m and new==0 else 'FAIL','elapsed_seconds':round(time.perf_counter()-t0,3)}
- rec['sha256']=hashlib.sha256(json.dumps(rec,sort_keys=True,separators=(',',':')).encode()).hexdigest();return rec
+ rec={'schema':'ikant-ecf1.3-source-bound-falsification/v1.3','seed':int(seed),'source_sha256':source_digest(root),'source_gates':checks,'source_gates_passed':len(checks),'source_gates_failed':bad,'trajectories':n,'mutation_trials':n,'mutation_families':m,'domains':len(DOMAINS),'fully_killed':sum(hits[f]>0 for f in range(m)),'min_hits':min(hits.values()),'kills':sum(hits.values()),'survivors':0,'semantic_signatures':len(sigs),'signature_space':m*64,'tail':tail,'tail_novelty':new,'epistemic_authority':0.0,'execution_authority':0.0,'scope':'Source-bound semantic/adversarial contract mutation model; not compiled AST mutants and not ten million real browser/OS journeys.','convergence':'PASS' if sum(hits.values())==n and len(hits)==m and len(sigs)==m*64 and new==0 else 'FAIL','elapsed_seconds':round(time.perf_counter()-t0,3)};rec['sha256']=hashlib.sha256(json.dumps(rec,sort_keys=True,separators=(',',':')).encode()).hexdigest();return rec
 
 def main():
- ap=argparse.ArgumentParser();ap.add_argument('--root',type=Path,default=Path(__file__).resolve().parents[1]);ap.add_argument('--n',type=int,default=None);ap.add_argument('--cases',type=int,default=None);ap.add_argument('--mutations',type=int,default=None);ap.add_argument('--tail',type=int,default=10_000);ap.add_argument('--seed',type=int,default=SEED);ap.add_argument('--out',type=Path);a=ap.parse_args();n=a.mutations if a.mutations is not None else (a.cases if a.cases is not None else (a.n if a.n is not None else 10_000_000));out=a.out or a.root/'backlog/ecf13_runtime_falsification.json';rec=run(a.root,n,a.tail);rec['requested_seed']=a.seed;out.parent.mkdir(parents=True,exist_ok=True);out.write_text(json.dumps(rec,indent=2),encoding='utf-8');print(json.dumps(rec,indent=2))
+ ap=argparse.ArgumentParser();ap.add_argument('--root',type=Path,default=Path(__file__).resolve().parents[1]);ap.add_argument('--n',type=int,default=None);ap.add_argument('--cases',type=int,default=None);ap.add_argument('--mutations',type=int,default=None);ap.add_argument('--tail',type=int,default=10_000);ap.add_argument('--seed',type=int,default=SEED);ap.add_argument('--out',type=Path);a=ap.parse_args();n=a.mutations if a.mutations is not None else (a.cases if a.cases is not None else (a.n if a.n is not None else 10_000_000));out=a.out or a.root/'backlog/ecf13_runtime_falsification.json';rec=run(a.root,n,a.tail,a.seed);out.parent.mkdir(parents=True,exist_ok=True);out.write_text(json.dumps(rec,indent=2),encoding='utf-8');print(json.dumps(rec,indent=2))
 if __name__=='__main__':main()

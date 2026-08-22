@@ -5,6 +5,7 @@ from pathlib import Path
 from urllib.parse import parse_qs,urlsplit
 from .epistemic_http import make_epistemic_handler
 from .experience_projection import runtime_projection
+from .foundation import FoundationConfigError,foundation_projection,load_experiment_config,update_experiment_config
 from .local_http import _MAX_AUDIO,_read_json
 from .local_security import PairingSession,allowed_hostnames
 from .local_web_host import LocalWebHostAdapter
@@ -22,19 +23,31 @@ def make_bootstrap_handler(service,pairing,*,assets_dir:Path,allowed_hosts:froze
  Base=make_epistemic_handler(service,pairing,assets_dir=assets_dir,allowed_hosts=allowed_hosts,expected_port=expected_port)
  class Handler(Base):
   def _composed_asset(self,name):
-   if name not in {'app.js','styles.css','conversation.js'}:return False
+   if name not in {'app.js','styles.css','conversation.js','foundation.js','foundation.css'}:return False
    if not self._guard(auth=False):return True
    if name=='app.js':files=(assets_dir/'app.js',assets_dir/'epistemic.js',assets_dir/'bootstrap.js')
    elif name=='styles.css':files=(assets_dir/'styles.css',assets_dir/'epistemic.css',assets_dir/'bootstrap.css')
-   else:files=(assets_dir/'conversation.js',)
+   elif name=='conversation.js':files=(assets_dir/'conversation.js',)
+   elif name=='foundation.js':files=(assets_dir/'foundation.js',)
+   else:files=(assets_dir/'foundation.css',)
    if any(not p.is_file() for p in files):self._error(404,'asset missing');return True
    raw=b'\n'.join(p.read_bytes() for p in files);ctype='text/javascript; charset=utf-8' if name.endswith('.js') else 'text/css; charset=utf-8';self.send_response(200);self._headers(ctype);self.send_header('Content-Length',str(len(raw)));self.end_headers();self.wfile.write(raw);self.wfile.flush();return True
   def do_GET(self):
    split=urlsplit(self.path);path=split.path
-   if path in {'/app.js','/styles.css','/conversation.js'} and self._composed_asset(path.lstrip('/')):return
+   if path in {'/app.js','/styles.css','/conversation.js','/foundation.js','/foundation.css'} and self._composed_asset(path.lstrip('/')):return
    if path=='/api/v6/experience':
     if not self._guard():return
     try:self._json(200,runtime_projection(service.root))
+    except Exception as exc:self._json(409,transport_diagnostic(path,exc))
+    return
+   if path=='/api/v7/foundation':
+    if not self._guard():return
+    try:self._json(200,foundation_projection(service))
+    except Exception as exc:self._json(409,transport_diagnostic(path,exc))
+    return
+   if path=='/api/v7/config':
+    if not self._guard():return
+    try:self._json(200,load_experiment_config(service.root))
     except Exception as exc:self._json(409,transport_diagnostic(path,exc))
     return
    if not path.startswith('/api/v5/bootstrap/'):return super().do_GET()
@@ -49,6 +62,12 @@ def make_bootstrap_handler(service,pairing,*,assets_dir:Path,allowed_hosts:froze
    except Exception:self._empty(409)
   def do_POST(self):
    path=urlsplit(self.path).path
+   if path=='/api/v7/config':
+    if not self._guard(origin=True):return
+    try:self._json(200,update_experiment_config(service,_read_json(self)))
+    except FoundationConfigError as exc:self._json(409,transport_diagnostic(path,exc))
+    except Exception as exc:self._json(409,transport_diagnostic(path,exc))
+    return
    if path.startswith('/api/v2/shell/'):
     if not self._guard(origin=True):return
     try:

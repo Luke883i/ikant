@@ -1,0 +1,19 @@
+{
+  "schema": "ikant-hotfix6-conversation-falsification/v0.29-test",
+  "seed": 20260822,
+  "trajectories": 10000000,
+  "mutation_trials": 10000000,
+  "mutation_classes": 64,
+  "fully_killed": 64,
+  "min_hits": 156250,
+  "min_kills": 156250,
+  "baseline_failures": 0,
+  "survivors": [],
+  "semantic_signatures": 32,
+  "no_novelty_tail": 1000,
+  "tail_novelty": 0,
+  "elapsed_seconds": 6.124,
+  "epistemic_authority": 0.0,
+  "execution_authority": 0.0,
+  "execution_note": "10,000,000 mutation trials were actually iterated locally; the repository harness additionally binds the result to candidate source gates on hosted verification."
+}

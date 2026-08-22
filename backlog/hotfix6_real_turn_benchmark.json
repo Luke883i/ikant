@@ -1,0 +1,70 @@
+{
+  "all_pass": false,
+  "epistemic_authority": 0.0,
+  "execution_authority": 0.0,
+  "rows": [
+    {
+      "error": "local model failed Surface A validation: word count 3 outside 5..500; surface_word_bounds",
+      "metrics": {
+        "attempts": 2,
+        "completion_tokens": 7,
+        "epistemic_authority": 0.0,
+        "execution_authority": 0.0,
+        "max_tokens": 160,
+        "prompt_tokens": 256,
+        "request_ms": [
+          2042.622,
+          685.065
+        ],
+        "status": "INVALID",
+        "system_chars": 775,
+        "total_ms": 2728.765
+      },
+      "prompt": "ciao",
+      "status": "FAIL",
+      "wall_ms": 2736.9
+    },
+    {
+      "error": "local model failed Surface A validation: identity_ikant_missing; engine_label_missing",
+      "metrics": {
+        "attempts": 2,
+        "completion_tokens": 25,
+        "epistemic_authority": 0.0,
+        "execution_authority": 0.0,
+        "max_tokens": 110,
+        "prompt_tokens": 272,
+        "request_ms": [
+          2569.635,
+          1225.367
+        ],
+        "status": "INVALID",
+        "system_chars": 775,
+        "total_ms": 3795.786
+      },
+      "prompt": "ciao, chi sei?",
+      "status": "FAIL",
+      "wall_ms": 3795.9
+    },
+    {
+      "metrics": {
+        "attempts": 1,
+        "completion_tokens": 25,
+        "epistemic_authority": 0.0,
+        "execution_authority": 0.0,
+        "max_tokens": 160,
+        "prompt_tokens": 216,
+        "request_ms": [
+          897.358
+        ],
+        "status": "VALIDATED",
+        "system_chars": 775,
+        "total_ms": 897.652
+      },
+      "prompt": "spiegami in una frase che cosa puoi fare",
+      "status": "PASS",
+      "text": "Posso aiutarti a risolvere problemi, scrivere codice, analizzare testi o creare contenuti con un tono informale e naturale.",
+      "wall_ms": 897.8
+    }
+  ],
+  "schema": "ikant-hotfix6-real-turn-benchmark/v0.29-test"
+}

@@ -4,20 +4,17 @@ from http.server import ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs,urlsplit
 from .epistemic_http import make_epistemic_handler
+from .experience_projection import runtime_projection
 from .local_http import _MAX_AUDIO,_read_json
 from .local_security import PairingSession,allowed_hostnames
 from .local_web_host import LocalWebHostAdapter
 
 TRANSPORT_DIAGNOSTIC_SCHEMA='ikant-interactive-transport-diagnostic/v0.29-test'
-_SECRET_PATTERNS=(
- re.compile(r'(?i)Bearer\s+[A-Za-z0-9._~+\/-]+'),
- re.compile(r'(?i)((?:token|password|secret|api[_-]?key)\s*[:=]\s*)[^\s,;]+'),
-)
+_SECRET_PATTERNS=(re.compile(r'(?i)Bearer\s+[A-Za-z0-9._~+\/-]+'),re.compile(r'(?i)((?:token|password|secret|api[_-]?key)\s*[:=]\s*)[^\s,;]+'))
 
 def transport_diagnostic(path,exc):
  message=str(exc or 'local transport failure').replace('\x00',' ')
- for pattern in _SECRET_PATTERNS:
-  message=pattern.sub(lambda m:('Bearer [REDACTED]' if m.group(0).lower().startswith('bearer ') else m.group(1)+'[REDACTED]'),message)
+ for pattern in _SECRET_PATTERNS:message=pattern.sub(lambda m:('Bearer [REDACTED]' if m.group(0).lower().startswith('bearer ') else m.group(1)+'[REDACTED]'),message)
  message=' '.join(message.split())[:240] or 'local transport failure'
  return {'schema':TRANSPORT_DIAGNOSTIC_SCHEMA,'path':str(path)[:120],'code':type(exc).__name__[:80],'message':message,'retryable':False,'presentation_is_authority':False,'epistemic_authority':0.0,'execution_authority':0.0}
 
@@ -35,6 +32,11 @@ def make_bootstrap_handler(service,pairing,*,assets_dir:Path,allowed_hosts:froze
   def do_GET(self):
    split=urlsplit(self.path);path=split.path
    if path in {'/app.js','/styles.css','/conversation.js'} and self._composed_asset(path.lstrip('/')):return
+   if path=='/api/v6/experience':
+    if not self._guard():return
+    try:self._json(200,runtime_projection(service.root))
+    except Exception as exc:self._json(409,transport_diagnostic(path,exc))
+    return
    if not path.startswith('/api/v5/bootstrap/'):return super().do_GET()
    if not self._guard():return
    query=parse_qs(split.query,keep_blank_values=False)

@@ -2,6 +2,7 @@ from __future__ import annotations
 import hashlib,json,re,threading,time
 from pathlib import Path
 from typing import Any
+from .experience_projection import timing_mark,timing_public
 from .local_web_host import LocalWebHostAdapter
 from .model_broker import LocalModelBroker,LocalModelError
 from .voice_input import LocalVoiceInputBroker
@@ -35,11 +36,6 @@ _LOCAL_IDENTITY_EN=(r'(?:hi |hello )?who are you',r'(?:hi |hello )?what are you'
 def _normalized_intent(text:str)->str:return ' '.join(_words(text))
 def _matches_any(value:str,patterns:tuple[str,...])->bool:return any(re.fullmatch(pattern,value) for pattern in patterns)
 def _local_social_surface(user_text:str,interaction:dict[str,Any],*,engine_label:str)->str|None:
-    """Answer closed social/interface facts without spending an LLM round trip.
-
-    This kernel is deliberately narrow: only exact greeting or interface-identity
-    forms are eligible. Any substantive or compound request remains model-bound.
-    """
     n=_normalized_intent(user_text)
     if _matches_any(n,_LOCAL_IDENTITY_IT):return f'Sono iKant. Il motore linguistico locale è {engine_label}; genera testo, ma non possiede autorità propria.'
     if _matches_any(n,_LOCAL_IDENTITY_EN):return f'I am iKant. The local language engine is {engine_label}; it generates text but has no authority of its own.'
@@ -60,7 +56,8 @@ def _structured_primary_from_chat(rt,*,cycle_id:str|None=None)->str|None:
     return None
 
 class LocalEmbodimentService:
-    def __init__(self,root:str|Path,*,model:LocalModelBroker,voice:LocalVoiceInputBroker):self.root=Path(root).resolve();self.model=model;self.voice=voice;self.web_adapter:LocalWebHostAdapter|None=None;self._cert=None;self._lock=threading.RLock()
+    def __init__(self,root:str|Path,*,model:LocalModelBroker,voice:LocalVoiceInputBroker):
+        self.root=Path(root).resolve();self.model=model;self.voice=voice;self.web_adapter:LocalWebHostAdapter|None=None;self._cert=None;self._lock=threading.RLock();self._turn_origins:dict[str,float]={};self._artifact_lock=threading.Lock()
     @property
     def state_dir(self):return self.root/'.ikant'
     def contract_text(self):return (self.root/'IKANT_ACCESS_CONTRACT.md').read_text(encoding='utf-8')
@@ -134,6 +131,21 @@ class LocalEmbodimentService:
                 if g.state==EgressState.RELEASED:return {'schema':LOCAL_APP_SCHEMA,'released':True,'state':'RELEASED'}
                 g.require_locked();p=prepare_human_frame(rt,persist_dashboard(rt),kind='WEB_DASHBOARD');return wrap_prepared_frame(p,primary_text=_structured_primary_from_chat(rt))
             finally:rt.close()
+    def _render_cycle_artifact(self,cycle:str)->None:
+        if not cycle:return
+        with self._artifact_lock:
+            json_path=self.state_dir/'cognitive'/f'{cycle}.json';docx_path=self.state_dir/'artifacts'/f'CRC_SNAPSHOT_{cycle}.docx'
+            if docx_path.is_file() or not json_path.is_file():return
+            try:
+                from .surfaces import export_surface_b_docx
+                snapshot=json.loads(json_path.read_text(encoding='utf-8'))
+                if str(snapshot.get('cycle_id') or '')!=cycle:return
+                export_surface_b_docx(snapshot,docx_path)
+            except Exception:return
+    def _schedule_cycle_artifact(self,cycle:str)->None:
+        if not cycle:return
+        threading.Thread(target=self._render_cycle_artifact,args=(cycle,),name='ikant-cycle-artifact',daemon=True).start()
+
     def acknowledge(self,ack):
         with self._lock:
             self.require_web_conformance()
@@ -146,7 +158,14 @@ class LocalEmbodimentService:
                 if not p:raise LocalAppError('acknowledgement requires a pending sealed frame')
                 frame=wrap_prepared_frame(p);ok,e=validate_web_ack(frame,ack)
                 if not ok:raise LocalAppError('web frame acknowledgement mismatch: '+'; '.join(e))
-                acknowledge_prepared_frame(rt,p,ack['visible_text']);return {'schema':LOCAL_APP_SCHEMA,'acknowledged':True,'delivery_state':existing_runtime_egress(rt).state.value}
+                result=acknowledge_prepared_frame(rt,p,ack['visible_text'])
+                receipt=dict(p.get('receipt') or {});cycle=str(receipt.get('cycle_id') or '')
+                if cycle:
+                    cog=rt.runtime.setdefault('cognitive',{});timing=dict(cog.get('last_turn_timing') or {});origin=self._turn_origins.pop(cycle,None)
+                    if origin is not None:
+                        timing['_origin']=origin;timing_mark(timing,'ACK_DONE',time.perf_counter());cog['last_turn_timing']=timing_public(timing);rt._write_runtime()
+                    self._schedule_cycle_artifact(cycle)
+                return {'schema':LOCAL_APP_SCHEMA,'acknowledged':True,'delivery_state':existing_runtime_egress(rt).state.value}
             finally:rt.close()
     def turn(self,user_text):
         with self._lock:
@@ -156,15 +175,15 @@ class LocalEmbodimentService:
             from .session_host import DashboardOnlySession
             from .surfaces import validate_surface_a
             from .interaction import build_interaction_contract,validate_interaction_surface
-            rt=Runtime(self.state_dir)
+            turn_origin=time.perf_counter();rt=Runtime(self.state_dir)
             try:
-                s=DashboardOnlySession(rt);begin=s.begin_user(text,engine_label=self.model.model)
+                s=DashboardOnlySession(rt);begin=s.begin_user(text,engine_label=self.model.model,timing_origin=turn_origin)
                 if begin.get('control')!='TURN':
                     human=begin.get('human')
                     if not human:raise LocalAppError('control transition missing human frame')
                     return wrap_prepared_frame(human)
-                out=begin['machine'];cycle=str(out['cycle']['cycle_id']);intent=out.get('intention_node_id');contract=out['surface_a_contract'];interaction=out.get('interaction_contract') or build_interaction_contract(text,engine_label=self.model.model)
-                started=time.perf_counter();surface=_local_social_surface(text,interaction,engine_label=self.model.model)
+                out=begin['machine'];cycle=str(out['cycle']['cycle_id']);intent=out.get('intention_node_id');contract=out['surface_a_contract'];interaction=out.get('interaction_contract') or build_interaction_contract(text,engine_label=self.model.model);timing=out.get('turn_timing') or {};self._turn_origins[cycle]=turn_origin
+                timing_mark(timing,'MODEL_START',time.perf_counter());started=time.perf_counter();surface=_local_social_surface(text,interaction,engine_label=self.model.model)
                 if surface is not None:
                     source='LOCAL_INTERACTION_KERNEL';ok,e=validate_surface_a(surface);iok,ie=validate_interaction_surface(surface,interaction);errors=list(dict.fromkeys(list(e)+list(ie)))
                     if not (ok and iok):raise LocalAppError('local interaction kernel failed: '+'; '.join(errors))
@@ -176,8 +195,10 @@ class LocalEmbodimentService:
                         source='OPERATIONAL_FALLBACK';surface=operational_fallback(text,engine_label=self.model.model);ok,e=validate_surface_a(surface);iok,ie=validate_interaction_surface(surface,interaction);errors=list(dict.fromkeys(list(e)+list(ie)))
                         if not (ok and iok):raise LocalAppError('operational fallback failed: '+'; '.join(errors))
                     metrics=dict(getattr(self.model,'last_completion_metrics',{}) or {})
-                prepared=s.finalize(cycle,surface,intention_node_id=intent)
-                generation={'cycle_id':cycle,'source':source,'model_generation_valid':source=='MODEL','model_metrics':metrics,'epistemic_authority':0.0,'execution_authority':0.0};cog=rt.runtime.setdefault('cognitive',{});cog['last_surface_a_generation']=generation;rt._write_runtime();rt._event('SURFACE_A_GENERATION',cycle,dict(generation));frame=wrap_prepared_frame(prepared,primary_text='iKant: '+surface);frame['generation']=generation;return frame
+                timing_mark(timing,'MODEL_DONE',time.perf_counter());ok,e=validate_surface_a(surface);iok,ie=validate_interaction_surface(surface,interaction)
+                if not (ok and iok):raise LocalAppError('validated reply contract drift: '+'; '.join(list(e)+list(ie)))
+                timing_mark(timing,'VALIDATION_DONE',time.perf_counter());prepared=s.finalize(cycle,surface,intention_node_id=intent);timing_mark(timing,'FRAME_SEALED',time.perf_counter())
+                generation={'cycle_id':cycle,'source':source,'model_generation_valid':source=='MODEL','model_metrics':metrics,'epistemic_authority':0.0,'execution_authority':0.0};cog=rt.runtime.setdefault('cognitive',{});cog['last_surface_a_generation']=generation;timing_mark(timing,'PRIMARY_DELIVERED',time.perf_counter());cog['last_turn_timing']=timing_public(timing);rt._write_runtime();rt._event('SURFACE_A_GENERATION',cycle,dict(generation));frame=wrap_prepared_frame(prepared,primary_text='iKant: '+surface);frame['generation']=generation;frame['turn_timing']=timing_public(timing);return frame
             finally:rt.close()
     def notice(self,message,*,kind='LOCAL_WEB_NOTICE'):
         with self._lock:

@@ -1,0 +1,75 @@
+name: hotfix6 latency bench
+on:
+  push:
+    branches: [diag/hotfix6-latency-bench]
+permissions:
+  contents: write
+jobs:
+  bench:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download pinned runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ikant-bench/engine
+          curl -L --fail --retry 3 -o /tmp/ikant-bench/engine.tar.gz https://github.com/ggml-org/llama.cpp/releases/download/b10344/llama-b10344-bin-ubuntu-x64.tar.gz
+          echo '01b90b0764821d0e53b985730eea3837e29a976ee00e783e18837937b93fc3f1  /tmp/ikant-bench/engine.tar.gz' | sha256sum -c -
+          tar -xzf /tmp/ikant-bench/engine.tar.gz -C /tmp/ikant-bench/engine
+          curl -L --fail --retry 3 -o /tmp/ikant-bench/model.gguf https://huggingface.co/ggml-org/Qwen3.5-0.8B-GGUF/resolve/9447f74101aeb4e93621884dfa36ee8effb8831b/Qwen3.5-0.8B-Q4_0.gguf
+          echo '57d1997790d1744fba5b40a7317df71ea5e2acee28c47e78f0cce39c0703f8cf  /tmp/ikant-bench/model.gguf' | sha256sum -c -
+          find /tmp/ikant-bench/engine -type f -name llama-server -print -quit > /tmp/ikant-bench/server.path
+          chmod +x "$(cat /tmp/ikant-bench/server.path)"
+      - name: Benchmark baseline and single-user tuned server
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/ikant-bench/bench.py <<'PY'
+          import json, os, subprocess, time, urllib.request
+          server=open('/tmp/ikant-bench/server.path').read().strip(); model='/tmp/ikant-bench/model.gguf'
+          prompts=['ciao','ciao, chi sei?','spiegami in una frase che cosa puoi fare']
+          system='You are the replaceable local language engine underneath iKant. Return only the final concise answer, in the same language as the user. No reasoning, headings, lists, tables or code.'
+          def wait(port,key,proc):
+              url=f'http://127.0.0.1:{port}/v1/models'; start=time.perf_counter()
+              while time.perf_counter()-start<60:
+                  if proc.poll() is not None: raise RuntimeError('server exited '+str(proc.returncode))
+                  try:
+                      req=urllib.request.Request(url,headers={'Authorization':'Bearer '+key})
+                      with urllib.request.urlopen(req,timeout=.8) as r:
+                          if r.status==200:return round((time.perf_counter()-start)*1000,1)
+                  except Exception: time.sleep(.1)
+              raise RuntimeError('readiness timeout')
+          def one(name,port,extra):
+              key='bench-secret'; cmd=[server,'-m',model,'--host','127.0.0.1','--port',str(port),'--api-key',key,'--no-webui','--reasoning','off']+extra
+              proc=subprocess.Popen(cmd,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,text=True)
+              try:
+                  startup=wait(port,key,proc); rows=[]
+                  for i,prompt in enumerate(prompts+prompts):
+                      payload={'model':'Qwen3.5-0.8B','messages':[{'role':'system','content':system},{'role':'user','content':prompt}], 'temperature':0.2,'max_tokens':64,'stream':False,'tools':[]}
+                      req=urllib.request.Request(f'http://127.0.0.1:{port}/v1/chat/completions',data=json.dumps(payload).encode(),headers={'Content-Type':'application/json','Authorization':'Bearer '+key})
+                      t=time.perf_counter()
+                      with urllib.request.urlopen(req,timeout=90) as r: out=json.loads(r.read())
+                      ms=round((time.perf_counter()-t)*1000,1); text=str(out['choices'][0]['message'].get('content') or '')
+                      rows.append({'i':i,'prompt':prompt,'ms':ms,'chars':len(text)})
+                  return {'name':name,'startup_ms':startup,'requests':rows,'mean_ms':round(sum(x['ms'] for x in rows)/len(rows),1),'first_cycle_ms':round(sum(x['ms'] for x in rows[:3])/3,1),'second_cycle_ms':round(sum(x['ms'] for x in rows[3:])/3,1)}
+              finally:
+                  proc.terminate()
+                  try: proc.wait(timeout=5)
+                  except Exception: proc.kill()
+          result={'schema':'ikant-hotfix6-latency-bench/v0.29-test','runner_cpu_count':os.cpu_count(),'baseline':one('baseline',31337,[]),'tuned':one('tuned',31338,['--ctx-size','4096','--parallel','1','--cache-prompt'])}
+          result['mean_speedup']=round(result['baseline']['mean_ms']/result['tuned']['mean_ms'],3)
+          os.makedirs('backlog',exist_ok=True);open('backlog/hotfix6_latency_bench.json','w').write(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(result,indent=2))
+          PY
+          python /tmp/ikant-bench/bench.py
+      - name: Commit benchmark receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add backlog/hotfix6_latency_bench.json
+          git commit -m 'diag: record hotfix6 latency benchmark' || exit 0
+          git push

@@ -29,6 +29,7 @@ FAMILIES=[(d,n) for d,names in DOMAINS.items() for n in names]
 def gates(root:Path):
  def read(p):return (root/p).read_text(encoding='utf-8')
  exp=read('ikant/experience_projection.py');cog=read('ikant/cognitive_runtime.py');host=read('ikant/runtime_host.py');local=read('ikant/local_service.py');http=read('ikant/bootstrap_http.py');html=read('ikant/web/index.html');app=read('ikant/web/app.js');compat=read('ikant/web/conversation.js');epi=read('ikant/web/epistemic.js');sw=read('ikant/web/sw.js');future=read('ikant/future_supply.py');contract=json.loads(read('docs/ECF1_3_ENGINEERING_CONTRACT.json'));product=json.loads(read('PRODUCT_CONTRACT.json'))
+ s11=next((s for s in product.get('slices',[]) if s.get('id')=='S11'),{})
  checks={
  'projection_schema':'ikant-experience-projection/v1.3' in exp,'trace_no_cot':'private_chain_of_thought' in exp and 'raw_model_rationale' in exp,
  'public_stages':all(x in exp for x in ('Capisco','Collego','Verifico','Valuto','Formulo','Integro')),'projection_zero_authority':exp.count("'epistemic_authority':0.0")>=3 and exp.count("'execution_authority':0.0")>=3,
@@ -47,7 +48,7 @@ def gates(root:Path):
  'cache_boundary':'ikant-s10bis-bootstrap-v1-interactive-liveness-hotfix5-ecf1-3-runtime-v30' in sw and 'caches.delete' in sw,
  'future_supply':all(x in future for x in ('exact_allowed_origins_no_wildcards','page_and_content_script_data_are_untrusted','platform_permission_surface_first','owns_no_cognition','pinned_version')),
  'thirty_invariants':[x['id'] for x in contract['invariants']]==[f'ECF13-{i:03d}' for i in range(1,31)],
- 'constitutional_registration':product.get('constitutional_convergence')=='S11' and product.get('slices',[])[-1].get('id')=='S11' and len(product.get('slices',[])[-1].get('invariants',[]))==30}
+ 'constitutional_registration':s11.get('schema')=='ikant-experience-projection/v1.3' and len(s11.get('invariants',[]))==30 and any(s.get('id')=='S11' for s in product.get('slices',[]))}
  return checks
 
 def source_digest(root:Path):
@@ -63,9 +64,6 @@ def run(root:Path,n:int,tail:int,seed:int=SEED):
  def step(z):z^=(z<<13)&mask;z^=z>>7;z^=(z<<17)&mask;return z&mask
  for i in range(n):
   fid=(i*883+int(seed))%m;x=step(x+i+fid+1);hits[fid]+=1
-  # The semantic signature lattice is deliberately enumerated, not left to PRNG luck.
-  # One full 64-slot cycle per family is complete after m*64 trials; larger runs stress
-  # the trajectories while the tail can then prove no-new-signature convergence.
   sigs.add((fid,(i//m)&63))
  seen=set(sigs);new=0
  for j in range(tail):

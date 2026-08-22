@@ -1,0 +1,25 @@
+{
+  "schema": "ikant-hotfix6-latency-bench/v0.29-test",
+  "runner_cpu_count": 4,
+  "baseline": {
+    "startup_ms": 3737.7,
+    "mean_ms": 744.4,
+    "first_cycle_ms": 804.6,
+    "second_cycle_ms": 684.2
+  },
+  "tuned": {
+    "startup_ms": 1515.8,
+    "mean_ms": 700.1,
+    "first_cycle_ms": 745.0,
+    "second_cycle_ms": 655.3
+  },
+  "mean_speedup": 1.063,
+  "provenance": {
+    "runner": "github-hosted ubuntu-22.04",
+    "llama_cpp_release": "b10344",
+    "engine_sha256": "01b90b0764821d0e53b985730eea3837e29a976ee00e783e18837937b93fc3f1",
+    "model": "Qwen3.5-0.8B-Q4_0.gguf",
+    "model_sha256": "57d1997790d1744fba5b40a7317df71ea5e2acee28c47e78f0cce39c0703f8cf",
+    "tuned_server_flags": ["--ctx-size", "4096", "--parallel", "1", "--cache-prompt"]
+  }
+}

@@ -6,6 +6,7 @@ from typing import Any
 WEB_FRAME_SCHEMA = "ikant-web-human-frame/v0.20-test"
 WEB_ACK_SCHEMA = "ikant-web-human-ack/v0.20-test"
 PENDING_PRIMARY_TEXT = "iKant: [PENDING - la risposta validata non e ancora stata emessa]"
+_PROMPT_LIKE_PREFIX = "[prompt-like text] "
 
 
 def _sha_text(text: str) -> str:
@@ -21,6 +22,13 @@ def _dashboard_cells(text: str) -> list[str]:
 
 
 def _surface_a_primary(text: str) -> str | None:
+    """Compatibility recovery parser for already-sealed dashboard frames.
+
+    Normal TURN delivery must provide structured primary text. This parser exists
+    only so a pending frame created by an older runtime can still recover after
+    the anti-spoof renderer prefixes a legitimate iKant line with
+    ``[prompt-like text]``.
+    """
     cells = _dashboard_cells(text)
     status = None
     capture = False
@@ -35,8 +43,9 @@ def _surface_a_primary(text: str) -> str | None:
         if not capture:
             continue
         stripped = cell.strip()
-        if stripped.startswith("> iKant:"):
-            parts.append(stripped.split("> iKant:", 1)[1].strip())
+        candidate = stripped[len(_PROMPT_LIKE_PREFIX):] if stripped.startswith(_PROMPT_LIKE_PREFIX) else stripped
+        if candidate.startswith("> iKant:"):
+            parts.append(candidate.split("> iKant:", 1)[1].strip())
         elif parts and stripped:
             parts.append(stripped)
     if status != "VALIDATED" or not parts:
@@ -70,12 +79,11 @@ def _control_primary(text: str, kind: str) -> str | None:
 
 
 def project_primary_text(text: str, kind: str | None = None) -> str:
-    """Project one concise chat line from the sealed HSPv2 dashboard.
+    """Compatibility projection from a sealed HSPv2 dashboard.
 
-    The sealed dashboard remains the canonical disclosure payload and is never
-    rewritten. The primary projection is derivative, zero-authority, and may
-    only expose a control message, the validated Surface A, or the exact pending
-    marker. It can never promote readiness, evidence, approval, or execution.
+    Structured TURN output is preferred by ``wrap_prepared_frame``. This
+    function remains deterministic for control frames and crash recovery, but
+    presentation ASCII is no longer the source of truth for a live Surface A.
     """
     control = _control_primary(text, str(kind or ""))
     if control:
@@ -86,18 +94,45 @@ def project_primary_text(text: str, kind: str | None = None) -> str:
     return PENDING_PRIMARY_TEXT
 
 
-def wrap_prepared_frame(prepared: dict[str, Any]) -> dict[str, Any]:
-    """Wrap one sealed dashboard plus a deterministic primary chat projection."""
+def _validated_explicit_primary(value: object) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    if not text.startswith("iKant: ") or text == "iKant: ":
+        raise ValueError("explicit primary text must be a non-empty iKant line")
+    if "\r" in text or "\x00" in text or "\x1b" in text:
+        raise ValueError("explicit primary text contains forbidden control bytes")
+    if len(text.encode("utf-8")) > 65536:
+        raise ValueError("explicit primary text exceeds bound")
+    return text
+
+
+def wrap_prepared_frame(prepared: dict[str, Any], *, primary_text: str | None = None) -> dict[str, Any]:
+    """Wrap one sealed dashboard plus a zero-authority primary projection.
+
+    A validated live TURN supplies ``primary_text`` from the structured chat
+    record / Surface A value. Parsing the ASCII dashboard is compatibility-only
+    for control frames and recoverable historical pending frames.
+    """
     text = str(prepared.get("text") or "")
     receipt = dict(prepared.get("receipt") or {})
     expected = str(receipt.get("frame_sha256") or "")
     if not text or not expected or _sha_text(text) != expected:
         raise ValueError("prepared frame text/receipt digest mismatch")
-    primary_text = project_primary_text(text, receipt.get("kind"))
+    explicit = _validated_explicit_primary(primary_text)
+    if explicit is not None:
+        projected = explicit
+        projection_source = "STRUCTURED_SURFACE_A"
+    else:
+        projected = project_primary_text(text, receipt.get("kind"))
+        projection_source = "SEALED_DASHBOARD_COMPAT"
     return {
         "schema": WEB_FRAME_SCHEMA,
         "text": text,
-        "primary_text": primary_text,
+        "primary_text": projected,
+        "primary_projection_source": projection_source,
         "receipt": receipt,
         "delivery_state": str(prepared.get("delivery_state") or ""),
         "acknowledged": bool(prepared.get("acknowledged", False)),
@@ -106,7 +141,8 @@ def wrap_prepared_frame(prepared: dict[str, Any]) -> dict[str, Any]:
             "mode": "VERBATIM_TEXT",
             "primary_mode": "PRIMARY_WITH_PROGRESSIVE_DISCLOSURE",
             "primary_text_is_derivative": True,
-            "primary_text_must_equal_projection": True,
+            "structured_primary_preferred": True,
+            "dashboard_parsing_is_compatibility_only": True,
             "details_text_must_equal_text": True,
             "details_collapsed_by_default": True,
             "canonical_frame_available_on_demand": True,

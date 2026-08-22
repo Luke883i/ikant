@@ -145,8 +145,9 @@ class LocalEmbodimentService:
                 except LocalModelError:
                     source='OPERATIONAL_FALLBACK';surface=operational_fallback(text,engine_label=self.model.model);ok,e=validate_surface_a(surface);iok,ie=validate_interaction_surface(surface,interaction);errors=list(dict.fromkeys(list(e)+list(ie)))
                     if not (ok and iok):raise LocalAppError('operational fallback failed: '+'; '.join(errors))
-                cog=rt.runtime.setdefault('cognitive',{});cog['last_surface_a_generation']={'cycle_id':cycle,'source':source,'model_generation_valid':source=='MODEL','epistemic_authority':0.0,'execution_authority':0.0};rt._write_runtime();rt._event('SURFACE_A_GENERATION',cycle,dict(cog['last_surface_a_generation']))
-                return wrap_prepared_frame(s.finalize(cycle,surface,intention_node_id=intent))
+                prepared=s.finalize(cycle,surface,intention_node_id=intent)
+                generation={'cycle_id':cycle,'source':source,'model_generation_valid':source=='MODEL','epistemic_authority':0.0,'execution_authority':0.0};cog=rt.runtime.setdefault('cognitive',{});cog['last_surface_a_generation']=generation;rt._write_runtime();rt._event('SURFACE_A_GENERATION',cycle,dict(generation))
+                frame=wrap_prepared_frame(prepared);frame['generation']=generation;return frame
             finally:rt.close()
     def notice(self,message,*,kind='LOCAL_WEB_NOTICE'):
         with self._lock:

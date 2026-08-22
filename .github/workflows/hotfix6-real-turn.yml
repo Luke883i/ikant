@@ -1,0 +1,74 @@
+name: hotfix6 real turn
+on:
+  push:
+    branches: [diag/hotfix6-real-turn]
+permissions: {contents: write}
+jobs:
+  real-turn:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Download exact pinned runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ikant-real/engine
+          curl -L --fail --retry 3 -o /tmp/ikant-real/engine.tar.gz https://github.com/ggml-org/llama.cpp/releases/download/b10344/llama-b10344-bin-ubuntu-x64.tar.gz
+          echo '01b90b0764821d0e53b985730eea3837e29a976ee00e783e18837937b93fc3f1  /tmp/ikant-real/engine.tar.gz' | sha256sum -c -
+          tar -xzf /tmp/ikant-real/engine.tar.gz -C /tmp/ikant-real/engine
+          curl -L --fail --retry 3 -o /tmp/ikant-real/model.gguf https://huggingface.co/ggml-org/Qwen3.5-0.8B-GGUF/resolve/9447f74101aeb4e93621884dfa36ee8effb8831b/Qwen3.5-0.8B-Q4_0.gguf
+          echo '57d1997790d1744fba5b40a7317df71ea5e2acee28c47e78f0cce39c0703f8cf  /tmp/ikant-real/model.gguf' | sha256sum -c -
+          find /tmp/ikant-real/engine -type f -name llama-server -print -quit > /tmp/ikant-real/server.path
+          chmod +x "$(cat /tmp/ikant-real/server.path)"
+      - name: Run exact hotfix6 broker turns
+        shell: bash
+        run: |
+          set -euo pipefail
+          key='hotfix6-real-key'
+          server="$(cat /tmp/ikant-real/server.path)"
+          "$server" -m /tmp/ikant-real/model.gguf --host 127.0.0.1 --port 31339 --api-key "$key" --no-webui --reasoning off --ctx-size 4096 --parallel 1 --cache-prompt >/tmp/ikant-real/server.out 2>/tmp/ikant-real/server.err &
+          pid=$!
+          trap 'kill $pid 2>/dev/null || true' EXIT
+          python - <<'PY'
+          import json,time,urllib.request
+          key='hotfix6-real-key'; url='http://127.0.0.1:31339/v1/models'
+          deadline=time.time()+60
+          while time.time()<deadline:
+              try:
+                  req=urllib.request.Request(url,headers={'Authorization':'Bearer '+key})
+                  with urllib.request.urlopen(req,timeout=.8) as r:
+                      if r.status==200: break
+              except Exception: time.sleep(.1)
+          else: raise SystemExit('readiness timeout')
+          PY
+          python - <<'PY'
+          import json,time,pathlib
+          from ikant.model_broker import LocalModelBroker
+          from ikant.surfaces import validate_surface_a
+          broker=LocalModelBroker('http://127.0.0.1:31339/v1/chat/completions',model='Qwen3.5-0.8B',api_key='hotfix6-real-key')
+          prompts=['ciao','ciao, chi sei?','spiegami in una frase che cosa puoi fare']
+          rows=[]
+          for prompt in prompts:
+              t=time.perf_counter()
+              try:
+                  text=broker.complete_surface_a({},prompt,validator=validate_surface_a)
+                  rows.append({'prompt':prompt,'status':'PASS','wall_ms':round((time.perf_counter()-t)*1000,1),'text':text,'metrics':broker.last_completion_metrics})
+              except Exception as exc:
+                  rows.append({'prompt':prompt,'status':'FAIL','wall_ms':round((time.perf_counter()-t)*1000,1),'error':str(exc),'metrics':broker.last_completion_metrics})
+          out={'schema':'ikant-hotfix6-real-turn-benchmark/v0.29-test','rows':rows,'all_pass':all(r['status']=='PASS' for r in rows),'epistemic_authority':0.0,'execution_authority':0.0}
+          pathlib.Path('backlog/hotfix6_real_turn_benchmark.json').write_text(json.dumps(out,indent=2,ensure_ascii=False,sort_keys=True)+'\n')
+          print(json.dumps(out,indent=2,ensure_ascii=False))
+          if not out['all_pass']: raise SystemExit(1)
+          PY
+      - name: Commit receipt
+        if: always()
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add backlog/hotfix6_real_turn_benchmark.json
+          git commit -m 'diag: record hotfix6 real turn benchmark' || true
+          git push

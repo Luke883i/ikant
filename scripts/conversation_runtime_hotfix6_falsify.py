@@ -14,6 +14,7 @@ def source_gate(root: Path) -> dict[str, bool]:
     service = (root / "ikant" / "local_service.py").read_text(encoding="utf-8")
     broker = (root / "ikant" / "model_broker.py").read_text(encoding="utf-8")
     engine = (root / "ikant" / "engine_supervisor.py").read_text(encoding="utf-8")
+    app = (root / "ikant" / "web" / "app.js").read_text(encoding="utf-8")
     voice = (root / "ikant" / "web" / "conversation.js").read_text(encoding="utf-8")
     turn = service.split("    def turn(self,user_text):", 1)[1].split("    def notice", 1)[0]
     return {
@@ -32,7 +33,7 @@ def source_gate(root: Path) -> dict[str, bool]:
         "prompt_cache": "'--cache-prompt'" in engine,
         "voice_local": "const SR=window.SpeechRecognition" in voice and "window.webkitSpeechRecognition" not in voice,
         "voice_no_auto_submit": "out.auto_submit!==false" in voice and "Premi ↑ per inviare a iKant" in voice,
-        "tts_local_post_ack": "localService===true" in voice and "maybeSpeak(frame)" in voice and "FRAME_ACKED" in voice,
+        "tts_local_post_ack": "localService===true" in app and "localVoices()" in voice and "maybeSpeak(frame)" in voice and "FRAME_ACKED" in voice,
     }
 
 

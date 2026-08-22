@@ -115,6 +115,7 @@ class FastInferenceBoundaryTests(unittest.TestCase):
 
 class VoiceRoundTripBindingTests(unittest.TestCase):
     def test_voice_path_remains_local_candidate_then_same_explicit_turn(self):
+        app = (ROOT / "ikant" / "web" / "app.js").read_text(encoding="utf-8")
         js = (ROOT / "ikant" / "web" / "conversation.js").read_text(encoding="utf-8")
         self.assertIn("const SR=window.SpeechRecognition", js)
         self.assertNotIn("window.webkitSpeechRecognition", js)
@@ -122,7 +123,8 @@ class VoiceRoundTripBindingTests(unittest.TestCase):
         self.assertIn("out.auto_submit!==false", js)
         self.assertIn("Premi ↑ per inviare a iKant", js)
         self.assertIn("shellCommand('TURN',{text:value})", js)
-        self.assertIn("localService===true", js)
+        self.assertIn("localService===true", app)
+        self.assertIn("localVoices()", js)
         self.assertIn("maybeSpeak(frame)", js)
         self.assertIn("FRAME_ACKED", js)
 

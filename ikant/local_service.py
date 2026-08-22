@@ -28,6 +28,20 @@ def operational_fallback(user_text:str,*,engine_label:str='local-engine')->str:
     if identity:return f'I am iKant. The local language engine {engine_label} did not produce a valid reply for this turn; no material action was executed, and you can retry.'
     return 'The local language engine did not produce a valid reply for this turn; no material action was executed, and you can retry.'
 
+def _structured_primary_from_chat(rt,*,cycle_id:str|None=None)->str|None:
+    """Recover Surface A from the hash-chained chat record, never presentation ASCII."""
+    from .chat_session import ChatLog
+    session_id=str((rt.runtime or {}).get('session_id') or '')
+    if not session_id:return None
+    log=ChatLog(Path(rt.state_dir)/'chat'/'transcript.jsonl',runtime_session_id=session_id)
+    log.verify()
+    for row in reversed(log.rows()):
+        if row.get('role')!='ikant':continue
+        if cycle_id is not None and str(row.get('cycle_id') or '')!=str(cycle_id):continue
+        value=str(row.get('text') or '').strip()
+        if value:return 'iKant: '+value
+    return None
+
 class LocalEmbodimentService:
     def __init__(self,root:str|Path,*,model:LocalModelBroker,voice:LocalVoiceInputBroker):
         self.root=Path(root).resolve();self.model=model;self.voice=voice;self.web_adapter:LocalWebHostAdapter|None=None;self._cert=None;self._lock=threading.RLock()
@@ -103,9 +117,11 @@ class LocalEmbodimentService:
                 if g.state in {EgressState.FRAME_PENDING,EgressState.RELEASE_PENDING}:
                     p=recover_prepared_frame(rt)
                     if not p:raise LocalAppError('pending egress has no recoverable frame')
-                    return wrap_prepared_frame(p)
+                    receipt=dict(p.get('receipt') or {})
+                    primary=_structured_primary_from_chat(rt,cycle_id=receipt.get('cycle_id')) if str(receipt.get('kind') or '').upper()=='TURN' else None
+                    return wrap_prepared_frame(p,primary_text=primary)
                 if g.state==EgressState.RELEASED:return {'schema':LOCAL_APP_SCHEMA,'released':True,'state':'RELEASED'}
-                g.require_locked();return wrap_prepared_frame(prepare_human_frame(rt,persist_dashboard(rt),kind='WEB_DASHBOARD'))
+                g.require_locked();p=prepare_human_frame(rt,persist_dashboard(rt),kind='WEB_DASHBOARD');return wrap_prepared_frame(p,primary_text=_structured_primary_from_chat(rt))
             finally:rt.close()
     def acknowledge(self,ack):
         with self._lock:
@@ -147,7 +163,7 @@ class LocalEmbodimentService:
                     if not (ok and iok):raise LocalAppError('operational fallback failed: '+'; '.join(errors))
                 prepared=s.finalize(cycle,surface,intention_node_id=intent)
                 generation={'cycle_id':cycle,'source':source,'model_generation_valid':source=='MODEL','epistemic_authority':0.0,'execution_authority':0.0};cog=rt.runtime.setdefault('cognitive',{});cog['last_surface_a_generation']=generation;rt._write_runtime();rt._event('SURFACE_A_GENERATION',cycle,dict(generation))
-                frame=wrap_prepared_frame(prepared);frame['generation']=generation;return frame
+                frame=wrap_prepared_frame(prepared,primary_text='iKant: '+surface);frame['generation']=generation;return frame
             finally:rt.close()
     def notice(self,message,*,kind='LOCAL_WEB_NOTICE'):
         with self._lock:

@@ -1,5 +1,5 @@
 from __future__ import annotations
-import hashlib,json,re,threading
+import hashlib,json,re,threading,time
 from pathlib import Path
 from typing import Any
 from .local_web_host import LocalWebHostAdapter
@@ -15,18 +15,37 @@ def runtime_active(root:Path)->bool:
     try:return json.loads((root/'.ikant'/'runtime.json').read_text(encoding='utf-8')).get('status')=='ACTIVE'
     except Exception:return False
 
+def _words(user_text:str)->list[str]:return re.findall(r"[a-zà-ÿ0-9']+",str(user_text).casefold())
 def _looks_italian(user_text:str)->bool:
-    words=set(re.findall(r"[a-zà-ÿ0-9']+",str(user_text).casefold()))
-    return bool(words&{'ciao','chi','sei','cosa','che','non','per','come','puoi','vorrei','fai','con','grazie','italiano','italiana','perché','perche'})
+    words=set(_words(user_text));return bool(words&{'ciao','chi','sei','cosa','che','non','per','come','puoi','vorrei','fai','con','grazie','italiano','italiana','perché','perche','salve','buongiorno','buonasera'})
 def operational_fallback(user_text:str,*,engine_label:str='local-engine')->str:
     from .interaction import build_interaction_contract
-    interaction=build_interaction_contract(str(user_text),engine_label=str(engine_label))
-    identity=bool((interaction.get('profile') or {}).get('identity_first'))
+    interaction=build_interaction_contract(str(user_text),engine_label=str(engine_label));identity=bool((interaction.get('profile') or {}).get('identity_first'))
     if _looks_italian(user_text):
         if identity:return f'Sono iKant. Il motore linguistico locale {engine_label} non ha prodotto una risposta valida in questo turno; nessuna azione materiale è stata eseguita e puoi riprovare.'
         return 'Il motore linguistico locale non ha prodotto una risposta valida in questo turno; nessuna azione materiale è stata eseguita e puoi riprovare.'
     if identity:return f'I am iKant. The local language engine {engine_label} did not produce a valid reply for this turn; no material action was executed, and you can retry.'
     return 'The local language engine did not produce a valid reply for this turn; no material action was executed, and you can retry.'
+
+_LOCAL_GREETING_IT=(r'(?:ciao|salve|buongiorno|buonasera)',r'ciao come va',r'ciao come stai')
+_LOCAL_GREETING_EN=(r'(?:hi|hello|hey)',r'(?:hi|hello|hey) how are you')
+_LOCAL_IDENTITY_IT=(r'(?:ciao )?chi sei',r'(?:ciao )?cosa sei',r'(?:ciao )?come ti chiami',r'(?:ciao )?(?:che|quale) modello(?: usi)?',r'(?:ciao )?che motore(?: usi)?')
+_LOCAL_IDENTITY_EN=(r'(?:hi |hello )?who are you',r'(?:hi |hello )?what are you',r'(?:hi |hello )?what is your name',r'(?:hi |hello )?(?:what|which) model(?: do you use)?',r'(?:hi |hello )?what engine(?: do you use)?')
+
+def _normalized_intent(text:str)->str:return ' '.join(_words(text))
+def _matches_any(value:str,patterns:tuple[str,...])->bool:return any(re.fullmatch(pattern,value) for pattern in patterns)
+def _local_social_surface(user_text:str,interaction:dict[str,Any],*,engine_label:str)->str|None:
+    """Answer closed social/interface facts without spending an LLM round trip.
+
+    This kernel is deliberately narrow: only exact greeting or interface-identity
+    forms are eligible. Any substantive or compound request remains model-bound.
+    """
+    n=_normalized_intent(user_text)
+    if _matches_any(n,_LOCAL_IDENTITY_IT):return f'Sono iKant. Il motore linguistico locale è {engine_label}; genera testo, ma non possiede autorità propria.'
+    if _matches_any(n,_LOCAL_IDENTITY_EN):return f'I am iKant. The local language engine is {engine_label}; it generates text but has no authority of its own.'
+    if _matches_any(n,_LOCAL_GREETING_IT):return 'Ciao, sono iKant. Dimmi pure come posso aiutarti oggi.'
+    if _matches_any(n,_LOCAL_GREETING_EN):return 'Hello, I am iKant. Tell me how I can help today.'
+    return None
 
 def _structured_primary_from_chat(rt,*,cycle_id:str|None=None)->str|None:
     from .chat_session import ChatLog
@@ -41,8 +60,7 @@ def _structured_primary_from_chat(rt,*,cycle_id:str|None=None)->str|None:
     return None
 
 class LocalEmbodimentService:
-    def __init__(self,root:str|Path,*,model:LocalModelBroker,voice:LocalVoiceInputBroker):
-        self.root=Path(root).resolve();self.model=model;self.voice=voice;self.web_adapter:LocalWebHostAdapter|None=None;self._cert=None;self._lock=threading.RLock()
+    def __init__(self,root:str|Path,*,model:LocalModelBroker,voice:LocalVoiceInputBroker):self.root=Path(root).resolve();self.model=model;self.voice=voice;self.web_adapter:LocalWebHostAdapter|None=None;self._cert=None;self._lock=threading.RLock()
     @property
     def state_dir(self):return self.root/'.ikant'
     def contract_text(self):return (self.root/'IKANT_ACCESS_CONTRACT.md').read_text(encoding='utf-8')
@@ -78,8 +96,7 @@ class LocalEmbodimentService:
         with self._lock:
             if runtime_active(self.root):raise LocalAppError('accept unavailable after ACTIVE')
             from .admission import issue_receipt,save_receipt
-            r=issue_receipt(self.contract_text(),str(phrase),presented_terms_sha256=str(presented_terms_sha256));save_receipt(self.state_dir,r)
-            return {'schema':LOCAL_APP_SCHEMA,'state':'ACCEPTED','receipt_id':r.get('receipt_id')}
+            r=issue_receipt(self.contract_text(),str(phrase),presented_terms_sha256=str(presented_terms_sha256));save_receipt(self.state_dir,r);return {'schema':LOCAL_APP_SCHEMA,'state':'ACCEPTED','receipt_id':r.get('receipt_id')}
     def probe(self):
         with self._lock:
             if runtime_active(self.root):raise LocalAppError('probe unavailable after ACTIVE')
@@ -97,9 +114,7 @@ class LocalEmbodimentService:
             from .human_dashboard import persist_dashboard
             rt=Runtime.initialize(self.state_dir,self.contract_text())
             try:
-                activate_runtime_egress(rt,initialization=True)
-                p=prepare_human_frame(rt,persist_dashboard(rt),kind='INITIALIZE',notice='iKant ACTIVE. Canale umano vincolato alla dashboard.')
-                return wrap_prepared_frame(p)
+                activate_runtime_egress(rt,initialization=True);p=prepare_human_frame(rt,persist_dashboard(rt),kind='INITIALIZE',notice='iKant ACTIVE. Canale umano vincolato alla dashboard.');return wrap_prepared_frame(p)
             finally:rt.close()
     def frame(self):
         with self._lock:
@@ -115,8 +130,7 @@ class LocalEmbodimentService:
                 if g.state in {EgressState.FRAME_PENDING,EgressState.RELEASE_PENDING}:
                     p=recover_prepared_frame(rt)
                     if not p:raise LocalAppError('pending egress has no recoverable frame')
-                    receipt=dict(p.get('receipt') or {});primary=_structured_primary_from_chat(rt,cycle_id=receipt.get('cycle_id')) if str(receipt.get('kind') or '').upper()=='TURN' else None
-                    return wrap_prepared_frame(p,primary_text=primary)
+                    receipt=dict(p.get('receipt') or {});primary=_structured_primary_from_chat(rt,cycle_id=receipt.get('cycle_id')) if str(receipt.get('kind') or '').upper()=='TURN' else None;return wrap_prepared_frame(p,primary_text=primary)
                 if g.state==EgressState.RELEASED:return {'schema':LOCAL_APP_SCHEMA,'released':True,'state':'RELEASED'}
                 g.require_locked();p=prepare_human_frame(rt,persist_dashboard(rt),kind='WEB_DASHBOARD');return wrap_prepared_frame(p,primary_text=_structured_primary_from_chat(rt))
             finally:rt.close()
@@ -132,8 +146,7 @@ class LocalEmbodimentService:
                 if not p:raise LocalAppError('acknowledgement requires a pending sealed frame')
                 frame=wrap_prepared_frame(p);ok,e=validate_web_ack(frame,ack)
                 if not ok:raise LocalAppError('web frame acknowledgement mismatch: '+'; '.join(e))
-                acknowledge_prepared_frame(rt,p,ack['visible_text'])
-                return {'schema':LOCAL_APP_SCHEMA,'acknowledged':True,'delivery_state':existing_runtime_egress(rt).state.value}
+                acknowledge_prepared_frame(rt,p,ack['visible_text']);return {'schema':LOCAL_APP_SCHEMA,'acknowledged':True,'delivery_state':existing_runtime_egress(rt).state.value}
             finally:rt.close()
     def turn(self,user_text):
         with self._lock:
@@ -150,17 +163,21 @@ class LocalEmbodimentService:
                     human=begin.get('human')
                     if not human:raise LocalAppError('control transition missing human frame')
                     return wrap_prepared_frame(human)
-                out=begin['machine'];cycle=str(out['cycle']['cycle_id']);intent=out.get('intention_node_id');contract=out['surface_a_contract'];source='MODEL'
-                interaction=out.get('interaction_contract') or build_interaction_contract(text,engine_label=self.model.model)
-                try:
-                    surface=self.model.complete_surface_a(contract,text,validator=validate_surface_a)
-                except LocalModelError:
-                    source='OPERATIONAL_FALLBACK';surface=operational_fallback(text,engine_label=self.model.model);ok,e=validate_surface_a(surface);iok,ie=validate_interaction_surface(surface,interaction);errors=list(dict.fromkeys(list(e)+list(ie)))
-                    if not (ok and iok):raise LocalAppError('operational fallback failed: '+'; '.join(errors))
+                out=begin['machine'];cycle=str(out['cycle']['cycle_id']);intent=out.get('intention_node_id');contract=out['surface_a_contract'];interaction=out.get('interaction_contract') or build_interaction_contract(text,engine_label=self.model.model)
+                started=time.perf_counter();surface=_local_social_surface(text,interaction,engine_label=self.model.model)
+                if surface is not None:
+                    source='LOCAL_INTERACTION_KERNEL';ok,e=validate_surface_a(surface);iok,ie=validate_interaction_surface(surface,interaction);errors=list(dict.fromkeys(list(e)+list(ie)))
+                    if not (ok and iok):raise LocalAppError('local interaction kernel failed: '+'; '.join(errors))
+                    metrics={'status':'VALIDATED','route':'LOCAL_INTERACTION_KERNEL','attempts':0,'request_ms':[],'total_ms':round((time.perf_counter()-started)*1000,3),'prompt_tokens':0,'completion_tokens':0,'epistemic_authority':0.0,'execution_authority':0.0}
+                else:
+                    source='MODEL'
+                    try:surface=self.model.complete_surface_a(contract,text,validator=validate_surface_a)
+                    except LocalModelError:
+                        source='OPERATIONAL_FALLBACK';surface=operational_fallback(text,engine_label=self.model.model);ok,e=validate_surface_a(surface);iok,ie=validate_interaction_surface(surface,interaction);errors=list(dict.fromkeys(list(e)+list(ie)))
+                        if not (ok and iok):raise LocalAppError('operational fallback failed: '+'; '.join(errors))
+                    metrics=dict(getattr(self.model,'last_completion_metrics',{}) or {})
                 prepared=s.finalize(cycle,surface,intention_node_id=intent)
-                metrics=dict(getattr(self.model,'last_completion_metrics',{}) or {})
-                generation={'cycle_id':cycle,'source':source,'model_generation_valid':source=='MODEL','model_metrics':metrics,'epistemic_authority':0.0,'execution_authority':0.0};cog=rt.runtime.setdefault('cognitive',{});cog['last_surface_a_generation']=generation;rt._write_runtime();rt._event('SURFACE_A_GENERATION',cycle,dict(generation))
-                frame=wrap_prepared_frame(prepared,primary_text='iKant: '+surface);frame['generation']=generation;return frame
+                generation={'cycle_id':cycle,'source':source,'model_generation_valid':source=='MODEL','model_metrics':metrics,'epistemic_authority':0.0,'execution_authority':0.0};cog=rt.runtime.setdefault('cognitive',{});cog['last_surface_a_generation']=generation;rt._write_runtime();rt._event('SURFACE_A_GENERATION',cycle,dict(generation));frame=wrap_prepared_frame(prepared,primary_text='iKant: '+surface);frame['generation']=generation;return frame
             finally:rt.close()
     def notice(self,message,*,kind='LOCAL_WEB_NOTICE'):
         with self._lock:

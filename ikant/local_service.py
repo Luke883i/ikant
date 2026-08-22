@@ -1,5 +1,5 @@
 from __future__ import annotations
-import hashlib,json,threading
+import hashlib,json,re,threading
 from pathlib import Path
 from typing import Any
 from .local_web_host import LocalWebHostAdapter
@@ -15,11 +15,18 @@ def runtime_active(root:Path)->bool:
     try:return json.loads((root/'.ikant'/'runtime.json').read_text(encoding='utf-8')).get('status')=='ACTIVE'
     except Exception:return False
 
-def operational_fallback(user_text:str)->str:
-    lower=' '+str(user_text).casefold()+' '
-    if any(x in lower for x in (' che ',' non ',' per ',' come ',' puoi ',' vorrei ',' fai ',' con ')):
-        return 'Il motore linguistico locale non ha prodotto una risposta valida; nessuna azione materiale è stata eseguita e puoi riprovare il turno.'
-    return 'The local language engine did not produce a valid reply; no material action was executed, and you can retry this turn.'
+def _looks_italian(user_text:str)->bool:
+    words=set(re.findall(r"[a-zà-ÿ0-9']+",str(user_text).casefold()))
+    return bool(words&{'ciao','chi','sei','cosa','che','non','per','come','puoi','vorrei','fai','con','grazie','italiano','italiana','perché','perche'})
+def operational_fallback(user_text:str,*,engine_label:str='local-engine')->str:
+    from .interaction import build_interaction_contract
+    interaction=build_interaction_contract(str(user_text),engine_label=str(engine_label))
+    identity=bool((interaction.get('profile') or {}).get('identity_first'))
+    if _looks_italian(user_text):
+        if identity:return f'Sono iKant. Il motore linguistico locale {engine_label} non ha prodotto una risposta valida in questo turno; nessuna azione materiale è stata eseguita e puoi riprovare.'
+        return 'Il motore linguistico locale non ha prodotto una risposta valida in questo turno; nessuna azione materiale è stata eseguita e puoi riprovare.'
+    if identity:return f'I am iKant. The local language engine {engine_label} did not produce a valid reply for this turn; no material action was executed, and you can retry.'
+    return 'The local language engine did not produce a valid reply for this turn; no material action was executed, and you can retry.'
 
 class LocalEmbodimentService:
     def __init__(self,root:str|Path,*,model:LocalModelBroker,voice:LocalVoiceInputBroker):
@@ -122,6 +129,7 @@ class LocalEmbodimentService:
             from .runtime import Runtime
             from .session_host import DashboardOnlySession
             from .surfaces import validate_surface_a
+            from .interaction import build_interaction_contract,validate_interaction_surface
             rt=Runtime(self.state_dir)
             try:
                 s=DashboardOnlySession(rt);begin=s.begin_user(text,engine_label=self.model.model)
@@ -129,13 +137,15 @@ class LocalEmbodimentService:
                     human=begin.get('human')
                     if not human:raise LocalAppError('control transition missing human frame')
                     return wrap_prepared_frame(human)
-                out=begin['machine'];cycle=str(out['cycle']['cycle_id']);intent=out.get('intention_node_id');contract=out['surface_a_contract']
+                out=begin['machine'];cycle=str(out['cycle']['cycle_id']);intent=out.get('intention_node_id');contract=out['surface_a_contract'];source='MODEL'
+                interaction=out.get('interaction_contract') or build_interaction_contract(text,engine_label=self.model.model)
                 try:
                     if not self.model.health():raise LocalModelError('local model server unavailable')
                     surface=self.model.complete_surface_a(contract,text,validator=validate_surface_a)
                 except LocalModelError:
-                    surface=operational_fallback(text);ok,e=validate_surface_a(surface)
-                    if not ok:raise LocalAppError('operational fallback failed: '+'; '.join(e))
+                    source='OPERATIONAL_FALLBACK';surface=operational_fallback(text,engine_label=self.model.model);ok,e=validate_surface_a(surface);iok,ie=validate_interaction_surface(surface,interaction);errors=list(dict.fromkeys(list(e)+list(ie)))
+                    if not (ok and iok):raise LocalAppError('operational fallback failed: '+'; '.join(errors))
+                cog=rt.runtime.setdefault('cognitive',{});cog['last_surface_a_generation']={'cycle_id':cycle,'source':source,'model_generation_valid':source=='MODEL','epistemic_authority':0.0,'execution_authority':0.0};rt._write_runtime();rt._event('SURFACE_A_GENERATION',cycle,dict(cog['last_surface_a_generation']))
                 return wrap_prepared_frame(s.finalize(cycle,surface,intention_node_id=intent))
             finally:rt.close()
     def notice(self,message,*,kind='LOCAL_WEB_NOTICE'):

@@ -1,0 +1,37 @@
+name: PR37 isolated unit
+
+on:
+  push:
+    branches: ['diag/pr37-unit-c08']
+    paths-ignore:
+      - 'backlog/pr37-isolated-unit.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Run exact full unit suite
+        shell: bash
+        run: |
+          set +e
+          python -W error::ResourceWarning -m unittest discover -s tests -v > /tmp/unit.log 2>&1
+          status=$?
+          mkdir -p backlog
+          {
+            echo "exit_code=${status}"
+            echo "source_head=c08e676725fe7ef4867d24e2f618ad6e406c0571"
+            echo "--- tail ---"
+            tail -n 80 /tmp/unit.log
+          } > backlog/pr37-isolated-unit.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backlog/pr37-isolated-unit.txt
+          git commit -m 'diagnostic: record PR37 isolated unit result [skip ci]' || true
+          git push

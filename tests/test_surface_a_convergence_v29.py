@@ -94,7 +94,8 @@ class PrimaryProjectionTests(unittest.TestCase):
         self.assertEqual(project_primary_text(dashboard, "TURN"), PENDING_PRIMARY_TEXT)
         wrapped = wrap_prepared_frame(_frame(dashboard))
         self.assertEqual(wrapped["primary_text"], PENDING_PRIMARY_TEXT)
-        self.assertEqual(wrapped["render_contract"]["mode"], "PRIMARY_WITH_PROGRESSIVE_DISCLOSURE")
+        self.assertEqual(wrapped["render_contract"]["mode"], "VERBATIM_TEXT")
+        self.assertEqual(wrapped["render_contract"]["primary_mode"], "PRIMARY_WITH_PROGRESSIVE_DISCLOSURE")
         self.assertTrue(wrapped["render_contract"]["canonical_frame_ack_remains_exact"])
 
     def test_validated_surface_projects_reply_without_dashboard(self):

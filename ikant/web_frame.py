@@ -103,7 +103,8 @@ def wrap_prepared_frame(prepared: dict[str, Any]) -> dict[str, Any]:
         "acknowledged": bool(prepared.get("acknowledged", False)),
         "recovery": bool(prepared.get("recovery", False)),
         "render_contract": {
-            "mode": "PRIMARY_WITH_PROGRESSIVE_DISCLOSURE",
+            "mode": "VERBATIM_TEXT",
+            "primary_mode": "PRIMARY_WITH_PROGRESSIVE_DISCLOSURE",
             "primary_text_is_derivative": True,
             "primary_text_must_equal_projection": True,
             "details_text_must_equal_text": True,

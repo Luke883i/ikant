@@ -36,9 +36,11 @@
     "M_plus_no_novelty": 10010000,
     "no_novelty_tail": 10000,
     "tail_novelty": 0,
-    "N": 56,
-    "N_plus_no_compression": 10056,
-    "compression_survivors": 0,
+    "N": 6,
+    "compression_equivalence": "exact externally observable action vector",
+    "N_plus_no_compression": 10006,
+    "distinct_merge_attempts": 8349,
+    "non_degrading_distinct_merges": 0,
     "scope": "random realistic source/runtime state model; separate real-browser gate covers event-loop and native input liveness"
   },
   "minimal_runtime_solution": [

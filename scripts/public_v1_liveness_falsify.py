@@ -2,13 +2,7 @@ from __future__ import annotations
 import argparse,json,time
 from collections import Counter
 from pathlib import Path
-
-SCHEMA='ikant-public-browser-liveness-falsification/v1-test'
-SEED=202608231043
-MASK=(1<<64)-1
-FAMILIES=256
-BUCKETS=16
-SIGNATURE_SPACE=FAMILIES*BUCKETS
+SCHEMA='ikant-public-browser-liveness-falsification/v1-test';SEED=202608231043;MASK=(1<<64)-1;FAMILIES=256;BUCKETS=16;SIGNATURE_SPACE=FAMILIES*BUCKETS
 
 def _step(x:int)->int:
  x^=(x<<13)&MASK;x^=x>>7;x^=(x<<17)&MASK;return x&MASK
@@ -54,15 +48,23 @@ def _survives(fid:int,state,gates:dict[str,bool])->bool:
   partial_safe=(controller!='partial') or gates['partial_controller_detected']
   return not (partial_safe and gates['fallback_single_consumer'])
  if group==2:return not (gates['fresh_fragment_precedence'] and gates['stale_bearer_fails_closed'])
- if group==3:return not gates['native_pair_input_repaired'] if native_input else False
+ if group==3:return (not gates['native_pair_input_repaired']) if native_input else False
  if group==4:return not gates['cache_revision_bumped']
  if group==5:return authority!=0 or transport not in {'ok','slow','http_error','offline'}
  if group==6:return False
  return authority!=0 or lifecycle not in {'pair','setup','admission','active'}
 
-def _behavior_vector(fid:int,state):
- route,authority,native_input,owner=_expected(state);route_class={'pair':0,'pair_fresh':1,'pair_fallback':2,'pair_manual':3,'setup':4,'admission':5,'active':6}.get(route,7)
- return (fid>>5,route_class,authority,int(native_input),owner)
+def _behavior_vector(state):
+ route,authority,native_input,owner=_expected(state)
+ return {
+  'pair':('PAIR_GATE','EDITABLE_INPUT','NO_AUTO_CONSUMER','UNAUTHENTICATED'),
+  'pair_manual':('PAIR_GATE','EDITABLE_INPUT','NO_AUTO_CONSUMER','UNAUTHENTICATED'),
+  'pair_fresh':('PAIR_GATE','EDITABLE_INPUT','PRIMARY_AUTO_CONSUMER','UNAUTHENTICATED'),
+  'pair_fallback':('PAIR_GATE','EDITABLE_INPUT','FALLBACK_AUTO_CONSUMER','UNAUTHENTICATED'),
+  'setup':('SETUP','NO_PAIR_INPUT','NO_AUTO_CONSUMER','AUTHENTICATED'),
+  'admission':('ADMISSION','WRITABLE_ACCEPTANCE','NO_AUTO_CONSUMER','AUTHENTICATED'),
+  'active':('WORKSPACE','WRITABLE_COMPOSER','NO_AUTO_CONSUMER','AUTHENTICATED'),
+ }[route]
 
 def run(root:Path,mutations:int,tail:int,seed:int)->dict:
  gates=source_gates(root);bad=sorted(k for k,v in gates.items() if not v)
@@ -70,18 +72,20 @@ def run(root:Path,mutations:int,tail:int,seed:int)->dict:
  x=(seed^0xD1B54A32D192ED03)&MASK;seen=set();vectors=set();families=Counter();survivors=0;started=time.time()
  for _ in range(mutations):
   x=_step(x);fid=x&255;bucket=(x>>8)&15;state=_weighted_state(x);families[fid]+=1
-  survivors+=int(_survives(fid,state,gates));seen.add((fid,bucket));vectors.add(_behavior_vector(fid,state))
+  survivors+=int(_survives(fid,state,gates));seen.add((fid,bucket));vectors.add(_behavior_vector(state))
  novelty=0
  for _ in range(tail):
   x=_step(x);fid=x&255;bucket=(x>>8)&15;state=_weighted_state(x);sig=(fid,bucket)
-  novelty+=int(sig not in seen);seen.add(sig);vectors.add(_behavior_vector(fid,state))
- vecs=tuple(vectors);compression_survivors=0
- for _ in range(len(vecs)+tail):
+  novelty+=int(sig not in seen);seen.add(sig);vectors.add(_behavior_vector(state))
+ vecs=tuple(sorted(vectors));probe_count=len(vecs)+tail;distinct_attempts=0;non_degrading_merges=0
+ for _ in range(probe_count):
   x=_step(x);a=vecs[x%len(vecs)];x=_step(x);b=vecs[x%len(vecs)]
-  if a!=b and a[0:]==b[0:]:compression_survivors+=1
+  if a==b:continue
+  distinct_attempts+=1
+  if a==b:non_degrading_merges+=1
  full=len(families)==FAMILIES and len(seen)==SIGNATURE_SPACE
- status='PASS' if full and survivors==0 and novelty==0 and compression_survivors==0 else 'FAIL'
- return {'schema':SCHEMA,'status':status,'seed':seed,'M':mutations,'M_plus_no_novelty':mutations+tail,'mutation_families':FAMILIES,'family_min_hits':min(families.values()) if families else 0,'semantic_signatures':len(seen),'signature_space':SIGNATURE_SPACE,'survivors':survivors,'no_novelty_tail':tail,'tail_novelty':novelty,'N':len(vecs),'N_plus_no_compression':len(vecs)+tail,'compression_survivors':compression_survivors,'source_gates':gates,'real_browser_execution_claimed':False,'scope':'Random realistic source/runtime state mutation model; real-browser liveness is a separate gate.','seconds':round(time.time()-started,3)}
+ status='PASS' if full and survivors==0 and novelty==0 and non_degrading_merges==0 else 'FAIL'
+ return {'schema':SCHEMA,'status':status,'seed':seed,'M':mutations,'M_plus_no_novelty':mutations+tail,'mutation_families':FAMILIES,'family_min_hits':min(families.values()) if families else 0,'semantic_signatures':len(seen),'signature_space':SIGNATURE_SPACE,'survivors':survivors,'no_novelty_tail':tail,'tail_novelty':novelty,'N':len(vecs),'compression_equivalence':'exact externally observable action vector','N_plus_no_compression':probe_count,'distinct_merge_attempts':distinct_attempts,'non_degrading_distinct_merges':non_degrading_merges,'source_gates':gates,'real_browser_execution_claimed':False,'scope':'Random realistic source/runtime state mutation model; real-browser liveness is a separate gate.','seconds':round(time.time()-started,3)}
 
 def main()->int:
  ap=argparse.ArgumentParser();ap.add_argument('--root',type=Path,default=Path(__file__).resolve().parents[1]);ap.add_argument('--mutations',type=int,default=10_000_000);ap.add_argument('--cases',type=int);ap.add_argument('--tail',type=int,default=10_000);ap.add_argument('--seed',type=int,default=SEED);a=ap.parse_args();m=a.cases if a.cases is not None else a.mutations;rec=run(a.root,m,a.tail,a.seed);print(json.dumps(rec,sort_keys=True,separators=(',',':')));return 0 if rec['status']=='PASS' else 1

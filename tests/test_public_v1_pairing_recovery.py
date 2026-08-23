@@ -21,8 +21,8 @@ class PublicV1PairingRecoveryTests(unittest.TestCase):
   for marker in ('function installControllerFallback()',"status.textContent='Connetti'","dot.className='status-dot blocked'",'function pairFragment()','async function fallbackPair(code)','const fragment=pairFragment()','queueMicrotask(()=>fallbackPair(fragment)','ensurePairInputInteractive()',"input.style.pointerEvents='auto'","input.tabIndex=0"):self.assertIn(marker,ui)
  def test_fallback_is_tdz_safe_and_single_consuming(self):
   ui=(ROOT/'ikant/web/public-v1.js').read_text(encoding='utf-8')
-  self.assertIn("function controllerAvailable(){try{return typeof state!=='undefined'",ui)
-  self.assertIn('catch(_){return false;}',ui)
+  start=ui.index('function controllerAvailable()');end=ui.index('function token()',start);controller=ui[start:end]
+  for marker in ('try{',"typeof state==='undefined'","typeof pairedUI!=='function'","typeof setStatus!=='function'",'catch(_){return false;}'):self.assertIn(marker,controller)
   self.assertIn("fallbackPairing=false",ui);self.assertIn('if(fallbackPairing)return false',ui)
   self.assertIn('event.stopImmediatePropagation()',ui)
  def test_release_cache_and_contract_register_corrective_slice(self):

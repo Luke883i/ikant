@@ -24,7 +24,15 @@ function forgetToken(){
   try{localStorage.removeItem(CONTINUITY_KEY);}catch(_){/* no-op */}
   try{sessionStorage.removeItem('ikantBearer');}catch(_){/* no-op */}
 }
-function controllerAvailable(){try{return typeof state!=='undefined'&&typeof pairedUI==='function'&&typeof setStatus==='function';}catch(_){return false;}}
+function controllerAvailable(){
+  try{
+    if(typeof state==='undefined'||typeof pairedUI!=='function'||typeof setStatus!=='function')return false;
+    const fragment=pairFragment();
+    if(fragment)return $('pair-code')?.value===fragment;
+    if(state.token)return true;
+    return String($('status-label')?.textContent||'')!=='Avvio';
+  }catch(_){return false;}
+}
 function token(){
   const live=sessionToken();
   if(live)return live;

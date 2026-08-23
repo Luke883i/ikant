@@ -1,0 +1,53 @@
+{
+  "schema": "ikant-enduser-self-model-convergence/v1-test",
+  "baseline": "17e44c2c2d8891d6baaa72ab7b536b41cedd92f2",
+  "status": "PASS",
+  "mutation_campaign": {
+    "schema": "ikant-enduser-self-model-falsification/v1-test",
+    "seed": 2026082314,
+    "mutations": 10000000,
+    "families": 256,
+    "kill_classes": 16,
+    "family_groups_seen": 16,
+    "family_hits_total": 10000000,
+    "survivors": 0,
+    "semantic_signatures": 16,
+    "no_novelty_tail": 100000,
+    "tail_novelty": 0,
+    "workers": 8,
+    "seconds": 21.772,
+    "real_code_executed": true
+  },
+  "browser_audit": {
+    "schema": "ikant-enduser-browser-audit/v1-test",
+    "real_browser": true,
+    "engine": "Chromium",
+    "status": "PASS",
+    "identity": "iKant locale",
+    "session_fingerprint_visible": true,
+    "synthetic_neuromodel_stages": 6,
+    "audit_progressive_disclosure_closed_by_default": true,
+    "history_boundary_visible": "32/40 · ultimi",
+    "consciousness_claim": false,
+    "biological_equivalence_claim": false
+  },
+  "failure_classes": [
+    "experience_cycle_drift",
+    "trace_cycle_drift",
+    "epistemic_cycle_drift",
+    "conversation_cycle_drift",
+    "capability_cycle_drift",
+    "conversation_session_drift",
+    "capability_session_drift",
+    "chat_integrity_failure",
+    "trace_schema_drift",
+    "private_chain_of_thought_contract_violation",
+    "raw_model_rationale_contract_violation",
+    "truth_certification_drift",
+    "visible_history_count_incoherence",
+    "timing_projection_overgrowth",
+    "synthetic_stage_status_drift",
+    "missing_runtime_identity"
+  ],
+  "boundary": "Hash integrity proves local transcript-chain integrity only; the synthetic neuromodel is an operational projection only; local identity is session-bound and never claims consciousness or biological identity."
+}

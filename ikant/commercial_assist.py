@@ -7,6 +7,7 @@ from urllib.request import Request,urlopen
 SCHEMA='ikant-commercial-abstract-assist/v1-test';MAX_TASK_CHARS=1800;MAX_RESPONSE_BYTES=1024*1024
 _ENDPOINTS={'openai':'https://api.openai.com/v1/responses','anthropic':'https://api.anthropic.com/v1/messages','deepseek':'https://api.deepseek.com/chat/completions'}
 _FORBIDDEN=re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|bearer\s+\S+|password\s*[:=]|api[_-]?key\s*[:=]|\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b|(?:[A-Za-z]:\\|/home/|/Users/|/mnt/|~[/\\])\S+)",re.I)
+_CAPSULE=re.compile(r"^op=(?:ANALYZE|COMPARE|SUMMARIZE|EXPLAIN|VERIFY); keys=[A-Za-zÀ-ÿ0-9_.+:-]+(?:,[A-Za-zÀ-ÿ0-9_.+:-]+){0,15}$")
 class CommercialAssistError(RuntimeError):pass
 @dataclass(frozen=True)
 class CommercialAssistConfig:
@@ -16,7 +17,7 @@ class CommercialAssistConfig:
 
 def build_request(task:str,config:CommercialAssistConfig)->Request:
  config.validate();text=str(task).strip()
- if not text or len(text)>MAX_TASK_CHARS or _FORBIDDEN.search(text):raise CommercialAssistError('commercial task outside abstract capsule boundary')
+ if not text or len(text)>MAX_TASK_CHARS or _FORBIDDEN.search(text) or not _CAPSULE.fullmatch(text):raise CommercialAssistError('commercial task outside typed abstract capsule boundary')
  contract='Abstract analysis only. No tools, no actions, no hidden rationale. Return concise findings. Authority is zero.';headers={'Content-Type':'application/json','Accept':'application/json'}
  if config.provider=='openai':headers['Authorization']='Bearer '+config.api_key;body={'model':config.model,'input':contract+'\n\n'+text,'store':False}
  elif config.provider=='anthropic':headers['x-api-key']=config.api_key;headers['anthropic-version']='2023-06-01';body={'model':config.model,'max_tokens':800,'system':contract,'messages':[{'role':'user','content':text}]}

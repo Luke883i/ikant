@@ -11,6 +11,10 @@ class CommercialAssistS15Tests(unittest.TestCase):
   for provider,url in rows.items():
    req=build_request('op=COMPARE; keys=latency,architecture',CommercialAssistConfig(provider,'model','secret'));self.assertEqual(req.full_url,url)
    if provider=='openai':self.assertFalse(json.loads(req.data)['store'])
+ def test_only_typed_abstract_capsules_cross_transport_boundary(self):
+  c=CommercialAssistConfig('openai','m','k')
+  for task in ('Confronta due architetture pubbliche','op=CREATE; keys=file','op=COMPARE; keys=valid,contains space'):
+   with self.assertRaises(Exception):build_request(task,c)
  def test_secrets_paths_and_emails_fail_closed(self):
   c=CommercialAssistConfig('openai','m','k')
   for task in ('sk-ABCDEF1234567890','/home/user/private.txt','me@example.com'):

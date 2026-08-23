@@ -33,18 +33,20 @@ def load_contract()->dict:
 def validate_paths(data:dict)->list[str]:
  errors=[];owned=set()
  for s in data['slices']:
+  sid=str(s.get('id') or '');match=SLICE_RE.fullmatch(sid);corrective=bool(match and match.group(2))
   test=ROOT/(str(s.get('machine_test') or '').replace('.','/')+'.py')
-  if not test.is_file():errors.append(f"{s['id']} missing machine test")
+  if not test.is_file():errors.append(f"{sid} missing machine test")
   seeded=s.get('seeded_harnesses')
-  if not isinstance(seeded,list) or any(x not in HARNESS_KEYS for x in seeded) or len(set(seeded))!=len(seeded):errors.append(f"{s['id']} invalid seeded_harnesses")
+  if not isinstance(seeded,list) or any(x not in HARNESS_KEYS for x in seeded) or len(set(seeded))!=len(seeded):errors.append(f"{sid} invalid seeded_harnesses")
   inv=s.get('invariants')
-  if not isinstance(inv,list) or not inv or len(set(inv))!=len(inv):errors.append(f"{s['id']} invalid invariant ownership")
+  if not isinstance(inv,list) or not inv or len(set(inv))!=len(inv):errors.append(f"{sid} invalid invariant ownership")
   else:
-   overlap=owned&set(inv)
-   if overlap:errors.append(f"{s['id']} duplicate invariant ownership: {','.join(sorted(overlap))}")
-   owned.update(inv)
+   inv_set=set(inv);overlap=owned&inv_set
+   if overlap:
+    if not corrective or overlap!=inv_set:errors.append(f"{sid} duplicate invariant ownership: {','.join(sorted(overlap))}")
+   else:owned.update(inv_set)
   for key in HARNESS_KEYS:
-   if not (ROOT/str(s.get(key) or '')).is_file():errors.append(f"{s['id']} missing {key}")
+   if not (ROOT/str(s.get(key) or '')).is_file():errors.append(f"{sid} missing {key}")
  return errors
 def command_for(s:dict,key:str,cases:int,tail:int,seed:int)->list[str]:
  size_arg='--mutations' if key=='mutations' else '--cases';cmd=[sys.executable,s[key],size_arg,str(cases),'--tail',str(tail)]

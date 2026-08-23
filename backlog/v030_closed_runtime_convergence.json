@@ -1,0 +1,168 @@
+{
+  "schema": "ikant-closed-runtime-convergence/v0.30-test",
+  "version_name": "iKant v0.30 — Closed Runtime",
+  "public_release_target": "v1.0-closed-runtime-test",
+  "scope": {
+    "included_surfaces": ["webapp", "floating_pwa_profile"],
+    "excluded_for_now": ["session_chat"],
+    "floating_native_os_overlay_claimed": false,
+    "analysis_kind": "repository-bound semantic/runtime fault model plus executable corrective slice",
+    "model_results_are_production_reliability_estimates": false
+  },
+  "functioning_contract": [
+    "reachable: launch -> pair -> setup -> admission -> ACTIVE is bounded, observable and recoverable",
+    "causally_closed: every user mutation has one typed validated writer path and either changes one versioned runtime state or fails explicitly",
+    "effect_observable: every behavior-changing configuration exposes the revision actually consumed by the relevant cycle",
+    "surface_complete_minimal: all user-governable runtime abstractions are declared by one manifest and undeclared controls are absent",
+    "surface_equivalent: webapp and floating consume the same semantic contract and differ only by layout/progressive disclosure",
+    "authority_safe: presentation and configuration never widen permission, approval, grant, lease or execution authority",
+    "recoverable: reload, restart, stale assets, transport loss and replaceable-component changes converge or block explicitly",
+    "oracle_bound: each material Definition-of-Done claim has an executable oracle crossing the same physical/runtime boundary"
+  ],
+  "as_is": {
+    "surface_topology": "one local PWA/runtime surface; floating is currently a compact presentation profile, not a second native host",
+    "closed_paths": [
+      "one-shot pairing and recovery",
+      "managed-model setup/readiness",
+      "T&C -> probe -> initialize",
+      "single-writer shell with exact frame ACK",
+      "session-bound conversation projection",
+      "read-only exact-ACK epistemic workspace",
+      "generation-only experiment config with CAS revision",
+      "session identity / synthetic neuromodel / audit projections",
+      "bounded reactive work projection"
+    ],
+    "material_gaps": [
+      "runtime views are assembled by independent endpoints/pollers rather than one atomic versioned surface snapshot",
+      "saved experiment config has no user-facing same-cycle consumed-revision receipt",
+      "there is no machine-readable all-and-only runtime surface manifest",
+      "memory influence is not exposed through a complete read/forget governance surface",
+      "temporal tasks/wakes are mainly projected as runtime status rather than a complete governed user surface",
+      "S15 work graph and deterministic command plan are not consumed by canonical TURN routing",
+      "S15 hybrid membrane/commercial assist are not integrated into canonical TURN and have no activation receipt",
+      "floating has no separate native host capability and therefore must not be presented as OS always-on-top functionality",
+      "effective provider destination/redirect pinning remains required before commercial activation",
+      "repository merge governance is described more strongly than GitHub branch protection currently enforces"
+    ]
+  },
+  "fault_space_monte_carlo": {
+    "seed": 202608240013,
+    "fault_families": 48,
+    "currently_unclosed_families": 22,
+    "modeled_scenarios": 10000000,
+    "scenario_fault_cardinality": "1..4 simultaneous families",
+    "scenarios_containing_at_least_one_unclosed_family": 7301140,
+    "semantic_gap_signatures_observed": 9108,
+    "semantic_gap_signature_space": 9108,
+    "no_novelty_tail": 100000,
+    "tail_seed": 202608240014,
+    "tail_new_signatures": 0,
+    "interpretation": "coverage of the declared modeled fault vocabulary; not an empirical production failure probability"
+  },
+  "markov_stress_model": {
+    "states": ["PAIR", "SETUP", "ADMISSION", "ACTIVE_IDLE", "TURN_RUNNING", "FRAME_PENDING", "POST_ACK", "DEGRADED"],
+    "absorbing_failure_state": "DEGRADED",
+    "transition_rule": "handled injected faults recover/self-loop; unhandled declared faults transition to DEGRADED; no-fault advances",
+    "stress_points": [
+      {"fault_injection_q": 0.02, "as_is_completion": 0.9443135, "target_completion_in_declared_fault_universe": 1.0},
+      {"fault_injection_q": 0.10, "as_is_completion": 0.7376457, "target_completion_in_declared_fault_universe": 1.0},
+      {"fault_injection_q": 0.25, "as_is_completion": 0.4218750, "target_completion_in_declared_fault_universe": 1.0}
+    ],
+    "interpretation": "synthetic comparative stress model; probabilities are conditional on the declared model and are not measured reliability"
+  },
+  "architecture_saturation": {
+    "intervention_vocabulary": 20,
+    "M": 1048576,
+    "full_coverage_architectures": 729,
+    "minimum_weighted_cost": 36,
+    "unique_minimum_within_vocabulary": true,
+    "selected_interventions": [
+      "transactional_work_store",
+      "canonical_delivery_binding",
+      "real_browser_slow_turn_oracle",
+      "versioned_surface_snapshot",
+      "config_effect_receipt",
+      "runtime_surface_manifest",
+      "shared_web_floating_contract",
+      "versioned_asset_bundle",
+      "provider_redirect_lock",
+      "identity_component_epoch",
+      "memory_governance_surface",
+      "temporal_control_projection",
+      "turn_plan_binding",
+      "hybrid_activation_gate"
+    ],
+    "M_plus_tail": 100000,
+    "tail_seed": 202608240015,
+    "tail_full_coverage_architectures": 74,
+    "tail_lower_cost_alternatives": 0,
+    "tail_equal_cost_nonisomorphic_alternatives": 0,
+    "bound": "minimality is only claimed inside the explicitly declared 20-intervention design vocabulary"
+  },
+  "web_runtime_parameterization": {
+    "setup_poll_current_ms": 900,
+    "setup_recommended_ms": [750, 1000],
+    "reactive_work_poll_current_ms": 280,
+    "reactive_work_recommended_ms": [250, 300],
+    "current_idle_projection_pollers_ms": [4500, 5000],
+    "target_idle_snapshot_ms": 2000,
+    "target_running_snapshot_ms": 250,
+    "target_rule": "prefer event/revision-triggered refresh; one versioned surface snapshot replaces independent semantic pollers"
+  },
+  "minimal_runtime_reticulum": {
+    "nodes": {
+      "H": "human intent/control",
+      "G": "admission and governance",
+      "S": "canonical versioned runtime surface snapshot",
+      "C": "user-governable configuration",
+      "W": "bounded work/plan graph",
+      "K": "local cognitive/runtime kernel",
+      "M": "replaceable zero-authority model",
+      "E": "epistemic and memory state",
+      "A": "capability/authority boundary",
+      "F": "sealed human frame and exact ACK",
+      "P": "local persistence",
+      "X": "optional external/provider boundary"
+    },
+    "closed_loops": [
+      "H -> G -> ACTIVE",
+      "H.intent -> W -> K -> M -> validated Surface A -> F -> exact ACK -> P -> S -> web/floating",
+      "H.config -> C(CAS) -> generation contract revision -> K/M -> cycle effect receipt -> S",
+      "E/P -> K and E -> S, with explicit memory governance before claiming complete user control",
+      "W.material -> A -> host -> execution receipt -> reconciliation -> S only when an executable capability exists",
+      "X enters canonical TURN only after explicit opt-in/config activation and remains zero-authority"
+    ]
+  },
+  "semantic_slices": [
+    {
+      "id": "S15bis",
+      "name": "Runtime Closure / Oracle Repair",
+      "status": "materializing",
+      "goals": ["transactional work state", "canonical post-frame monotonicity", "real Chromium slow-TURN observability oracle"]
+    },
+    {
+      "id": "S16",
+      "name": "Surface Contract",
+      "status": "planned",
+      "goals": ["all-and-only runtime surface manifest", "single versioned runtime snapshot", "same-cycle config-effect receipt", "versioned asset bundle", "web/floating semantic equivalence"]
+    },
+    {
+      "id": "S17",
+      "name": "State Governance",
+      "status": "planned",
+      "goals": ["identity component epoch", "memory read/forget governance", "temporal task/wake projection and controls"]
+    },
+    {
+      "id": "S18",
+      "name": "Reactive Plan Binding",
+      "status": "planned",
+      "goals": ["bind work graph to canonical TURN routing", "surface deterministic plan truthfully", "preserve authority chain before any material execution"]
+    },
+    {
+      "id": "S19",
+      "name": "Hybrid Opt-in",
+      "status": "planned",
+      "goals": ["effective-host/redirect pinning", "explicit provider activation gate", "cycle-bound route receipt", "zero-authority provider result", "local fallback"]
+    }
+  ]
+}

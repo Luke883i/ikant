@@ -1,0 +1,32 @@
+{
+  "schema": "ikant-enduser-next-frontier/v1-planning",
+  "status": "PLANNED_NOT_ACTIVATED",
+  "allocation": "20_percent_following_frontier",
+  "baseline_slice": "S14",
+  "principle": "Extend only after S14 exact-head CI and browser evidence converge; no planned item grants authority or implies consciousness.",
+  "clarifications": [
+    "Io locale is an operational runtime identity, not a claim of phenomenal consciousness or biological personhood.",
+    "Model replacement must not silently replace runtime identity; model provenance and identity continuity are separate dimensions.",
+    "Conversation integrity, artifact integrity and audit integrity are cryptographic/local consistency properties, not truth certification.",
+    "Synthetic neuromodel stage order describes the public runtime protocol, not neuroscientific equivalence or hidden chain-of-thought.",
+    "What iKant remembers must distinguish visible window, retained local transcript, cognitive snapshot and deliberately forgotten/revoked state."
+  ],
+  "planned_failure_domains": [
+    {"id":"identity_restart_boundary","mutations":["browser_reload_same_runtime","runtime_restart_new_session","stale_fingerprint","cross-tab_old_identity"]},
+    {"id":"model_identity_separation","mutations":["model_hot_swap_same_runtime","model_restart_same_session","model_route_fallback","model_metadata_drift"]},
+    {"id":"memory_legibility","mutations":["visible_32_vs_retained_history","forgotten_node_still_explained_as_memory","revoked_source_in_summary","compaction_boundary_undisclosed"]},
+    {"id":"audit_concurrency","mutations":["new_cycle_during_public_refresh","exact_ack_changes_between_projection_reads","artifact_arrives_after_primary","stale_service_worker_projection"]},
+    {"id":"surface_b_provenance","mutations":["json_docx_cycle_mismatch","artifact_hash_mismatch","history_object_session_drift","download_after_writer_loss"]},
+    {"id":"identity_privacy","mutations":["fingerprint_linkability_across_restarts","session_identifier_leak","diagnostic_secret_echo","cross-origin_continuity_attempt"]},
+    {"id":"neuromodel_semantics","mutations":["stage_missing","stage_reordered","latency_misread_as_confidence","complete_stage_misread_as_truth","synthetic_label_removed"]},
+    {"id":"accessibility_and_language","mutations":["screen_reader_disclosure_order","keyboard_inspector_cycle","reduced_motion_state_parity","italian_copy_ambiguity","narrow_viewport_audit_overflow"]}
+  ],
+  "planned_campaigns": [
+    {"name":"identity_continuity","families":96,"target_scale":10000000,"seeds":[2026082411,2026082417,2026082483]},
+    {"name":"memory_and_audit_races","families":128,"target_scale":10000000,"seeds":[2026082513,2026082597,20260825883]},
+    {"name":"surface_b_cross_binding","families":96,"target_scale":10000000,"seeds":[2026082619,2026082689,202608262026]},
+    {"name":"semantic_non_anthropomorphism","families":64,"target_scale":1000000,"seeds":[2026082707,2026082783]}
+  ],
+  "no_novelty_target": 100000,
+  "activation": false
+}

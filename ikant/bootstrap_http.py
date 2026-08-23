@@ -31,7 +31,7 @@ def make_bootstrap_handler(service,pairing,*,assets_dir:Path,allowed_hosts:froze
    elif name=='conversation.js':files=(assets_dir/'conversation.js',)
    elif name=='foundation.js':files=(assets_dir/'foundation.js',)
    elif name=='foundation.css':files=(assets_dir/'foundation.css',)
-   elif name=='public-v1.js':files=(assets_dir/'public-v1.js',)
+   elif name=='public-v1.js':files=(assets_dir/'public-v1.js',assets_dir/'enduser.js')
    else:files=(assets_dir/'public-v1.css',)
    if any(not p.is_file() for p in files):self._error(404,'asset missing');return True
    raw=b'\n'.join(p.read_bytes() for p in files);ctype='text/javascript; charset=utf-8' if name.endswith('.js') else 'text/css; charset=utf-8';self.send_response(200);self._headers(ctype);self.send_header('Content-Length',str(len(raw)));self.end_headers();self.wfile.write(raw);self.wfile.flush();return True

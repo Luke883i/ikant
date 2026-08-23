@@ -21,7 +21,7 @@ def gates(root:Path)->dict[str,bool]:
  def read(path):return (root/path).read_text(encoding='utf-8')
  local=read('ikant/local_app.py');ui=read('ikant/web/public-v1.js');sec=read('ikant/local_security.py');sw=read('ikant/web/sw.js');product=json.loads(read('PRODUCT_CONTRACT.json'))
  controller=function_slice(ui,'controllerAvailable','token')
- s=next((x for x in product.get('slices',[]) if x.get('id')=='S13bis'),{})
+ slices=product.get('slices',[]);ids=[x.get('id') for x in slices];s=next((x for x in slices if x.get('id')=='S13bis'),{})
  return {
   'launch_url_fragment':"launch_url=url+'#pair='+pairing.code" in local and 'webbrowser.open(launch_url,new=2)' in local,
   'pair_code_not_http_query':'?pair=' not in local,
@@ -37,7 +37,7 @@ def gates(root:Path)->dict[str,bool]:
   'one_shot_server_preserved':'if self.paired:' in sec and 'pairing code already consumed' in sec,
   'no_pairing_code_public_status':'"code": self.code' not in sec and "'code': self.code" not in sec,
   'cache_bumped':'public-v1-s13-pairing-recovery-s13bis' in sw,
-  'contract_current':product.get('constitutional_convergence')=='S13bis' and s.get('schema')=='ikant-public-pairing-recovery/v1-test',
+  'contract_current':bool(ids) and product.get('constitutional_convergence')==ids[-1] and 'S13bis' in ids and ids.index('S13bis')<len(ids) and s.get('schema')=='ikant-public-pairing-recovery/v1-test',
   'owned_invariants':set(s.get('invariants',[]))=={'EMB-002','EXP-004','ECF13-017','ECF13-020'},
  }
 

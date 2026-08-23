@@ -45,6 +45,7 @@ def source_gates(root:Path)->dict:
  css=read('ikant/web/public-v1.css');js=read('ikant/web/public-v1.js');html=read('ikant/web/index.html');py=read('ikant/public_v1.py');http=read('ikant/bootstrap_http.py');sw=read('ikant/web/sw.js');product=json.loads(read('PRODUCT_CONTRACT.json'))
  s13=next((x for x in product.get('slices',[]) if x.get('id')=='S13'),{})
  ids=[x.get('id') for x in product.get('slices',[])]
+ historical_prefix=['S1','S2','S3','S4','S5','S6','S7','S8','S9','S10','S10bis','S11','S12','S13']
  return {
   'hidden_is_absolute':REQUIRED_UI_TOKENS[0] in css,
   'viewport_is_bounded':'html,body{height:100%;overflow:hidden}' in css and '.gate-stage' in css and 'height:100%' in css,
@@ -58,7 +59,7 @@ def source_gates(root:Path)->dict:
   'public_endpoint':'/api/v8/public' in js and "path=='/api/v8/public'" in http and 'public_projection(service)' in http,
   'public_cache_boundary':'public-v1-s13' in sw and '/public-v1.js' in sw and '/public-v1.css' in sw,
   's13_registration':s13.get('schema')=='ikant-public-experience/v1-test' and 'S13' in ids and ids.index('S13')<len(ids),
-  'forward_corrective_slice':product.get('constitutional_convergence') in {'S13','S13bis'} and ids[:14]==['S1','S2','S3','S4','S5','S6','S7','S8','S9','S10','S10bis','S11','S12','S13'],
+  'forward_corrective_slice':ids[:len(historical_prefix)]==historical_prefix and bool(ids) and product.get('constitutional_convergence')==ids[-1],
   'mobile_sheet':'@media(max-width:820px)' in css and 'position:fixed' in css,
   'public_release':'v1.0-public-test' in py and 'release-badge' in html,
   'zero_authority':py.count('epistemic_authority')>=4 and py.count('execution_authority')>=4,

@@ -1,0 +1,52 @@
+{
+  "schema": "ikant-public-browser-liveness-evidence/v1-test",
+  "observed_contradiction": {
+    "status_label": "Avvio",
+    "tab_loading_persists": true,
+    "pair_input_visible": true,
+    "pair_input_user_editable": false,
+    "evidence_kind": "user-observed real browser screenshot and interaction report"
+  },
+  "root_cause": {
+    "introduced_in": "PR42 S13 public-v1.js",
+    "class": "MUTATION_OBSERVER_SELF_FEEDBACK",
+    "mechanism": "installAdmissionRepair observed disabled/class/hidden across the admission subtree while syncAdmission rewrote those same presentation attributes, allowing an unbounded MutationObserver microtask chain before the browser event loop returned",
+    "pr43_miss": "S13bis changed pairing continuity/fallback but preserved the pre-existing observer feedback loop",
+    "secondary_survivor": "controllerAvailable treated global symbol presence as completed primary-controller bootstrap; partial initialization could suppress fallback binding"
+  },
+  "real_browser_falsification": {
+    "engine_family": "Chromium",
+    "mechanism": "Chrome DevTools Protocol on about:blank with the exact admission functions extracted from public-v1.js",
+    "baseline": "FAIL: Runtime.evaluate exceeds the bounded response window under the old subtree observer",
+    "candidate": {
+      "status": "PASS",
+      "event_loop_tick": true,
+      "native_input_insert_text": "ikant-liveness",
+      "admission_transition": "accepted -> probe visible"
+    },
+    "browser_cases_are_not_counted_as_10m": true
+  },
+  "modeled_saturation": {
+    "seed": 202608231043,
+    "M": 10000000,
+    "mutation_families": 256,
+    "semantic_signatures": 4096,
+    "signature_space": 4096,
+    "survivors": 0,
+    "M_plus_no_novelty": 10010000,
+    "no_novelty_tail": 10000,
+    "tail_novelty": 0,
+    "N": 56,
+    "N_plus_no_compression": 10056,
+    "compression_survivors": 0,
+    "scope": "random realistic source/runtime state model; separate real-browser gate covers event-loop and native input liveness"
+  },
+  "minimal_runtime_solution": [
+    "observe only lifecycle source markers step-accept and step-probe",
+    "never observe presentation attributes that syncAdmission writes",
+    "make hidden writes idempotent",
+    "treat completed controller bootstrap as observable completed-branch state, not mere global symbol existence",
+    "invalidate stale public shell cache",
+    "require a real-browser liveness workflow on every PR"
+  ]
+}

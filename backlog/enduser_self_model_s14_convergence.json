@@ -12,11 +12,13 @@
     "family_hits_total": 10000000,
     "survivors": 0,
     "semantic_signatures": 16,
+    "signature_equivalence": "same externally observable safety obligation; NO_CYCLE and DEGRADED both mean NOT_CONSISTENT",
     "no_novelty_tail": 100000,
     "tail_novelty": 0,
     "workers": 8,
-    "seconds": 21.772,
-    "real_code_executed": true
+    "seconds": 22.678,
+    "real_code_executed": true,
+    "oracle": "Material drift or missing binding must never remain CONSISTENT; missing root cycle is NO_CYCLE while internal drift is DEGRADED."
   },
   "browser_audit": {
     "schema": "ikant-enduser-browser-audit/v1-test",
@@ -32,13 +34,13 @@
     "biological_equivalence_claim": false
   },
   "failure_classes": [
-    "experience_cycle_drift",
-    "trace_cycle_drift",
-    "epistemic_cycle_drift",
-    "conversation_cycle_drift",
-    "capability_cycle_drift",
-    "conversation_session_drift",
-    "capability_session_drift",
+    "experience_cycle_drift_or_missing",
+    "trace_cycle_drift_or_missing",
+    "epistemic_cycle_drift_or_missing",
+    "conversation_cycle_drift_or_missing",
+    "capability_cycle_drift_or_missing",
+    "conversation_session_drift_or_missing",
+    "capability_session_drift_or_missing",
     "chat_integrity_failure",
     "trace_schema_drift",
     "private_chain_of_thought_contract_violation",

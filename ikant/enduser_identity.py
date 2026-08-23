@@ -16,6 +16,7 @@ STAGES = (
     ("FORMULATE", "Formulo"),
     ("INTEGRATE", "Integro"),
 )
+_ALLOWED_STAGE_STATUS = frozenset({"idle", "pending", "complete"})
 
 
 def _text(value: object, limit: int = 160) -> str:
@@ -27,6 +28,17 @@ def _session_fingerprint(session_id: object) -> str | None:
     if not value:
         return None
     return hashlib.sha256(value.encode("utf-8")).hexdigest()[:12]
+
+
+def _trace_shape_valid(trace: dict[str, Any]) -> bool:
+    rows = trace.get("stages") if isinstance(trace.get("stages"), list) else []
+    by_id = {str(row.get("id")): row for row in rows if isinstance(row, dict)}
+    return (
+        trace.get("schema") == TRACE_SCHEMA
+        and trace.get("private_chain_of_thought") is False
+        and trace.get("raw_model_rationale") is False
+        and all(sid in by_id and _text(by_id[sid].get("status"), 24) in _ALLOWED_STAGE_STATUS for sid, _ in STAGES)
+    )
 
 
 def local_identity_projection(*, runtime_session_id: object, state: object) -> dict[str, Any]:
@@ -58,7 +70,7 @@ def synthetic_neuromodel_projection(experience: object) -> dict[str, Any]:
     for sid, label in STAGES:
         row = by_id.get(sid, {})
         status = _text(row.get("status"), 24)
-        if status not in {"idle", "pending", "complete"}:
+        if status not in _ALLOWED_STAGE_STATUS:
             status = "unknown"
         facts = row.get("facts") if isinstance(row.get("facts"), dict) else {}
         bounded_facts = {}
@@ -66,12 +78,11 @@ def synthetic_neuromodel_projection(experience: object) -> dict[str, Any]:
             if isinstance(value, (str, int, float, bool)) or value is None:
                 bounded_facts[_text(key, 48)] = value if not isinstance(value, str) else _text(value, 96)
         stages.append({"id": sid, "label": label, "status": status, "facts": bounded_facts})
-    trace_ok = trace.get("schema") == TRACE_SCHEMA and all(stage["status"] != "unknown" for stage in stages)
     return {
         "schema": NEUROMODEL_SCHEMA,
         "status": "AVAILABLE" if trace else "NO_CYCLE",
         "cycle_id": _text(exp.get("cycle_id"), 160) or None,
-        "trace_schema_valid": trace_ok,
+        "trace_schema_valid": _trace_shape_valid(trace),
         "stages": stages,
         "model_kind": "SYNTHETIC_RUNTIME_MODEL",
         "private_chain_of_thought_exposed": False,
@@ -105,13 +116,11 @@ def audit_projection(*, conversation: object, experience: object, epistemic_valu
         "conversation": _last_assistant_cycle(conv),
         "capabilities": _text(caps.get("cycle_id"), 160) or None,
     }
-    material_refs = [value for value in cycle_refs.values() if value]
-    cycle_coherent = bool(cycle) and all(value == cycle for value in material_refs)
+    cycle_coherent = bool(cycle) and all(value == cycle for value in cycle_refs.values())
     session_exp = _text(exp.get("runtime_session_id"), 512) or None
     session_conv = _text(conv.get("runtime_session_id"), 512) or None
     session_caps = _text(caps.get("runtime_session_id"), 512) or None
-    session_refs = [value for value in (session_exp, session_conv, session_caps) if value]
-    session_coherent = bool(session_exp) and all(value == session_exp for value in session_refs)
+    session_coherent = bool(session_exp) and session_conv == session_exp and session_caps == session_exp
     integrity = conv.get("integrity_verified") is True
     total = conv.get("record_count")
     visible = conv.get("visible_record_count")
@@ -121,11 +130,7 @@ def audit_projection(*, conversation: object, experience: object, epistemic_valu
         visible = len(conv.get("records") or []) if isinstance(conv.get("records"), list) else 0
     record_counts_coherent = total >= visible
     truncated = total > visible
-    trace_valid = (
-        trace.get("schema") == TRACE_SCHEMA
-        and trace.get("private_chain_of_thought") is False
-        and trace.get("raw_model_rationale") is False
-    )
+    trace_valid = _trace_shape_valid(trace)
     truth_boundary = epi.get("truth_certified") is False
     consistency = integrity and cycle_coherent and session_coherent and trace_valid and truth_boundary and record_counts_coherent
     timing = exp.get("timing") if isinstance(exp.get("timing"), dict) else {}
@@ -158,12 +163,7 @@ def enduser_projection(*, conversation: object, experience: object, epistemic_va
     exp = experience if isinstance(experience, dict) else {}
     identity = local_identity_projection(runtime_session_id=exp.get("runtime_session_id"), state=exp.get("state"))
     neuromodel = synthetic_neuromodel_projection(exp)
-    audit = audit_projection(
-        conversation=conversation,
-        experience=exp,
-        epistemic_value=epistemic_value,
-        capabilities=capabilities,
-    )
+    audit = audit_projection(conversation=conversation, experience=exp, epistemic_value=epistemic_value, capabilities=capabilities)
     return {
         "schema": ENDUSER_SCHEMA,
         "identity": identity,

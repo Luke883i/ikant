@@ -1,10 +1,11 @@
 from __future__ import annotations
-import argparse,json,random,re
+import argparse,json,random,sys
 from pathlib import Path
+ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT))
 from ikant.commercial_assist import CommercialAssistConfig,build_request
 from ikant.reactive_hybrid import MAX_EDGES,MAX_TARGETS,MAX_UNITS,MAX_WORKS,WorkStore,build_graph,compile_command,hybrid_membrane
 
-ROOT=Path(__file__).resolve().parents[1]
 FAMILIES=40
 VARIANTS=64
 PERIOD=FAMILIES*VARIANTS

@@ -1,0 +1,124 @@
+{
+  "schema": "ikant-s16-surface-contract-convergence/v1-test",
+  "slice": "S16",
+  "version": "iKant v0.30 — Closed Runtime",
+  "base_main_sha": "d1d558874b66b5b094ff0930700e38f158c791bc",
+  "intent": "Make webapp and floating PWA profile consume one versioned semantic runtime contract, expose all and only currently user-readable/governable abstractions, and distinguish saved configuration from cycle-bound configuration effect without blocking the canonical TURN.",
+  "runtime_contract": {
+    "canonical_endpoint": "/api/v10/surface",
+    "schema": "ikant-surface-contract/v1-test",
+    "stable_mode": "optimistic before/after revision vector with one retry",
+    "running_mode": "nonblocking work overlay over last stable snapshot",
+    "legacy_semantic_views": ["/api/v6/experience", "/api/v7/foundation", "/api/v7/config", "/api/v8/public", "/api/v9/work/current"],
+    "legacy_mutation_routes_changed": false,
+    "single_writer_changed": false,
+    "exact_ack_changed": false
+  },
+  "all_and_only_manifest": {
+    "abstraction_count": 12,
+    "ids": [
+      "admission_lifecycle",
+      "conversation_turn",
+      "generation_config",
+      "cognitive_trace",
+      "epistemic_workspace",
+      "capability_catalog",
+      "runtime_systems",
+      "enduser_identity_audit",
+      "reactive_work",
+      "artifacts",
+      "bootstrap_diagnostics",
+      "voice_candidate"
+    ],
+    "explicitly_absent_until_activated": ["commercial_assist", "native_app_open", "native_os_overlay"],
+    "web_floating_same_semantic_digest_required": true,
+    "floating_is_layout_profile_only": true
+  },
+  "config_effect": {
+    "capture_boundary": "after canonical frame sealing and before exact ACK",
+    "reason": "delegate TURN serialization has completed and pending exact ACK blocks configuration mutation; a pre-TURN read would be race-prone",
+    "statuses": [
+      "NO_CYCLE",
+      "UNATTESTED_CYCLE",
+      "RECEIPT_INTEGRITY_BLOCKED",
+      "STALE_BINDING",
+      "CONFIRMED_CURRENT",
+      "CONFIRMED_CYCLE_CONFIG_NOW_CHANGED",
+      "MODEL_CONFIG_ATTEMPTED_FINAL_FALLBACK",
+      "BYPASSED_NON_MODEL_ROUTE"
+    ],
+    "saved_equals_effective_claimed": false,
+    "receipt_authority": 0.0
+  },
+  "modeled_falsification": {
+    "seed": 202608240016,
+    "fault_families": 32,
+    "phases": 8,
+    "profiles": 2,
+    "mutation_classes": 16,
+    "semantic_signature_space": 8192,
+    "cases": 10000000,
+    "observed_signatures": 8192,
+    "survivors": 0,
+    "family_min_hits": 311682,
+    "family_max_hits": 314250,
+    "tail": 100000,
+    "tail_seed": 202608240017,
+    "tail_new_signatures": 0,
+    "claim_boundary": "deterministic coverage of the declared S16 fault vocabulary; not empirical production reliability and not ten million browser executions"
+  },
+  "architecture_saturation": {
+    "interventions": 16,
+    "M": 65536,
+    "full_coverage_architectures": 4806,
+    "minimum_weighted_cost": 19,
+    "minimum_count": 1,
+    "selected_minimum": [
+      "canonical_snapshot",
+      "optimistic_stamp",
+      "work_overlay",
+      "cycle_config_receipt",
+      "surface_manifest",
+      "profile_contract_hash",
+      "semantic_fetch_virtualizer",
+      "asset_revision"
+    ],
+    "minimality_bound": "unique only inside the declared 16-intervention S16 design vocabulary"
+  },
+  "executable_oracles": {
+    "unit_manifest_and_receipt": "tests.test_surface_contract_s16",
+    "real_http_concurrency": "ThreadingHTTPServer + authenticated pairing + synchronous slow TURN + concurrent /api/v10/surface + SEALED/ACK/DELIVERED",
+    "existing_real_chromium_s15bis": "preserved unchanged",
+    "new_s16_real_chromium_extension": "NOT_CLAIMED",
+    "reason_new_chromium_not_claimed": "the attempted connector write for the Chromium extension was blocked; no nonexistent evidence is promoted into the contract"
+  },
+  "falsification_discoveries": [
+    {
+      "id": "S16-F1",
+      "severity": "CRITICAL",
+      "finding": "A global snapshot lock would serialize /api/v10/surface behind a synchronous TURN and regress S15bis liveness.",
+      "resolution": "nonblocking RUNNING overlay over a stable snapshot"
+    },
+    {
+      "id": "S16-F2",
+      "severity": "CRITICAL",
+      "finding": "Capturing experiment config before shell_command is race-prone and can bind the wrong revision if configuration wins before canonical TURN serialization.",
+      "resolution": "capture after sealed canonical frame while pending exact ACK prevents config mutation"
+    },
+    {
+      "id": "S16-F3",
+      "severity": "HIGH",
+      "finding": "Independent semantic pollers can observe different cycles/revisions even when each endpoint is locally correct.",
+      "resolution": "client compatibility virtualization over one versioned /api/v10/surface snapshot"
+    }
+  ],
+  "merge_dod": [
+    "full repository compile and unit discovery pass on exact synthetic merge",
+    "Product Boundary accepts S16 registration and executes 10M/10M/10M current-slice campaigns plus 100k tail",
+    "existing real Chromium S15bis landing and slow-TURN liveness remains green",
+    "S16 real HTTP concurrency test remains green",
+    "no mutation route, authority chain, S8 writer or exact-ACK semantic is widened",
+    "webapp and floating manifest semantic digests are identical",
+    "saved configuration is never presented as cycle-effective without a valid same-session/same-cycle receipt"
+  ]
+}

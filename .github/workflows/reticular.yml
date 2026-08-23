@@ -2,11 +2,14 @@ name: iKant reticular boundary
 on:
   pull_request:
   push:
-    branches: [main, 'agent/**']
+    branches: [main]
 permissions:
   contents: read
   issues: write
   pull-requests: write
+concurrency:
+  group: ikant-reticular-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   registry:
     runs-on: ubuntu-latest

@@ -11,9 +11,16 @@ DOMAINS=(
 FAMILIES=128
 SIGNATURES=FAMILIES*32
 
+def function_slice(source:str,name:str,next_name:str)->str:
+ start=source.find(f'function {name}()')
+ if start<0:return ''
+ end=source.find(f'function {next_name}()',start)
+ return source[start:] if end<0 else source[start:end]
+
 def gates(root:Path)->dict[str,bool]:
  def read(path):return (root/path).read_text(encoding='utf-8')
  local=read('ikant/local_app.py');ui=read('ikant/web/public-v1.js');sec=read('ikant/local_security.py');sw=read('ikant/web/sw.js');product=json.loads(read('PRODUCT_CONTRACT.json'))
+ controller=function_slice(ui,'controllerAvailable','token')
  s=next((x for x in product.get('slices',[]) if x.get('id')=='S13bis'),{})
  return {
   'launch_url_fragment':"launch_url=url+'#pair='+pairing.code" in local and 'webbrowser.open(launch_url,new=2)' in local,
@@ -21,7 +28,7 @@ def gates(root:Path)->dict[str,bool]:
   'continuity_store':"CONTINUITY_KEY='ikantBearerContinuityV1'" in ui and 'localStorage.setItem(CONTINUITY_KEY' in ui,
   'fresh_hash_precedence':'if(pairFragment())return' in ui,
   'fallback_fragment_autopair':all(x in ui for x in ('function pairFragment()','async function fallbackPair(code)','const fragment=pairFragment()','queueMicrotask(()=>fallbackPair(fragment)')),
-  'fallback_tdz_safe':"function controllerAvailable(){try{return typeof state!=='undefined'" in ui and 'catch(_){return false;}' in ui,
+  'fallback_tdz_safe':all(x in controller for x in ('try{',"typeof state==='undefined'","typeof pairedUI!=='function'","typeof setStatus!=='function'",'catch(_){return false;}')),
   'fallback_single_consumer':all(x in ui for x in ('fallbackPairing=false','if(fallbackPairing)return false','event.stopImmediatePropagation()')),
   'stale_401_fail_closed':all(x in ui for x in ("r.status!==401","forgetToken()","pairedUI(false)","setStatus('Connetti','')")),
   'paired_else_actionable':'già collegata a una sessione browser precedente' in ui,

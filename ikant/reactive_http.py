@@ -19,6 +19,9 @@ def _cycle(out):
  frame=out.get('frame') if isinstance(out,dict) else None;receipt=frame.get('receipt') if isinstance(frame,dict) else None
  return str(receipt.get('cycle_id') or '') if isinstance(receipt,dict) else ''
 
+def _has_frame(out):
+ return isinstance(out,dict) and isinstance(out.get('frame'),dict)
+
 def make_reactive_handler(service,pairing,*,assets_dir:Path,allowed_hosts:frozenset[str],expected_port:int):
  Base=make_bootstrap_handler(service,pairing,assets_dir=assets_dir,allowed_hosts=allowed_hosts,expected_port=expected_port)
  class Handler(Base):
@@ -41,7 +44,7 @@ def make_reactive_handler(service,pairing,*,assets_dir:Path,allowed_hosts:frozen
    path=urlsplit(self.path).path
    if path not in {'/api/v2/shell/command','/api/v2/shell/ack'}:return super().do_POST()
    if not self._guard(origin=True):return
-   store=None;wid=None;session=None
+   store=None;wid=None;session=None;canonical_frame=False
    try:
     body=_read_json(self);session=active_session(service.root);store=store_for_root(service.root)
     if path=='/api/v2/shell/command':
@@ -49,18 +52,21 @@ def make_reactive_handler(service,pairing,*,assets_dir:Path,allowed_hosts:frozen
      if text is not None and not store.active(session):wid,_=store.begin(session,text)
      out=service.shell_command(body)
      if wid:
-      cycle=_cycle(out)
-      if cycle:store.bind_cycle(wid,cycle)
-      store.advance(wid,'SEALED')
+      canonical_frame=_has_frame(out)
+      if canonical_frame:store.seal_from_canonical(wid,_cycle(out))
+      else:store.fail(wid)
     else:
      out=service.shell_ack(body)
      if isinstance(out,dict) and out.get('acknowledged') is True:store.deliver_current(session)
     self._json(200,out)
    except Exception as exc:
-    if wid and store:
+    # Once the canonical shell has produced a frame, projection/HTTP failures may not rewrite
+    # that already-materialized semantic result as FAILED. Exact ACK remains the terminal owner.
+    if wid and store and not canonical_frame:
      try:store.fail(wid)
      except Exception:pass
-    self._json(409,transport_diagnostic(path,exc))
+    try:self._json(409,transport_diagnostic(path,exc))
+    except Exception:pass
  return Handler
 
 def build_server(service,*,host,port,pairing=None,assets_dir=None,env=None):

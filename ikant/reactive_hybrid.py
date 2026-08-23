@@ -85,11 +85,16 @@ class WorkStore:
    self._order.remove(victim);record=self._works.pop(victim)
    if self._by_session.get(record.session)==victim:self._by_session.pop(record.session,None)
  def begin(self,session:str,text:str)->tuple[str,dict[str,Any]]:
+  # Compile before mutating the registry: a failed structuring pass must not orphan an active work item.
+  g=build_graph(text)
   with self._lock:
    old=self._works.get(self._by_session.get(session,''))
    if old and not old.terminal:raise RuntimeError('one in-flight work item allowed per runtime session')
-   self._make_room();wid='work-'+secrets.token_urlsafe(18);w=_Work(wid,session,'ACCEPTED',time.monotonic(),facts={});self._works[wid]=w;self._by_session[session]=wid;self._order.append(wid)
-  g=build_graph(text);self.advance(wid,'STRUCTURED',unit_count=len(g['units']),command_count=int(bool(g['command_plan'])));self.advance(wid,'RUNNING',route='COMMAND_COMPILED' if g['command_plan'] else 'LOCAL_RETICULAR');return wid,g
+   self._make_room();wid='work-'+secrets.token_urlsafe(18)
+   facts={'unit_count':len(g['units']),'command_count':int(bool(g['command_plan'])),'route':'COMMAND_COMPILED' if g['command_plan'] else 'LOCAL_RETICULAR'}
+   # ACCEPTED -> STRUCTURED -> RUNNING is an atomic intake transaction from the external observer's perspective.
+   w=_Work(wid,session,'RUNNING',time.monotonic(),facts=facts);self._works[wid]=w;self._by_session[session]=wid;self._order.append(wid)
+  return wid,g
  def active(self,session:str)->bool:
   with self._lock:
    w=self._works.get(self._by_session.get(session,''));return bool(w and not w.terminal)
@@ -98,12 +103,23 @@ class WorkStore:
    w=self._works[wid]
    if w.cycle and w.cycle!=cycle:raise RuntimeError('cycle binding immutable')
    w.cycle=cycle
+ def seal_from_canonical(self,wid:str,cycle:str|None=None)->None:
+  """Mirror an already-materialized canonical frame without being able to invalidate it."""
+  with self._lock:
+   w=self._works[wid]
+   if w.terminal:return
+   if w.phase not in {'RUNNING','SEALED'}:raise RuntimeError('canonical frame cannot seal work from current phase')
+   c=str(cycle or '')
+   if c:
+    if w.cycle and w.cycle!=c:w.facts['projection_degraded']='cycle_binding_drift'
+    else:w.cycle=c
+   w.phase='SEALED'
  def advance(self,wid:str,phase:str,**facts:Any)->None:
   with self._lock:
    w=self._works[wid]
    if w.terminal:raise RuntimeError('terminal work cannot advance')
    if phase not in _RANK or _RANK[phase]<_RANK.get(w.phase,-1) or _RANK[phase]>_RANK.get(w.phase,-1)+1:raise RuntimeError('invalid work phase transition')
-   w.phase=phase;w.facts.update({k:v for k,v in facts.items() if k in {'unit_count','command_count','route','provider'}});w.terminal=phase=='DELIVERED'
+   w.phase=phase;w.facts.update({k:v for k,v in facts.items() if k in {'unit_count','command_count','route','provider','projection_degraded'}});w.terminal=phase=='DELIVERED'
  def fail(self,wid:str)->None:
   with self._lock:w=self._works[wid];w.phase='FAILED';w.terminal=True
  def deliver_current(self,session:str)->None:

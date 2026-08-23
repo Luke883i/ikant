@@ -6,7 +6,7 @@ SCHEMA='ikant-public-pairing-recovery-falsification/v1-test'
 SEED=2026082309
 DOMAINS=(
  'launch_fragment','manual_base_url','first_pair','consumed_pair','same_tab_reload','new_tab_restore','stale_token_new_runtime','stale_token_paired_runtime',
- 'controller_missing','controller_parse_failure','pair_input_focus','pair_input_pointer','pair_reset','origin_boundary','one_shot_preservation','ready_state_truth',
+ 'controller_missing','controller_parse_failure','fallback_hash_autopair','pair_input_focus','pair_input_pointer','pair_reset','origin_boundary','one_shot_preservation','ready_state_truth',
 )
 FAMILIES=128
 SIGNATURES=FAMILIES*32
@@ -19,11 +19,12 @@ def gates(root:Path)->dict[str,bool]:
   'launch_url_fragment':"launch_url=url+'#pair='+pairing.code" in local and 'webbrowser.open(launch_url,new=2)' in local,
   'pair_code_not_http_query':'?pair=' not in local,
   'continuity_store':"CONTINUITY_KEY='ikantBearerContinuityV1'" in ui and 'localStorage.setItem(CONTINUITY_KEY' in ui,
-  'fresh_hash_precedence':"if(location.hash.includes('pair='))return" in ui,
+  'fresh_hash_precedence':'if(pairFragment())return' in ui,
+  'fallback_fragment_autopair':all(x in ui for x in ('function pairFragment()','async function fallbackPair(code)','const fragment=pairFragment()','queueMicrotask(()=>fallbackPair(fragment)')),
   'stale_401_fail_closed':all(x in ui for x in ("r.status!==401","forgetToken()","pairedUI(false)","setStatus('Connetti','')")),
   'paired_else_actionable':'già collegata a una sessione browser precedente' in ui,
   'controller_fallback':all(x in ui for x in ('installControllerFallback','controllerAvailable()',"fetch('/api/v1/pair'",'location.reload()')),
-  'input_operable':all(x in ui for x in ('ensurePairInputInteractive',"input.disabled=false","input.readOnly=false","input.style.pointerEvents='auto'")),
+  'input_operable':all(x in ui for x in ('ensurePairInputInteractive',"input.disabled=false","input.readOnly=false","input.tabIndex=0","input.style.pointerEvents='auto'")),
   'one_shot_server_preserved':'if self.paired:' in sec and 'pairing code already consumed' in sec,
   'no_pairing_code_public_status':'"code": self.code' not in sec and "'code': self.code" not in sec,
   'cache_bumped':'public-v1-s13-pairing-recovery-s13bis' in sw,

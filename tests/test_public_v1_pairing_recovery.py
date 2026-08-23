@@ -25,8 +25,8 @@ class PublicV1PairingRecoveryTests(unittest.TestCase):
   for marker in ('try{',"typeof state==='undefined'","typeof pairedUI!=='function'","typeof setStatus!=='function'",'catch(_){return false;}'):self.assertIn(marker,controller)
   self.assertIn("fallbackPairing=false",ui);self.assertIn('if(fallbackPairing)return false',ui)
   self.assertIn('event.stopImmediatePropagation()',ui)
- def test_release_cache_and_contract_register_corrective_slice(self):
+ def test_release_cache_and_contract_preserve_corrective_slice(self):
   sw=(ROOT/'ikant/web/sw.js').read_text(encoding='utf-8');self.assertIn('public-v1-s13-pairing-recovery-s13bis',sw)
-  product=json.loads((ROOT/'PRODUCT_CONTRACT.json').read_text(encoding='utf-8'));self.assertEqual(product['constitutional_convergence'],'S13bis');s=product['slices'][-1];self.assertEqual(s['id'],'S13bis');self.assertEqual(s['schema'],'ikant-public-pairing-recovery/v1-test');self.assertEqual(s['saturation'],{'cases':1000000,'mutations':1000000,'edges':100000,'tail':100000,'seed':2026082309});self.assertTrue(s['evidence']['one_shot_pairing_preserved']);self.assertFalse(s['evidence']['pair_code_publicly_exposed']);self.assertTrue(s['evidence']['fragment_autopair_fallback'])
+  product=json.loads((ROOT/'PRODUCT_CONTRACT.json').read_text(encoding='utf-8'));self.assertEqual(product['constitutional_convergence'],product['slices'][-1]['id']);s=next(x for x in product['slices'] if x['id']=='S13bis');self.assertLess(product['slices'].index(s),len(product['slices'])-1);self.assertEqual(s['schema'],'ikant-public-pairing-recovery/v1-test');self.assertEqual(s['saturation'],{'cases':1000000,'mutations':1000000,'edges':100000,'tail':100000,'seed':2026082309});self.assertTrue(s['evidence']['one_shot_pairing_preserved']);self.assertFalse(s['evidence']['pair_code_publicly_exposed']);self.assertTrue(s['evidence']['fragment_autopair_fallback'])
 
 if __name__=='__main__':unittest.main()

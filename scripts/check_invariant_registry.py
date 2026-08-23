@@ -20,10 +20,10 @@ if head.get('rights_policy_schema')!=RIGHTS_SCHEMA:fail('rights schema drift')
 product=json.loads((ROOT/'PRODUCT_CONTRACT.json').read_text(encoding='utf-8'))
 if product.get('schema')!='ikant-product-contract/v0.29-test' or product.get('product_version')!=PRODUCT_VERSION:fail('product contract drift')
 slice_ids=[x.get('id') for x in product.get('slices',[])]
-expected=['S1','S2','S3','S4','S5','S6','S7','S8','S9','S10','S10bis','S11','S12','S13']
+expected=['S1','S2','S3','S4','S5','S6','S7','S8','S9','S10','S10bis','S11','S12','S13','S13bis']
 if slice_ids!=expected:fail('product slice coverage drift')
-if product.get('constitutional_convergence')!='S13':fail('product convergence drift')
-if set(product['slices'][-1].get('invariants') or [])-set(critical_ids()):fail('Public v1 invariant registry drift')
+if product.get('constitutional_convergence')!='S13bis':fail('product convergence drift')
+if set(product['slices'][-1].get('invariants') or [])-set(critical_ids()):fail('S13bis invariant registry drift')
 model_runtime=load_manifest(ROOT/'MODEL_RUNTIME.json')
 if model_runtime.get('schema')!=MODEL_RUNTIME_SCHEMA or model_runtime.get('product_version')!='0.23.0a1':fail('historical S5 managed runtime manifest drift')
 historical_materialized=expected[:11]
@@ -45,6 +45,6 @@ for path in ('ikant/__main__.py','ikant/app_cli.py','ikant/session_host.py','ika
 for inv in registry_manifest()['invariants']:
  target=inv['machine_test'].replace('.','/')
  if inv['severity']=='CRITICAL' and not ((ROOT/(target+'.py')).exists() or inv['machine_test'].startswith('scripts.')):fail('missing critical machine test '+inv['id'])
-for path in ('ikant/bootstrap_observability.py','ikant/bootstrap_runtime.py','ikant/bootstrap_http.py','ikant/experience_projection.py','ikant/future_supply.py','ikant/foundation.py','ikant/public_v1.py','ikant/web/foundation.js','ikant/web/foundation.css','ikant/web/public-v1.js','ikant/web/public-v1.css'):
+for path in ('ikant/bootstrap_observability.py','ikant/bootstrap_runtime.py','ikant/bootstrap_http.py','ikant/experience_projection.py','ikant/future_supply.py','ikant/foundation.py','ikant/public_v1.py','ikant/web/foundation.js','ikant/web/foundation.css','ikant/web/public-v1.js','ikant/web/public-v1.css','scripts/public_v1_pairing_recovery_falsify.py','tests/test_public_v1_pairing_recovery.py'):
  if not (ROOT/path).is_file():fail('missing registered module '+path)
 print(json.dumps({'schema':'ikant-invariant-registry-check/v0.29-test','ok':True,'product_version':PRODUCT_VERSION,'public_release':'v1.0-public-test','critical_count':len([x for x in registry_manifest()['invariants'] if x['severity']=='CRITICAL']),'rights_policy':RIGHTS_SCHEMA,'slices':slice_ids},indent=2))

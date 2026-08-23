@@ -2,7 +2,7 @@
 (()=>{
 const $=id=>document.getElementById(id);
 const CONTINUITY_KEY='ikantBearerContinuityV1';
-let timer=null,refreshing=false,lastConversationSha='';
+let timer=null,refreshing=false,lastConversationSha='',fallbackPairing=false;
 
 function sessionToken(){
   try{return sessionStorage.getItem('ikantBearer')||'';}catch(_){return '';}
@@ -24,7 +24,7 @@ function forgetToken(){
   try{localStorage.removeItem(CONTINUITY_KEY);}catch(_){/* no-op */}
   try{sessionStorage.removeItem('ikantBearer');}catch(_){/* no-op */}
 }
-function controllerAvailable(){return typeof state!=='undefined'&&typeof pairedUI==='function'&&typeof setStatus==='function';}
+function controllerAvailable(){try{return typeof state!=='undefined'&&typeof pairedUI==='function'&&typeof setStatus==='function';}catch(_){return false;}}
 function token(){
   const live=sessionToken();
   if(live)return live;
@@ -43,16 +43,20 @@ async function publicPairStatus(){
   return r.json();
 }
 async function fallbackPair(code){
+  if(fallbackPairing)return false;
   const candidate=String(code||'').trim();
   if(!candidate){setPairMessage('Inserisci il codice mostrato dal processo iKant.');return false;}
-  const r=await fetch('/api/v1/pair',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({code:candidate}),cache:'no-store'});
-  const raw=await r.text();let out={};if(raw){try{out=JSON.parse(raw);}catch(_){out={};}}
-  if(!r.ok||!out.bearer_token)throw new Error(String(out.error||out.message||('HTTP '+r.status)));
-  try{sessionStorage.setItem('ikantBearer',out.bearer_token);}catch(_){}
-  rememberToken(out.bearer_token);
-  history.replaceState(null,'',location.pathname+location.search);
-  location.reload();
-  return true;
+  fallbackPairing=true;
+  try{
+    const r=await fetch('/api/v1/pair',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({code:candidate}),cache:'no-store'});
+    const raw=await r.text();let out={};if(raw){try{out=JSON.parse(raw);}catch(_){out={};}}
+    if(!r.ok||!out.bearer_token)throw new Error(String(out.error||out.message||('HTTP '+r.status)));
+    try{sessionStorage.setItem('ikantBearer',out.bearer_token);}catch(_){}
+    rememberToken(out.bearer_token);
+    history.replaceState(null,'',location.pathname+location.search);
+    location.reload();
+    return true;
+  }catch(error){fallbackPairing=false;throw error;}
 }
 async function validateRememberedSession(){
   const live=sessionToken();
@@ -110,6 +114,7 @@ function installControllerFallback(){
   form.dataset.fallbackBound='true';
   form.addEventListener('submit',async event=>{
     event.preventDefault();
+    event.stopImmediatePropagation();
     setPairMessage('');
     try{await fallbackPair($('pair-code')?.value);}catch(error){setPairMessage(String(error?.message||'Collegamento non riuscito').slice(0,180));$('pair-code')?.focus();}
   },{capture:true});

@@ -6,7 +6,7 @@ SCHEMA='ikant-public-pairing-recovery-falsification/v1-test'
 SEED=2026082309
 DOMAINS=(
  'launch_fragment','manual_base_url','first_pair','consumed_pair','same_tab_reload','new_tab_restore','stale_token_new_runtime','stale_token_paired_runtime',
- 'controller_missing','controller_parse_failure','fallback_hash_autopair','pair_input_focus','pair_input_pointer','pair_reset','origin_boundary','one_shot_preservation','ready_state_truth',
+ 'controller_missing','controller_parse_failure','fallback_hash_autopair','fallback_tdz','fallback_single_consumer','pair_input_focus','pair_input_pointer','pair_reset','origin_boundary','one_shot_preservation','ready_state_truth',
 )
 FAMILIES=128
 SIGNATURES=FAMILIES*32
@@ -21,6 +21,8 @@ def gates(root:Path)->dict[str,bool]:
   'continuity_store':"CONTINUITY_KEY='ikantBearerContinuityV1'" in ui and 'localStorage.setItem(CONTINUITY_KEY' in ui,
   'fresh_hash_precedence':'if(pairFragment())return' in ui,
   'fallback_fragment_autopair':all(x in ui for x in ('function pairFragment()','async function fallbackPair(code)','const fragment=pairFragment()','queueMicrotask(()=>fallbackPair(fragment)')),
+  'fallback_tdz_safe':"function controllerAvailable(){try{return typeof state!=='undefined'" in ui and 'catch(_){return false;}' in ui,
+  'fallback_single_consumer':all(x in ui for x in ('fallbackPairing=false','if(fallbackPairing)return false','event.stopImmediatePropagation()')),
   'stale_401_fail_closed':all(x in ui for x in ("r.status!==401","forgetToken()","pairedUI(false)","setStatus('Connetti','')")),
   'paired_else_actionable':'già collegata a una sessione browser precedente' in ui,
   'controller_fallback':all(x in ui for x in ('installControllerFallback','controllerAvailable()',"fetch('/api/v1/pair'",'location.reload()')),

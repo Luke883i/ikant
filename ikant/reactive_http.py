@@ -49,19 +49,21 @@ def make_reactive_handler(service,pairing,*,assets_dir:Path,allowed_hosts:frozen
    path=urlsplit(self.path).path
    if path not in {'/api/v2/shell/command','/api/v2/shell/ack'}:return super().do_POST()
    if not self._guard(origin=True):return
-   store=None;wid=None;session=None;canonical_frame=False;turn_config=None
+   store=None;wid=None;session=None;canonical_frame=False
    try:
     body=_read_json(self);session=active_session(service.root);store=store_for_root(service.root)
     if path=='/api/v2/shell/command':
      text=_turn_text(body)
-     if text is not None and not store.active(session):
-      turn_config=load_experiment_config(service.root);wid,_=store.begin(session,text)
+     if text is not None and not store.active(session):wid,_=store.begin(session,text)
      out=service.shell_command(body)
      if wid:
       canonical_frame=_has_frame(out)
       if canonical_frame:
        store.seal_from_canonical(wid,_cycle(out))
-       try:record_config_effect(service.root,config=turn_config or load_experiment_config(service.root),frame=out['frame'])
+       # The delegate TURN lock spans generation and frame sealing; while the frame is pending,
+       # S12 configuration mutation is rejected. Reading here therefore binds the revision that
+       # could actually have been consumed by this cycle, rather than a racy pre-TURN observation.
+       try:record_config_effect(service.root,config=load_experiment_config(service.root),frame=out['frame'])
        except Exception:pass
       else:store.fail(wid)
     else:

@@ -1,0 +1,28 @@
+{
+  "schema": "ikant-s15-reactive-hybrid-convergence/v1-test",
+  "status": "PR_MATERIALIZED_PENDING_CI",
+  "baseline_main_sha": "d73ad7cf5dc235330caa31e16f918188f8362f72",
+  "ontological_target": "LOCAL_COGNITIVE_RUNTIME_WITH_REACTIVE_HYBRID_CONTROL_PLANE",
+  "bounds": {"max_work_units": 24, "max_work_edges": 48, "max_command_targets": 4, "max_work_records": 64, "progress_fraction": null},
+  "authority": {"local_governance_only": true, "commercial_model_authority": 0.0, "work_projection_authority": 0.0, "command_plan_authority": 0.0},
+  "capabilities": {"reactive_cognitive_moment_projection": true, "deterministic_essential_command_compiler": true, "commercial_provider_transport": true, "commercial_turn_auto_activation": false, "native_app_open_execution": false, "native_os_always_on_top_overlay": false, "web_floating_compact_mode": true},
+  "mutation_evidence": {
+    "mutations_per_seed_model": 10000000,
+    "total_mutations": 50000000,
+    "mutation_families": 40,
+    "candidate_survivors": 0,
+    "actual_candidate_code_fuzz_cases": 87501,
+    "actual_candidate_code_survivors": 0,
+    "no_novelty_tail_per_seed": 100000,
+    "seed_models": {
+      "cognitive_moment": 1584556928992201195,
+      "command_compiler": 13751705130212186732,
+      "hybrid_membrane": 2498556069746222327,
+      "single_writer_replay": 2372726106992045155,
+      "substrate_connectivity": 2440771210519547834
+    }
+  },
+  "control_plane_benchmark_p50_ms": {"command_translate": 0.004106, "command_workgraph": 0.02628, "abstract_workgraph": 0.051526, "reactive_begin": 0.076414},
+  "merge_gates": ["repository CI green", "real Chromium slow-TURN polling liveness", "exact-ACK/replay regression green"],
+  "unclaimed": ["real Qwen TTFT or semantic-equivalence improvement", "live commercial-provider success", "native application launch", "native OS always-on-top floating overlay"]
+}

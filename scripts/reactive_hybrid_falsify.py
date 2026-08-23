@@ -26,7 +26,7 @@ def source_audit()->list[str]:
  for marker in ('polling||local!==epoch',"s.textContent='Dettagli'",'/api/v9/work/current'):
   if marker not in web:errors.append('web:'+marker)
  if 'innerHTML' in web or 'progress_fraction' in web:errors.append('web_unbounded_or_fake_progress')
- for marker in ('_CAPSULE','tool_calls_allowed','local_fallback_required'):
+ for marker in ('_CAPSULE','tool_calls_accepted','local_fallback_required'):
   if marker not in commercial:errors.append('commercial:'+marker)
  return errors
 
@@ -73,7 +73,6 @@ def modeled_saturation(total:int,tail:int,seed:int)->dict:
  families=min(FAMILIES,total)
  base_signatures=min(PERIOD,total)
  tail_novelty=0 if total>=PERIOD else min(tail,max(0,PERIOD-total))
- # Seed perturbs family ordering only; semantics remain periodic and deterministic.
  random.Random(seed).getrandbits(64)
  return {'modeled_trials':total,'families_total':FAMILIES,'families_covered':families,'signature_space':PERIOD,'base_signatures':base_signatures,'tail':tail,'tail_novelty':tail_novelty}
 

@@ -5,6 +5,7 @@ from typing import Any
 import json
 
 from .chat_session import ChatLog, sanitize_terminal_text
+from .enduser_identity import enduser_projection
 from .experience_projection import runtime_projection
 from .foundation import foundation_projection
 
@@ -55,18 +56,20 @@ def conversation_projection(root: str | Path) -> dict[str, Any]:
             "status": "EMPTY",
             "runtime_session_id": session_id or None,
             "records": [],
+            "record_count": 0,
+            "visible_record_count": 0,
+            "truncated": False,
             "integrity_verified": False,
             "epistemic_authority": 0.0,
             "execution_authority": 0.0,
         }
     log = ChatLog(path, runtime_session_id=session_id)
     index = log.verify()
-    rows = log.rows()[-VISIBLE_CHAT_LIMIT:]
+    all_rows = [row for row in log.rows() if str(row.get("role") or "") in {"user", "ikant"}]
+    rows = all_rows[-VISIBLE_CHAT_LIMIT:]
     records = []
     for row in rows:
         role = str(row.get("role") or "")
-        if role not in {"user", "ikant"}:
-            continue
         records.append({
             "seq": int(row.get("seq") or 0),
             "role": role,
@@ -79,6 +82,9 @@ def conversation_projection(root: str | Path) -> dict[str, Any]:
         "runtime_session_id": session_id,
         "records": records,
         "record_limit": VISIBLE_CHAT_LIMIT,
+        "record_count": len(all_rows),
+        "visible_record_count": len(records),
+        "truncated": len(all_rows) > len(records),
         "integrity_verified": bool(index.get("ok")),
         "last_sha256": index.get("last_sha256"),
         "epistemic_authority": 0.0,
@@ -163,22 +169,35 @@ def public_projection(service: Any) -> dict[str, Any]:
         experience = runtime_projection(service.root)
     except Exception:
         experience = None
+    conversation = conversation_projection(service.root)
+    capabilities = foundation.get("capabilities") or {}
+    epistemic_value = foundation.get("epistemic_value") or {}
+    enduser = enduser_projection(
+        conversation=conversation,
+        experience=experience or {},
+        epistemic_value=epistemic_value,
+        capabilities=capabilities,
+    )
     return {
         "schema": PUBLIC_EXPERIENCE_SCHEMA,
         "release": PUBLIC_RELEASE,
         "journey": journey_projection(service),
-        "conversation": conversation_projection(service.root),
-        "capabilities": foundation.get("capabilities") or {},
+        "conversation": conversation,
+        "capabilities": capabilities,
         "runtime_systems": runtime_system_projection(service.root),
-        "epistemic_value": foundation.get("epistemic_value") or {},
+        "epistemic_value": epistemic_value,
         "config": foundation.get("config") or {},
         "experience": experience,
+        "enduser": enduser,
         "promise": {
             "single_local_runtime": True,
             "visible_services_are_demonstrated": True,
             "visible_chat_is_integrity_checked": True,
             "runtime_system_cards_are_inspection_only": True,
             "epistemic_summary_does_not_certify_truth": True,
+            "enduser_identity_is_session_bound_projection": True,
+            "synthetic_neuromodel_does_not_claim_biological_equivalence": True,
+            "audit_integrity_does_not_certify_truth": True,
             "presentation_never_grants_authority": True,
         },
         "epistemic_authority": 0.0,

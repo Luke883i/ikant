@@ -2,7 +2,7 @@ from __future__ import annotations
 import argparse,os,sys,webbrowser
 from pathlib import Path
 from .epistemic_workspace import EpistemicWorkspaceCoordinator
-from .bootstrap_http import build_server
+from .reactive_http import build_server
 from .bootstrap_runtime import ObservableProductBootstrapCoordinator
 from .local_service import operational_fallback
 from .managed_runtime import ManagedLocalRuntime

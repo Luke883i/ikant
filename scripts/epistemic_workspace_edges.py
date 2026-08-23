@@ -19,6 +19,7 @@ def code_audit()->list[str]:
   return p.read_text(encoding='utf-8')
  projection=read('ikant/epistemic_projection.py');workspace=read('ikant/epistemic_workspace.py');http=read('ikant/epistemic_http.py');js=read('ikant/web/epistemic.js');css=read('ikant/web/epistemic.css');app=read('ikant/local_app.py');index=read('ikant/web/index.html');sw=read('ikant/web/sw.js')
  bootstrap_path=ROOT/'ikant/bootstrap_http.py';bootstrap=bootstrap_path.read_text(encoding='utf-8') if bootstrap_path.is_file() else ''
+ reactive_path=ROOT/'ikant/reactive_http.py';reactive=reactive_path.read_text(encoding='utf-8') if reactive_path.is_file() else ''
  for marker in ('MAX_HISTORY=64','MAX_SNAPSHOT_BYTES=4*1024*1024','MAX_OBJECTS=96','event_keys'):
   if marker not in projection and marker!='event_keys':e.append('projection:'+marker)
  for marker in ('presentation_is_not_evidence','presentation_is_not_authorization','_last_acked_frame','_pending is not None','cycle path escape','artifact session/cycle mismatch'):
@@ -31,7 +32,8 @@ def code_audit()->list[str]:
  if index.count('id="dashboard"')!=1:e.append('semantic_viewport_count')
  direct='epistemic_http' in app
  composed='bootstrap_http' in app and 'make_epistemic_handler' in bootstrap and '.epistemic_http' in bootstrap
- if 'EpistemicWorkspaceCoordinator' not in app or not (direct or composed):e.append('launcher_wiring')
+ reactive_composed=('reactive_http' in app and 'make_bootstrap_handler' in reactive and '.bootstrap_http' in reactive and 'make_epistemic_handler' in bootstrap and '.epistemic_http' in bootstrap)
+ if 'EpistemicWorkspaceCoordinator' not in app or not (direct or composed or reactive_composed):e.append('launcher_wiring')
  if 'const CACHE=' not in sw or 'keys.filter(k=>k!==CACHE)' not in sw:e.append('pwa_stale_cache_invalidation')
  for forbidden in ('https://','http://cdn','unpkg','jsdelivr','fonts.googleapis','/completion','/v1/chat'):
   if forbidden in js+css+http:e.append('forbidden:'+forbidden)

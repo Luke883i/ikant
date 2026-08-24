@@ -1,0 +1,20 @@
+{
+  "schema": "ikant-s17bis-runtime-recovery-surface-closure/v1-test",
+  "slice": "S17bis",
+  "name": "Runtime Recovery & Surface Closure",
+  "baseline": {"main_sha":"f5159a4833f0fb5d6aeab520d4383a18b136e9b5","product_contract_convergence":"S17","product_contract_advanced_by_candidate":false},
+  "rla": ["durable runtime/session + epoch","durable egress journal/pending frame","validated Surface A/chat RESPONSE","verified recovery reducer","derivative Work/Surface projection","exact recovery ACK","post-ACK cognitive reconciliation"],
+  "recovery_classes": [
+    {"state":"SEALED_FRAME_PENDING","action":"replay exact durable frame","model_retry":false},
+    {"state":"INTERRUPTED_UNSEALED","action":"seal zero-authority RECOVERY frame and abort pending only after exact ACK","model_retry":false},
+    {"state":"SURFACE_A_UNSEALED","action":"reconcile at most one missing chat reply and seal RECOVERY frame from validated Surface A","model_retry":false},
+    {"state":"RECOVERY_ACKED_PENDING_RECONCILE","action":"deterministic cleanup only","model_retry":false},
+    {"state":"INTEGRITY_BLOCKED","action":"fail closed","model_retry":false}
+  ],
+  "invariants": ["RSC-001","RSC-002","RSC-003","RSC-004"],
+  "modeled_falsification": {"cases":10000000,"tail":100000,"seed":5106034144745002672,"fault_families":96,"domains":12,"simultaneous_faults":"2..4","semantic_signature_space":12288,"semantic_signatures_observed":12288,"domain_pair_space":78,"domain_pairs_observed":78,"family_min_hits":103270,"family_max_hits":105087,"tail_new_signatures":0,"interpretation":"declared-vocabulary saturation only; not production reliability or formal verification"},
+  "physical_oracles": ["tests.test_runtime_recovery_s17bis","scripts/runtime_recovery_process_oracle.py","scripts/runtime_recovery_browser_liveness.mjs","scripts/surface_census_s17bis.py"],
+  "surface_census": {"independent_of_surface_manifest":true,"boundaries":["production HTTP route literals","production composed JavaScript assets","source DOM controls","real Chromium DOM controls"]},
+  "nonclaims": ["No model, planner, material-driver or shell state is replayed by recovery.","Hash chains establish local integrity, not actor authenticity or world truth.","Modeled mutation counts do not estimate production failure probability.","S17bis does not add memory, temporal-task, connector, transaction or OS-residency capability.","Product Contract remains S17 while this PR is a draft candidate; constitutional registration belongs to promotion/merge readiness."],
+  "evidence_status": {"pre_candidate_model_10m":"PASS","pre_candidate_python_syntax":"PASS","full_repository_unit":"PENDING_PR_CI","real_process_restart":"PENDING_PR_CI","real_chromium_recovery":"PENDING_PR_CI","real_chromium_dom_census":"PENDING_PR_CI","hosted_ci":"PENDING_PR_CI","reticular_ci":"PENDING_PR_CI","product_boundary_ci":"PENDING_PR_CI"}
+}

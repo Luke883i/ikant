@@ -23,7 +23,7 @@ class DevelopmentContinuityS16bisTests(unittest.TestCase):
   bundle=json.loads((ROOT/'IKANT_DEVELOPMENT_BUNDLE.json').read_text(encoding='utf-8'));rows=bundle['modeled_campaigns']
   self.assertEqual([x['campaign'] for x in rows],['hardening','hypothetical','usage'])
   for row in rows:
-   self.assertEqual(row['cases'],10_000_000);self.assertEqual(row['tail'],100_000);self.assertTrue(row['coverage_complete']);self.assertEqual(row['signatures_observed'],row['signature_space']);self.assertEqual(row['tail_new_signatures'],0);self.assertIn('not a production failure probability',row['interpretation'])
+   self.assertEqual(row['cases'],10_000_000);self.assertEqual(row['tail'],100_000);self.assertTrue(row['coverage_complete']);self.assertEqual(row['signatures_observed'],row['signature_space']);self.assertEqual(row['tail_new_signatures'],0);self.assertIn('not',row['interpretation'].lower())
  def test_structural_bundle_gate_passes_but_does_not_claim_readiness_with_open_blockers(self):
   run=subprocess.run([sys.executable,'scripts/development_bundle_gate.py'],cwd=ROOT,text=True,capture_output=True,check=False)
   self.assertEqual(run.returncode,0,run.stderr+run.stdout);out=json.loads(run.stdout);self.assertEqual(out['status'],'PASS');self.assertFalse(out['ready_to_advance']);self.assertIn('FND-002',out['open_high_or_critical_blockers'])

@@ -56,6 +56,7 @@ jobs:
             const fs = require('fs');
             const marker = '<!-- ikant-unit-diagnostic -->';
             const ok = process.env.UNIT_EXIT_CODE === '0';
+            const head = context.payload.pull_request?.head?.sha || context.sha;
             let detail = '';
             if (!ok && fs.existsSync('unit-summary.txt')) detail = fs.readFileSync('unit-summary.txt','utf8').replace(/```/g,'` ` `');
             const body = [
@@ -63,7 +64,8 @@ jobs:
               '## iKant full-unit diagnostic',
               '',
               `UNIT_DIAGNOSTIC: ${ok ? 'PASS' : 'FAIL'}`,
-              `HEAD_SHA: ${context.sha}`,
+              `MERGE_SHA: ${context.sha}`,
+              `HEAD_SHA: ${head}`,
               ...(ok ? [] : ['', '```text', detail, '```']),
               '',
               'Diagnostic projection only; it grants no authority and does not weaken the full-unit gate.'

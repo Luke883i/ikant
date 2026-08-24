@@ -6,6 +6,7 @@ from .human_dashboard import persist_dashboard,render_dashboard_ascii
 from .human_surface_protocol import project_human_surface,validate_human_surface
 from .runtime_host import conforming_turn,emit_incarnate_surface_a
 from .session_egress import DashboardEgressGuard,FrameReceipt,EgressState,EgressViolation,existing_runtime_egress
+from .store import fsync_parent
 from .transport import TransportAttestation
 SESSION_HOST_SCHEMA='ikant-dashboard-session-host/v0.11-test'
 
@@ -25,9 +26,16 @@ def _surface_kind(kind:str)->str:
     return 'NOTICE'
 
 def prepare_text_frame(runtime,frame_text,*,kind,cycle_id=None,release_after_frame=False):
-    guard=_guard(runtime);guard.require_locked();receipt=guard.seal_frame(frame_text,kind=kind,cycle_id=cycle_id,release_after_frame=release_after_frame);return {'schema':SESSION_HOST_SCHEMA,'text':frame_text,'receipt':asdict(receipt),'delivery_state':guard.state.value,'acknowledged':False}
+    guard=_guard(runtime);guard.require_locked();receipt=guard.seal_frame(frame_text,kind=kind,cycle_id=cycle_id,release_after_frame=release_after_frame);fsync_parent(guard.frames_dir/'namespace')
+    prepared={'schema':SESSION_HOST_SCHEMA,'text':frame_text,'receipt':asdict(receipt),'delivery_state':guard.state.value,'acknowledged':False}
+    from .causal_ledger import bind_frame
+    bind_frame(runtime,prepared)
+    return prepared
 
 def prepare_human_frame(runtime,dashboard,*,kind,cycle_id=None,release_after_frame=False,notice=None,approval_frame=None,progress=None,error=None,degraded=None,recovery=None,width=96):
+    from .causal_ledger import reconcile_restart
+    causal=reconcile_restart(runtime)
+    if causal.get('state')=='ROLLED_BACK_PREPARE':dashboard=persist_dashboard(runtime)
     guard=_guard(runtime);guard.require_locked();projected=guard.attach_projection(dashboard,notice=notice);surface_kind=_surface_kind(kind)
     if surface_kind=='NOTICE':project_human_surface(runtime,projected,kind=surface_kind,cycle_id=cycle_id,notice=notice or str(kind))
     elif surface_kind in {'INITIALIZE','RESUME'}:project_human_surface(runtime,projected,kind=surface_kind,cycle_id=cycle_id,notice=notice)
@@ -50,6 +58,9 @@ def prepare_degraded_frame(runtime,dashboard,degraded,*,cycle_id=None,width=96):
 def acknowledge_prepared_frame(runtime,prepared,actual_visible_text):
     guard=_guard(runtime);receipt=FrameReceipt(**dict(prepared['receipt']))
     if not guard.acknowledge_visible(receipt,actual_visible_text):raise EgressViolation('visible dashboard delivery acknowledgement failed')
+    fsync_parent(guard.frames_dir/'namespace')
+    from .causal_ledger import finalize_exact_ack
+    finalize_exact_ack(runtime,prepared)
     return {**prepared,'delivery_state':guard.state.value,'acknowledged':True}
 
 def recover_prepared_frame(runtime):

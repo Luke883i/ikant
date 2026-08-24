@@ -1,0 +1,56 @@
+{
+  "schema": "ikant-ai-session-workbook-bundle/v1-test",
+  "snapshot": {
+    "main_sha": "175908a3b6c2472e911cd42a0220de71d785a645",
+    "latest_merged_pr": 52,
+    "latest_10_merged_prs": [52, 51, 50, 49, 48, 47, 46, 45, 44, 43],
+    "open_pr_count": 0,
+    "product_contract_slice": "S17",
+    "product_contract_version": "0.18.0",
+    "branch_protected": false,
+    "development_bundle_known_stale": true
+  },
+  "artifact": {
+    "filename": "iKant_AI_Session_Development_Bundle.xlsx",
+    "sha256": "1852fb58fcafe5971d26c1ccfca2557cce1fdd99e76ec63dc47b60eaebba604d",
+    "repository_binary_committed": false,
+    "inherits": "iKant_Development_Workbook_100M.xlsx",
+    "sheets": 28,
+    "formula_error_scan": 0
+  },
+  "next_semantic_runtime_slice": "S17bis — Runtime Recovery & Surface Closure",
+  "candidate_chain": [
+    "S17bis Runtime Recovery & Surface Closure",
+    "S18 Durable Cognitive State / Causal Ledger",
+    "S19 Memory Governance",
+    "S20 Temporal Task Governance",
+    "S21 Reactive Intent / Plan Reconciliation",
+    "S22 Hybrid Abstract Assist Opt-in",
+    "S23 Connector Capability Fabric",
+    "S24 Material Action / Transaction Orchestration",
+    "S25 Native Presence / Background Residency",
+    "S26 Release / Update / Privacy / Accessibility Hardening"
+  ],
+  "decision_contract": {
+    "architecture_owner": "AI_SESSION_LOCAL",
+    "human": "Luke883i",
+    "human_self_description": "IT dummy",
+    "human_decision_surface": "compressed_simple_product_outcomes_only",
+    "rule": "The active local AI session owns architecture, implementation, tests, CI/CD and semantic slice partitioning. Ask Luke only simple product-outcome questions when genuinely unavoidable; never outsource implementation entropy."
+  },
+  "bootstrap_required": [
+    "fetch current main SHA and branch protection",
+    "audit PRODUCT_CONTRACT.json, AGENTS.md, IKANT_DEVELOPMENT_BUNDLE.json and workbook manifest",
+    "audit latest 10 merged PRs in merge order",
+    "audit all open/draft PRs and exact CI before branch creation",
+    "compare live repository truth with workbook snapshot",
+    "confirm or mutate the candidate slice using focused source/fault analysis",
+    "implement using atomic semantic commits and same-boundary evidence",
+    "update handoff state at the end of the development iteration"
+  ],
+  "nonclaims": [
+    "Workbook snapshot is not canonical Git truth.",
+    "Modeled mutation counts are not production reliability or physical execution evidence.",
+    "Future slice IDs are not constitutional until implementation, evidence, Product Contract registration and merge."
+  ]
+}

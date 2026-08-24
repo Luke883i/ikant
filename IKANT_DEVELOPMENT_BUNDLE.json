@@ -1,0 +1,209 @@
+{
+  "schema": "ikant-development-continuity-bundle/v1-test",
+  "bundle_version": "0.30-s16bis-candidate.1",
+  "purpose": "Machine-readable anti-entropy contract for AI-assisted iKant development. It records the audited baseline, open engineering ignorance, modeled stress coverage, supply-chain assumptions, semantic roadmap and iteration handoff protocol. It is control-plane state, not epistemic evidence and not a substitute for executable runtime oracles.",
+  "baseline": {
+    "repository": "Luke883i/iKant",
+    "main_sha": "70dc14894a88e117dbc9f4e879c90a90b692f291",
+    "merged_pr": 48,
+    "merged_slice": "S16",
+    "product_contract_version": "0.17.0",
+    "product_contract_current_slice": "S16",
+    "surface_contract": "ikant-surface-contract/v1-test",
+    "s16_synthetic_merge_sha": "1fd59d8f56884b53f0676467a5e4a6e4bb3ba58e",
+    "s16_ci_receipts": ["full-unit:PASS", "hosted-ci:PASS", "reticular:PASS", "product-boundary:PASS"],
+    "branch_protection_observed": false,
+    "baseline_is_production_reliability_claim": false
+  },
+  "unitary_intent": "Consolidate the executable and constitutional truth of iKant before adding user-governable state or external computation; make each new capability causally closed, supply-chain-real, user-legible, falsifiable at its physical boundary and resumable by a fresh chat session without relying on conversational memory.",
+  "functioning_definition": [
+    "one declared source of semantic runtime truth per lifecycle phase",
+    "every user mutation has a typed writer, bounded effect, receipt and recovery path",
+    "every behavior-changing state is bound to runtime/session/cycle/component identity",
+    "UI claims no capability stronger than the concrete technological supply chain can deliver",
+    "presentation never widens evidence, permission, approval, grant, lease or execution authority",
+    "all material DoD claims are exercised at the same browser/OS/provider boundary they name",
+    "merge and development history are traceable independently of model-generated prose"
+  ],
+  "audit_findings": [
+    {"id":"FND-001","severity":"CRITICAL","status":"OPEN","finding":"After a successful /api/v10/surface bind, S16 browser reads can still silently fall back to independent legacy semantic endpoints when the canonical snapshot fails.","risk":"split semantic realities can reappear exactly when the canonical contract is unavailable","candidate_mitigation":"S16bis fail-closed browser boundary after first canonical ACTIVE bind"},
+    {"id":"FND-002","severity":"CRITICAL","status":"OPEN","finding":"PR47 was a material S15bis runtime slice but PRODUCT_CONTRACT lineage currently jumps S15 -> S16 although future_slice_rule explicitly requires material bis slices to be registered.","risk":"Product Boundary can be self-consistent while incomplete against actual Git development history","candidate_mitigation":"retrospective S15bis lineage reconciliation plus Git/contract provenance oracle"},
+    {"id":"FND-003","severity":"HIGH","status":"OPEN","finding":"main is not protected and required status checks are not enforced by repository branch protection.","risk":"CI receipts are advisory rather than a material merge barrier","candidate_mitigation":"repository ruleset/branch protection requiring Hosted, Reticular, Product Boundary and current real-browser gate"},
+    {"id":"FND-004","severity":"HIGH","status":"OPEN","finding":"S16 all-and-only manifest test compares surface_manifest against a hardcoded expected set rather than independently enumerating the production UI/API control census.","risk":"manifest and test can agree while an undeclared control or read path exists","candidate_mitigation":"production-derived surface census oracle across composed assets, routes and browser DOM"},
+    {"id":"FND-005","severity":"MEDIUM","status":"OPEN","finding":"The canonical S16 snapshot is ACTIVE-only while admission/setup remain legacy-bootstrap surfaces, but the manifest includes admission_lifecycle without making the lifecycle scope explicit.","risk":"single-surface wording can be interpreted more broadly than the implemented boundary","candidate_mitigation":"declare and test PRE_ACTIVE_BOOTSTRAP -> ACTIVE_CANONICAL transition contract"},
+    {"id":"FND-006","severity":"HIGH","status":"OPEN","finding":"Stable Surface Contract cache and S15 WorkStore are process-local; restart can lose the last stable overlay/work projection while canonical frame state may remain recoverable elsewhere.","risk":"restart/replay can produce truthful-but-incomplete or inconsistent work presentation","candidate_mitigation":"durable session-bound stable checkpoint plus canonical pending-frame/work reconciliation"},
+    {"id":"FND-007","severity":"MEDIUM","status":"OPEN","finding":"S16 config-effect receipt uses a recomputable SHA-256 checksum stored with the payload.","risk":"detects accidental corruption but is not an authenticity proof against a writer able to rewrite the file","candidate_mitigation":"classify it as integrity checksum or bind to an append-only/runtime-authenticated receipt chain"},
+    {"id":"FND-008","severity":"HIGH","status":"OPEN","finding":"forget_memory marks one node FORGOTTEN but does not use the dependency cascade implemented for source revocation.","risk":"a user-facing Forget action could suppress a source while dependent derived memories remain cognitively available","candidate_mitigation":"define forget semantics and dependency-closure before exposing mutation UI"},
+    {"id":"FND-009","severity":"HIGH","status":"OPEN","finding":"TemporalAutonomy is durable locally but schedule/journal ownership is session-bound and no current UI contract establishes OS-background residency across app shutdown/reboot.","risk":"a reminder UI could promise wake behavior the process supply chain cannot deliver","candidate_mitigation":"runtime-epoch ownership plus explicit residency guarantee; native background host only in a later capability slice if required"},
+    {"id":"FND-010","severity":"HIGH","status":"OPEN","finding":"S15 build_graph/command_plan is a separate representation from the existing canonical practical_reason -> planning -> execution_protocol lattice.","risk":"directly binding S15 plans would create competing plan semantics and authority confusion","candidate_mitigation":"typed IntentEnvelope and reconciliation into the existing canonical plan ledger, never a second planner"},
+    {"id":"FND-011","severity":"CRITICAL","status":"OPEN","finding":"Commercial assist still relies on default redirect-following transport and its provider response parsers do not uniformly reject every non-text/tool-bearing output shape.","risk":"credential/endpoint boundary and tool prohibition are not strong enough for activation","candidate_mitigation":"reject redirects, pin effective provider origin, fail closed on unknown output items, keep feature disabled until provider-bound E2E passes"},
+    {"id":"FND-012","severity":"HIGH","status":"OPEN","finding":"S16 real HTTP test uses a synthetic slow service and S16-specific Chromium assertions were not added; the inherited browser oracle proves S15bis liveness, not the entire S16 semantic virtualizer.","risk":"browser-specific cache/fallback/controller failures can escape Python HTTP tests","candidate_mitigation":"real Chromium S16bis canonical-read failure/recovery and DOM census oracle"},
+    {"id":"FND-013","severity":"MEDIUM","status":"OPEN","finding":"Invariant extension currently snapshots the previous registry in invariants_legacy_s15.py; repeating this pattern each slice would accumulate copied constitutional code.","risk":"lineage code duplication and stale registry behavior","candidate_mitigation":"future modular invariant ownership registry rather than per-slice whole-file snapshots"}
+  ],
+  "modeled_campaigns": [
+    {"id":"MC-HARDENING-10M","campaign":"hardening","cases":10000000,"seed":202608240101,"dimensions":{"families":64,"phases":8,"contexts":4,"mutation_classes":4},"signature_space":8192,"signatures_observed":8192,"coverage_complete":true,"declared_open_family_occurrences":3438869,"family_hit_min":155274,"family_hit_max":156904,"tail":100000,"tail_seed":202608240111,"tail_new_signatures":0,"interpretation":"repository-bound foundation/provenance/state/control fault-space coverage; not a production failure probability"},
+    {"id":"MC-HYPOTHETICAL-10M","campaign":"hypothetical","cases":10000000,"seed":202608240102,"dimensions":{"families":72,"phases":8,"contexts":4,"mutation_classes":4},"signature_space":9216,"signatures_observed":9216,"coverage_complete":true,"declared_open_family_occurrences":4167187,"family_hit_min":138063,"family_hit_max":139744,"tail":100000,"tail_seed":202608240112,"tail_new_signatures":0,"interpretation":"future-slice dependency, supply-chain, adversarial and edge-case coverage; not a production failure probability"},
+    {"id":"MC-USAGE-10M","campaign":"usage","cases":10000000,"seed":202608240103,"dimensions":{"families":48,"phases":10,"contexts":4,"mutation_classes":6},"signature_space":11520,"signatures_observed":11520,"coverage_complete":true,"declared_open_family_occurrences":3751738,"family_hit_min":207341,"family_hit_max":209164,"tail":100000,"tail_seed":202608240113,"tail_new_signatures":0,"interpretation":"normal/typical/recovery/accessibility/stress/user-control scenario coverage; not measured UX success"}
+  ],
+  "hardening_lattice": {
+    "rule":"No new user-governable state or external provider is activated while a prerequisite foundation node is OPEN.",
+    "nodes":[
+      {"id":"H0","name":"development provenance truth","requires":[],"feeds":["H1","I","M","T","P","Y"]},
+      {"id":"H1","name":"canonical surface enforcement","requires":["H0"],"feeds":["I","M","T","P","Y"]},
+      {"id":"H2","name":"independent surface census oracle","requires":["H1"],"feeds":["I","M","T","P","Y"]},
+      {"id":"H3","name":"restart/replay reconciliation","requires":["H1"],"feeds":["M","T","P"]},
+      {"id":"I","name":"runtime identity/provenance epoch","requires":["H0","H1"],"feeds":["M","T","P","Y"]},
+      {"id":"M","name":"memory governance","requires":["I","H3"],"feeds":["T","P"]},
+      {"id":"T","name":"temporal task governance","requires":["I"],"feeds":["P"]},
+      {"id":"P","name":"intent/plan reconciliation","requires":["I","M","T"],"feeds":["Y"]},
+      {"id":"Y","name":"hybrid abstract assist boundary","requires":["H1","I","P"],"feeds":[]}
+    ],
+    "partition_decision":"Split original S17 because component identity, memory and scheduler have different persistence, authority, recovery and supply-chain semantics. Reframe original S18 as reconciliation into the existing canonical planner rather than making the S15 work graph authoritative. Keep Hybrid last."
+  },
+  "roadmap": [
+    {
+      "id":"S16bis","name":"Foundation Enforcement & Development Continuity",
+      "foundation_links":["S8 single-writer/exact ACK","S15bis real-browser slow-TURN liveness","S16 canonical Surface Contract","PRODUCT_CONTRACT future_slice_rule","version-neutral Product Boundary"],
+      "expected_runtime":["pre-ACTIVE bootstrap compatibility is explicitly distinguished from ACTIVE canonical semantic reads","after first successful ACTIVE Surface Contract bind, semantic GET failures never silently resurrect independent legacy realities","material Git slice history and constitutional lineage are reconciled","future sessions can validate one machine-readable development bundle before changing code"],
+      "user_experience":["no new product capability","normal successful UI is unchanged","if canonical ACTIVE semantic state becomes unavailable the UI reports a bounded retryable runtime-state failure instead of mixing old projections","Details may expose contract/recovery diagnostics without creating a second semantic channel"],
+      "technology_supply_chain":["existing loopback HTTP/PWA/service worker","Git commit/PR history","PRODUCT_CONTRACT + invariant registry","GitHub Actions Hosted/Reticular/Product Boundary/browser gates","external repository ruleset/branch protection for materially enforced required checks"],
+      "dod":{"local":["bundle structural gate PASS","post-bind browser semantic fallback is fail-closed in executable JS test","S15bis lineage discrepancy has an explicit reconciliation test","all new model receipts state that they are not runtime reliability estimates"],"intermediate":["three declared 10M campaigns reproduce full signature coverage with +100k no-novelty tails","full Python unit discovery green","Product Boundary accepts reconciled lineage","S16 regressions remain green"],"final":["real Chromium: bind /api/v10/surface, fault canonical endpoint, prove no legacy semantic GET is used, then prove bounded recovery","independent UI/API surface census equals manifest","Hosted + Reticular + Product Boundary + browser gates green on exact synthetic merge","repository required-check ruleset enabled before release-level merge claim"]},
+      "success_metrics":["0 post-bind legacy semantic fallbacks","0 material merged slices absent from constitutional provenance after reconciliation","0 undeclared user controls in independent surface census","0 claimed protected-merge state while branch rules are disabled","100% exact-head DoD receipts named by the slice"],
+      "checklist":["preserve admission semantics","preserve S8 writer","preserve S15bis concurrent liveness","do not activate native/provider capability","invalidate stale S16 assets","record remaining restart/cache and receipt-authenticity gaps without overstating closure"],
+      "ui_ux_prototype":{"normal":"no visible change","degraded":"single concise state near existing runtime status: Stato runtime non verificabile · Riprova","details":"contract digest/recovery reason only; no raw internal chain-of-thought"},
+      "prerequisites":[]
+    },
+    {
+      "id":"S17","name":"Runtime Identity & Provenance Epoch",
+      "foundation_links":["S5 managed-runtime binding_sha256","S14 local iKant identity separation from replaceable model","S16 semantic contract digest","S16bis provenance enforcement"],
+      "expected_runtime":["materialize a monotonic runtime_epoch envelope binding session, product/contract version, Surface Contract digest, config revision and managed engine/model binding","every cycle/snapshot/receipt that can outlive a component change is epoch-bound","component/model replacement starts a new epoch but never changes the identity label iKant"],
+      "user_experience":["System details answers Quale runtime sto usando? without presenting the model as iKant","component changes are visible as bounded version/change facts","ordinary chat remains uncluttered"],
+      "technology_supply_chain":["existing MODEL_RUNTIME.json immutable engine/model revisions and SHA-256","existing ManagedLocalRuntime binding digest","Git/product contract identity","optional SLSA-style provenance ingestion when build attestations exist; do not claim it before then","TUF/rollback protection deferred until automatic updater exists"],
+      "dod":{"local":["same inputs produce same epoch identity; any binding/product/contract/surface change produces a new epoch","epoch has zero authority","model label cannot replace iKant identity"],"intermediate":["restart/component-switch tests reject stale cycle/config/work receipts across epoch","surface snapshot exposes one bounded epoch descriptor","history explicitly marks epoch boundaries"],"final":["real managed-runtime startup binds actual engine/model digest into epoch","real browser shows component change without identity conflation","all downstream S18-S21 schemas can require exact epoch binding"]},
+      "success_metrics":["100% durable cycle/control receipts epoch-bound","0 stale cross-epoch receipt accepted","0 UI string presenting replaceable provider/model as iKant identity","one canonical epoch descriptor per runtime snapshot"],
+      "checklist":["no auto updater activation","no trust derived from hash alone","component presence remains zero-authority","preserve S14 identity model","bind provenance facts, not marketing version strings"],
+      "ui_ux_prototype":{"collapsed":"iKant · runtime locale","details":"Runtime epoch <short id> · modello locale <label> · componente verificato; full hashes behind expert disclosure","change":"Componente linguistico aggiornato; nuova epoca runtime. La memoria iKant non viene presentata come identità del modello."},
+      "prerequisites":["S16bis"]
+    },
+    {
+      "id":"S18","name":"Memory Governance",
+      "foundation_links":["temporal_memory classes/states","dependency_invalidation derivation cascade","temporal replay","epistemic workspace exact-ACK reads","S17 runtime epoch"],
+      "expected_runtime":["bounded typed read/search of memories by class/source/status","define Forget from future cognition as a tombstone/availability mutation, not an unverifiable physical-erasure claim","before mutation compute direct and dependency-derived impact; independently supported claims survive","persist an epoch/session-bound receipt and prove forgotten/dependency-invalidated nodes cannot re-enter retrieval"],
+      "user_experience":["Memory is a progressive inspector, not a second chat","Dimentica opens an impact preview naming what stops influencing future cognition and what audit tombstone remains","after confirmation the user receives a concise effect receipt","physical artifact deletion is a separate operation and absent until implemented"],
+      "technology_supply_chain":["existing local graph/node store","temporal_memory and temporal_replay","provenance/dependency graph","atomic local persistence","no vector database or cloud memory service required for this slice"],
+      "dod":{"local":["forget never modifies evidence values","dependency closure kills unsupported derived availability","independently supported claims remain active","kernel/constitutional memory has explicit non-forgettable or separately governed semantics"],"intermediate":["restart/replay reproduces identical tombstones and dependency states","concurrent turn/forget follows one writer ordering and cannot create half-applied memory state","impact preview hash equals applied mutation receipt"],"final":["E2E: establish memory influence, forget it, run subsequent turns and prove unavailable nodes are absent from retrieval/activation","real browser accessibility/confirmation flow passes","10M memory/dependency mutation campaign has zero survivors against declared invariants"]},
+      "success_metrics":["0 forgotten nodes returned by governed retrieval","0 unsupported dependent derivations remain ACTIVE","100% destructive memory mutations preview-bound and receipted","100% independent-support preservation tests pass","0 UI claim of physical erasure without byte-level deletion oracle"],
+      "checklist":["define forget vs source revoke vs artifact delete","require explicit confirmation","preserve audit tombstone minimum","bind to epoch/session","bound list/search size","do not expose hidden rationale"],
+      "ui_ux_prototype":{"entry":"Dettagli → Memoria","list":"class · source · updated · state; semantic summary only","action":"Dimentica → preview Impatto: 1 memoria + N derivazioni non più usate → Conferma","receipt":"Dimenticata dalla cognizione futura · audit locale preservato"},
+      "prerequisites":["S17"]
+    },
+    {
+      "id":"S19","name":"Temporal Task Governance",
+      "foundation_links":["S6 TemporalAutonomy durable journal","fresh material authorization invariant","S16 canonical surface","S17 epoch ownership","S18 governed state semantics"],
+      "expected_runtime":["typed list/schedule/cancel/pause/retry controls for tasks and wakes","task ownership survives only under an explicit epoch/session migration rule","a due clock creates control work only and never permission or material execution","surface states exactly what residence guarantee exists: process-resident until a real background host is supplied"],
+      "user_experience":["Tasks panel shows next due, recurrence, state and retry/cancel","scheduling confirmation repeats intent/time/recurrence and current residence guarantee","a wake appears as work to review; consequential action still asks for fresh authorization"],
+      "technology_supply_chain":["existing TemporalAutonomyKernel journal/lock/clock rollback logic","local process timer/runtime runner","no OS wake daemon claimed in base slice","if later requirement is works after app shutdown/reboot, add a separately authorized signed native background service with platform startup integration"],
+      "dod":{"local":["schedule/cancel exact authorization receipts","clock rollback/future bounds/retry bounds preserved","wake cannot carry lease or execution authority"],"intermediate":["restart replay preserves task state under declared ownership rule","cancel races and duplicate claims are idempotent/fail-closed","surface reports residence capability truthfully"],"final":["wall-clock E2E exercises schedule → wake → review → fresh authorization path","shutdown test proves the exact declared residency behavior rather than assuming OS background execution","accessibility and time-zone/DST edge suite passes"]},
+      "success_metrics":["0 wake-triggered material executions without fresh authorization","100% scheduled tasks expose next due/state/residency","0 duplicate delivered wake for one task fire","100% cancel receipts reflected in subsequent projections","clock rollback always blocks until explicit recovery"],
+      "checklist":["do not imply always-on service","show timezone/absolute time","bound recurrence","minimize persisted intent text","epoch-bind task owner","fresh authorization for material sink"],
+      "ui_ux_prototype":{"entry":"Dettagli → Attività programmate","card":"Domani 09:00 · una volta · iKant deve essere in esecuzione","create":"natural-language intent → typed schedule preview → Conferma","wake":"È il momento di… · Apri / Rimanda / Annulla; no silent external action"},
+      "prerequisites":["S17","S18"]
+    },
+    {
+      "id":"S20","name":"Reactive Intent / Plan Reconciliation",
+      "foundation_links":["S15 build_graph/compile_command","canonical action_governance","planning v0.16 plan ledger/world/counterfactual/rollback lattice","execution_protocol/handoff","S17 epoch","S19 task wake envelope"],
+      "expected_runtime":["S15 structuring becomes a typed zero-authority IntentEnvelope bound to raw-intent hash and epoch","deterministic command candidates reconcile into the existing canonical action/plan ledger; they never become a second planner","mismatch between deterministic candidate and cognitive plan blocks/demotes rather than executes","simple conversational turns remain plan-free in presentation"],
+      "user_experience":["work bubble may say Sto organizzando without invented progress","only reconciled actionable plans appear as previews","material preview exposes target/provider/scope/cost/irreversibility/approval before any capability request","open Firefox becomes a proposed native-app step, not an executed command unless the existing authority chain and host capability actually exist"],
+      "technology_supply_chain":["local deterministic parser","existing cognitive/action/plan/execution ledgers","capability registry + fresh host revalidation","native/web drivers only if already admitted and explicitly available; no new execution backend required to ship reconciliation"],
+      "dod":{"local":["every S15 command candidate has exactly one reconcile outcome: MATCH/DEMOTE/BLOCK","no candidate directly invokes a driver","plan and IntentEnvelope hashes are cycle+epoch bound"],"intermediate":["property/fuzz tests cover ambiguous/multi-step/injected commands","scheduled wake and interactive intent enter the same reconciliation boundary","canonical plan remains sole authority owner"],"final":["real browser E2E for representative conversation, abstract analysis and OPEN_APP intent","where native capability is absent UI truthfully stops at proposal/revalidation required","10M plan-reconciliation mutations yield no alternate writer/execution path"]},
+      "success_metrics":["100% deterministic command candidates reconciled before presentation","0 direct S15-to-driver calls","0 duplicate authoritative plan ledgers per cycle","0 simple-chat plan chrome unless plan is materially useful","100% material previews expose required action facts"],
+      "checklist":["reuse canonical planner","never promote parser confidence to authority","bind intent hash","host revalidate each material step","fail on representation mismatch","keep work projection zero-authority"],
+      "ui_ux_prototype":{"conversation":"unchanged for normal questions","plan":"compact Piano proposto card after reconciliation","material":"Apri Firefox · dispositivo locale · richiede capacità native.app.open · no execution until approval/revalidation","conflict":"Non posso riconciliare il comando con un piano sicuro; nessuna azione eseguita"},
+      "prerequisites":["S17","S18","S19"]
+    },
+    {
+      "id":"S21","name":"Hybrid Abstract Assist Opt-in",
+      "foundation_links":["S15 hybrid_membrane typed abstract capsule","S16 canonical surface","S17 epoch/config identity","S20 reconciled abstract operation boundary","commercial_assist candidate"],
+      "expected_runtime":["disabled by default","explicit local opt-in chooses provider/model and privacy budget","transport rejects redirects and pins the effective HTTPS provider origin","provider parser rejects any tool/function/unknown output item and accepts bounded text only","only minimized typed abstract capsule crosses the boundary; provider result is evidence=0 and authority=0","provider error or policy block falls back locally with a cycle-bound route receipt"],
+      "user_experience":["External compute setting is off by default and explains exactly what can leave the machine","before first use user can inspect provider/model and capsule class; no raw transcript promise","turn receipt states Local or External <provider> and whether local fallback was used","no provider UI implies tools, browsing or account authority"],
+      "technology_supply_chain":["provider HTTPS API and versioned response schema","redirect-denying network transport with normal certificate validation","session-memory secret vault for minimal first release, or OS credential store before claiming persistent API-key UX","timeout/byte/token/cost budgets","provider sandbox/test account for E2E; no provider tool API enabled"],
+      "dod":{"local":["all redirect codes fail closed without forwarding credentials","all tool/function/unknown provider output shapes fail closed","secret never appears in capsule/log/receipt/disk under declared secret mode","private/material whole-turn quarantine stays local"],"intermediate":["mock and provider-schema conformance suites cover OpenAI/Anthropic/DeepSeek adapters","route receipt binds epoch/cycle/config/provider/model/capsule digest","budget exhaustion and network failure preserve local availability"],"final":["real opt-in provider E2E with test credentials and network capture proves exact host/no redirects/no tools","browser UI confirms disabled-by-default and exported-data mental model","security red-team includes prompt injection, source-sink exfiltration, denial-of-wallet and response-schema drift"]},
+      "success_metrics":["0 redirects followed","0 tool/function outputs accepted","0 secrets persisted when session-only mode is declared","0 private/material units exported","100% external calls cycle+epoch+provider receipted","100% provider failures retain bounded local fallback where local generation is available"],
+      "checklist":["explicit opt-in","least privilege","no tools","whole-turn privacy quarantine","effective-host pin","bounded cost/time/bytes","secret lifecycle","local fallback","route receipt","real provider oracle before activation"],
+      "ui_ux_prototype":{"settings":"Calcolo esterno [Off] · provider/model · Dati inviati: solo capsule astratte tipizzate","first_use":"preview category and provider; confirm opt-in","turn_badge":"Locale or Assistito da <provider> · Dettagli shows capsule digest/fallback, not raw hidden reasoning"},
+      "prerequisites":["S16bis","S17","S20"]
+    }
+  ],
+  "research_constraints": [
+    {"id":"R-SSDF","source":"NIST SP 800-218 SSDF 1.1","url":"https://csrc.nist.gov/pubs/sp/800/218/final","application":"security practices and recurrence prevention belong inside the SDLC/bundle rather than as after-the-fact review"},
+    {"id":"R-SLSA","source":"SLSA specification v1.2 / Provenance","url":"https://slsa.dev/spec/v1.2/","application":"future runtime/component provenance must describe where/how artifacts were produced; a digest alone is not provenance"},
+    {"id":"R-TUF","source":"The Update Framework security properties","url":"https://theupdateframework.io/docs/security/","application":"if automatic updates are introduced, add freshness/rollback/freeze defenses; current pinning must not be marketed as a secure updater"},
+    {"id":"R-OWASP-AGENT","source":"OWASP AI Agent Security Cheat Sheet / Excessive Agency","url":"https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html","application":"least privilege, decision/execution separation, explicit approval and bounded resources are release invariants for S20/S21"},
+    {"id":"R-OPENAI-PI","source":"OpenAI Designing AI agents to resist prompt injection","url":"https://openai.com/index/designing-agents-to-resist-prompt-injection/","application":"constrain dangerous sinks and information transmission even if untrusted content manipulates the model"},
+    {"id":"R-HAX","source":"Microsoft Guidelines for Human-AI Interaction / HAX","url":"https://www.microsoft.com/en-us/research/publication/guidelines-for-human-ai-interaction/","application":"capabilities, limits, correction and explanations must map to causal runtime effects, not decorative confidence"},
+    {"id":"R-PAIR","source":"Google People + AI Guidebook Feedback + Control","url":"https://pair.withgoogle.com/chapter/feedback-controls/","application":"state mutations need clear control, opt-out/reset semantics and explicit time-to-impact"}
+  ],
+  "iteration_protocol": {
+    "bootstrap_steps":[
+      "Obey AGENTS.md admission/rights boundary before repository study or materialization.",
+      "Fetch current main SHA, current open/draft PRs and exact current Product Contract.",
+      "Read AGENTS.md, PRODUCT_CONTRACT.json, IKANT_DEVELOPMENT_BUNDLE.json and files/tests/docs owned by the current candidate slice.",
+      "Run python scripts/development_bundle_gate.py. If baseline/current contract drift is detected, select ANTI_ENTROPY_REVIEW before development.",
+      "Re-evaluate all OPEN CRITICAL/HIGH findings affected by current main; never silently mark a finding closed from prose or modeled mutation counts.",
+      "Select the smallest semantic slice whose prerequisites are closed and whose supply chain can be materially exercised."
+    ],
+    "modes": {
+      "DEVELOP":"Materialize the next minimal runtime slice with atomic semantic commits, local/CI/physical-boundary oracles and an exact-head draft PR.",
+      "ANTI_ENTROPY_REVIEW":"Re-audit main + current PR, rerun declared stress models, challenge roadmap/prerequisites/DoD and update the bundle before adding capability.",
+      "HANDOFF":"Freeze the current engineering state into the bundle, make its gate pass structurally, record exact branch/PR/SHA/check receipts and prepare a fresh chat session to resume from files rather than conversation memory."
+    },
+    "required_logs":["decision_log","inference_log","falsification_log","conflict_log","risk_log","strategic_log","supply_chain_log","ui_ux_log","ci_receipt_log"],
+    "end_of_iteration_steps":[
+      "record changed facts and unresolved ignorance in the bundle/backlog",
+      "separate modeled evidence from executable unit/HTTP/browser/OS/provider evidence",
+      "commit atomically by semantic responsibility",
+      "open/update draft PR and record exact head/synthetic-merge status without inventing PASS",
+      "run bundle gate and state whether ready_to_advance is true",
+      "ask the human to choose DEVELOP, ANTI_ENTROPY_REVIEW or HANDOFF"
+    ],
+    "end_of_iteration_choices":["DEVELOP","ANTI_ENTROPY_REVIEW","HANDOFF"]
+  },
+  "decision_log": [
+    {"id":"D-001","decision":"Insert S16bis before new functionality","because":["canonical surface fail-open","material S15bis lineage absent from Product Contract","independent surface census/browser S16 oracle incomplete"]},
+    {"id":"D-002","decision":"Split original S17 into Runtime Identity, Memory Governance and Temporal Task Governance","because":["different persisted stores","different failure semantics","different user expectations and supply chains","smaller falsifiable blast radius"]},
+    {"id":"D-003","decision":"Replace Reactive Plan Binding with Intent/Plan Reconciliation","because":["canonical planning already exists in practical_reason/planning/execution_protocol","S15 graph must not become a second authority/planner"]},
+    {"id":"D-004","decision":"Keep Hybrid last and disabled until transport/parser/secret/provider oracles close","because":["external data boundary","prompt-injection source-sink risk","current redirect and output-shape gaps"]},
+    {"id":"D-005","decision":"Do not add TUF/SLSA labels as product claims before actual provenance/update infrastructure exists","because":["current component pinning is strong but not equivalent to attested build provenance or compromise-resilient update freshness"]}
+  ],
+  "inference_log": [
+    {"id":"I-001","inference":"Managed runtime binding_sha256 is sufficient raw material for a runtime epoch but is not currently an explicit cross-surface epoch contract."},
+    {"id":"I-002","inference":"Memory forget must be defined as availability/dependency semantics before a destructive-looking UI is safe."},
+    {"id":"I-003","inference":"Temporal tasks cannot promise OS wake-after-shutdown until a native/background supply chain is materially installed and permissioned."},
+    {"id":"I-004","inference":"The best near-term product UX is progressive disclosure of causal state and controls, not exposing more internal taxonomy."}
+  ],
+  "falsification_log": [
+    {"id":"X-001","target":"S16 single semantic reality","result":"FALSIFIED as absolute browser property; current code may fall back to legacy semantic GETs after canonical failure","action":"S16bis fail-closed-after-bind"},
+    {"id":"X-002","target":"Product Contract complete material lineage","result":"FALSIFIED; S15bis merged PR47 is absent","action":"S16bis lineage reconciliation"},
+    {"id":"X-003","target":"original S17 is one coherent semantic slice","result":"FALSIFIED by three independent state/supply-chain domains","action":"split S17/S18/S19"},
+    {"id":"X-004","target":"original S18 should make S15 graph canonical","result":"FALSIFIED by pre-existing canonical planning/execution lattice","action":"S20 reconciliation"},
+    {"id":"X-005","target":"S19 Hybrid can remain the immediate third post-S16 slice","result":"FALSIFIED by prerequisite identity/plan/security gaps","action":"move to S21"}
+  ],
+  "conflict_log": [
+    {"id":"C-001","conflict":"S16 manifest says all-and-only while its oracle is self-declared and legacy server endpoints remain directly available","resolution":"treat manifest as target contract; require independent production census in S16bis"},
+    {"id":"C-002","conflict":"temporal scheduler is durable on disk but end-user durability may be interpreted as OS background execution","resolution":"separate data durability from process residency in UI and DoD"},
+    {"id":"C-003","conflict":"forget implies deletion in ordinary language while current primitive is a temporal tombstone","resolution":"label first product action Forget from future cognition and explicitly state audit tombstone/physical bytes semantics"}
+  ],
+  "risk_log": [
+    {"id":"RISK-001","severity":"CRITICAL","risk":"hybrid credential/data exfiltration through redirect or prompt-injected sink","owner_slice":"S21"},
+    {"id":"RISK-002","severity":"HIGH","risk":"state mutation without dependency closure creates false user control","owner_slice":"S18"},
+    {"id":"RISK-003","severity":"HIGH","risk":"task UI overpromises wake/residency","owner_slice":"S19"},
+    {"id":"RISK-004","severity":"HIGH","risk":"two planning representations drift into two authority paths","owner_slice":"S20"},
+    {"id":"RISK-005","severity":"HIGH","risk":"green CI without branch enforcement or complete lineage becomes governance theater","owner_slice":"S16bis"}
+  ],
+  "strategic_log": [
+    {"id":"S-001","strategy":"Prefer closed causal loops and independent oracles over adding visible features."},
+    {"id":"S-002","strategy":"Keep webapp and floating as presentation profiles of one semantic runtime until a real native host is separately supplied."},
+    {"id":"S-003","strategy":"Use current local primitives before adding infrastructure: existing graph memory, temporal journal, planning ledger and component binding are sufficient for S17-S20 foundations."},
+    {"id":"S-004","strategy":"Treat external provider/native background/updater dependencies as explicit supply-chain expansions with their own activation gates."}
+  ]
+}

@@ -38,7 +38,7 @@ class CausalLedgerS18Tests(unittest.TestCase):
 
     def test_real_subprocess_preprepare_crash_oracle(self):
         root=Path(__file__).resolve().parents[1]
-        proc=subprocess.run([sys.executable,'scripts/s18_process_crash_oracle.py'],cwd=root,capture_output=True,text=True,check=True)
+        proc=subprocess.run([sys.executable,'scripts/s18_causal_crash_oracle.py'],cwd=root,capture_output=True,text=True,check=True)
         self.assertIn('"status": "PASS"',proc.stdout)
 
 if __name__=='__main__':unittest.main()

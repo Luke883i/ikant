@@ -13,3 +13,11 @@ After successful PROBE and INITIALIZE, treat the local runtime as authoritative 
 Use `ikant.invariants` as the cross-cutting invariant registry. Runtime-derived telemetry, rights/admission state, psyche, dashboard, Surface B and hashes are not evidence. Functional psyche may increase caution but never relax blocks. Surface A/B remain same-cycle.
 
 Canonical runtime modules and release workflows are version-neutral. Historical version modules/scripts remain compatibility or historical-regression assets only. Prefer consolidation over adding another version-specific orchestrator or CI workflow.
+
+## AI-assisted development continuity
+
+After the admission/rights boundary permits repository development, a session working on product evolution must treat `IKANT_DEVELOPMENT_BUNDLE.json` as the canonical anti-entropy development handoff and `docs/DEVELOPMENT_CONTINUITY.md` as its human protocol. Load both together with `PRODUCT_CONTRACT.json` and the current slice before modifying code.
+
+Run `python scripts/development_bundle_gate.py` before development. If the bundle baseline or Product Contract has drifted, or if a HIGH/CRITICAL prerequisite relevant to the intended slice is unresolved, use `ANTI_ENTROPY_REVIEW` before adding capability. Modeled mutation/scenario coverage never substitutes for unit, HTTP, browser, OS, provider or repository-governance evidence.
+
+At the end of an AI-assisted development iteration, update the bundle's decision/inference/falsification/conflict/risk/strategic state as needed, record exact branch/PR/SHA/check truth, materialize atomic semantic commits and a draft PR, run the bundle gate, and ask the human to choose exactly one semantic continuation mode: `DEVELOP`, `ANTI_ENTROPY_REVIEW`, or `HANDOFF`. No mode implies asynchronous work; a later iteration requires a new user instruction.

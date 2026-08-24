@@ -29,14 +29,15 @@ def apply_intention_atoms(runtime, atoms: list[dict] | None) -> list[dict]:
 def record_surface_a(runtime, cycle_id: str, text: str, *, intention_node_id: str | None = None) -> dict:
     ok,errors=validate_surface_a(text)
     if not ok:raise ValueError('Surface A validation failed: '+'; '.join(errors))
-    n=runtime.ingest(kind=NodeKind.RESPONSE,layer=Layer.MEMORY,text=text,confidence=1.0,evidence=0.0,source_mode='runtime_derived',metadata={'speech_act_not_evidence':True,'surface_a_validated':True,'response_cycles':[cycle_id]})
+    epoch=dict(runtime.runtime.get('runtime_epoch') or {});epoch_id=str(epoch.get('epoch_id') or '') or None;epoch_ordinal=epoch.get('ordinal') if isinstance(epoch.get('ordinal'),int) else None
+    n=runtime.ingest(kind=NodeKind.RESPONSE,layer=Layer.MEMORY,text=text,confidence=1.0,evidence=0.0,source_mode='runtime_derived',metadata={'speech_act_not_evidence':True,'surface_a_validated':True,'response_cycles':[cycle_id],'runtime_epoch_id':epoch_id,'runtime_epoch_ordinal':epoch_ordinal})
     cycles=list(n.metadata.get('response_cycles',[]))
     if cycle_id not in cycles:cycles.append(cycle_id)
     cycles=cycles[-32:]
-    n.metadata.update({'speech_act_not_evidence':True,'surface_a_validated':True,'response_cycles':cycles,'response_cycle_window':32,'response_emission_count':n.recurrence,'last_cycle_id':cycle_id});runtime._save(n)
+    n.metadata.update({'speech_act_not_evidence':True,'surface_a_validated':True,'response_cycles':cycles,'response_cycle_window':32,'response_emission_count':n.recurrence,'last_cycle_id':cycle_id,'runtime_epoch_id':epoch_id,'runtime_epoch_ordinal':epoch_ordinal});runtime._save(n)
     if intention_node_id and intention_node_id in runtime.nodes:runtime.relate(intention_node_id,n.id,RelationKind.PRECEDES,1.0)
-    runtime.runtime.setdefault('cognitive',{})['last_surface_a_response_id']=n.id;runtime.runtime['cognitive']['last_surface_a_cycle_id']=cycle_id;runtime._write_runtime();runtime._event('SURFACE_A_EMIT',cycle_id,{'response_id':n.id,'word_count':len(text.split()),'validated':True})
-    receipt={'schema':'ikant-surface-a-emission/v0.2','cycle_id':cycle_id,'response_id':n.id,'validated':True,'evidence':n.evidence,'speech_act_not_evidence':True,'word_count':len(text.split())}
+    runtime.runtime.setdefault('cognitive',{})['last_surface_a_response_id']=n.id;runtime.runtime['cognitive']['last_surface_a_cycle_id']=cycle_id;runtime._write_runtime();runtime._event('SURFACE_A_EMIT',cycle_id,{'response_id':n.id,'word_count':len(text.split()),'validated':True,'runtime_epoch_id':epoch_id,'runtime_epoch_ordinal':epoch_ordinal})
+    receipt={'schema':'ikant-surface-a-emission/v0.2','cycle_id':cycle_id,'response_id':n.id,'validated':True,'evidence':n.evidence,'speech_act_not_evidence':True,'word_count':len(text.split()),'runtime_epoch_id':epoch_id,'runtime_epoch_ordinal':epoch_ordinal}
     snap_path=runtime.runtime.get('cognitive',{}).get('last_snapshot')
     if snap_path and Path(snap_path).exists():
         snap=json.loads(Path(snap_path).read_text(encoding='utf-8'))
@@ -112,6 +113,12 @@ def compile_cognitive_turn(runtime, intent: str, *, limit: int = 12, horizon: Ep
         if prior_response in runtime.nodes:runtime.relate(prior_response,intention_node.id,RelationKind.PRECEDES,1.0)
     mined_atoms=apply_intention_atoms(runtime,atoms)
     cycle = runtime.concentric_cycle(intent, limit=limit)
+    runtime_epoch=dict(runtime.runtime.get("runtime_epoch") or {})
+    if runtime_epoch:
+        cycle["runtime_epoch"]=runtime_epoch
+        if getattr(runtime,"durable",False):
+            raw_cycle=Path(runtime.cycles_dir)/f"{cycle.get('cycle_id')}.json"
+            atomic_json_write(raw_cycle,cycle)
     cognitive_state = runtime.runtime.get("cognitive", {})
     crc = evaluate_reticulum(cycle["semantic_slice"], horizon=horizon, previous_neurofunctional_state=cognitive_state.get("neurofunctional_state", {}))
     previous = cognitive_state.get("proto_self", {})
@@ -131,6 +138,8 @@ def compile_cognitive_turn(runtime, intent: str, *, limit: int = 12, horizon: Ep
         "rir_proxy": crc.get("diagnostics", {}).get("reticular_irreducibility_proxy"),
         "central_mode": central.get("regulative_mode"),
         "proto_self_index": proto.get("proto_self_index"),
+        "runtime_epoch_id": runtime_epoch.get("epoch_id"),
+        "runtime_epoch_ordinal": runtime_epoch.get("ordinal"),
     }
     runtime._write_runtime()
     runtime._event("COGNITIVE_COMPILE", cycle.get("cycle_id"), {
@@ -139,11 +148,14 @@ def compile_cognitive_turn(runtime, intent: str, *, limit: int = 12, horizon: Ep
         "proto_self_index": proto.get("proto_self_index"),
         "workspace_applied": len(workspace.get("applied", [])),
         "mean_collapse": crc.get("diagnostics", {}).get("mean_coefficient_of_collapse"),
+        "runtime_epoch_id": runtime_epoch.get("epoch_id"),
+        "runtime_epoch_ordinal": runtime_epoch.get("ordinal"),
     })
 
     result = {
         "schema": "ikant-cognitive-turn/v0.2",
         "session_id": runtime.runtime.get("session_id"),
+        "runtime_epoch": runtime_epoch,
         "cycle": cycle,
         "crc": crc,
         "proto_self": proto,
@@ -171,5 +183,5 @@ def compile_cognitive_turn(runtime, intent: str, *, limit: int = 12, horizon: Ep
         result["surface_b_docx"] = str(export_surface_b_docx(snapshot, docx_path))
         runtime.runtime["cognitive"]["last_surface_b_docx"] = result["surface_b_docx"]
         runtime._write_runtime()
-        runtime._event("SURFACE_B_SNAPSHOT", cycle.get("cycle_id"), {"path": result["surface_b_docx"], "json_path": json_path})
+        runtime._event("SURFACE_B_SNAPSHOT", cycle.get("cycle_id"), {"path": result["surface_b_docx"], "json_path": json_path, "runtime_epoch_id": runtime_epoch.get("epoch_id")})
     return result

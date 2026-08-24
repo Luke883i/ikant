@@ -14,7 +14,7 @@ from .store import atomic_json_write, read_json
 SURFACE_CONTRACT_SCHEMA="ikant-surface-contract/v1-test"
 SURFACE_MANIFEST_SCHEMA="ikant-surface-manifest/v1-test"
 CONFIG_EFFECT_SCHEMA="ikant-config-effect-receipt/v1-test"
-ASSET_REVISION="v030-s16-surface-contract-1"
+ASSET_REVISION="v030-s17-runtime-provenance-epoch-1"
 _CACHE_LOCK=threading.RLock();_STABLE_CACHE:dict[tuple[str,str],dict[str,Any]]={}
 
 _ABSTRACTIONS=(
@@ -25,7 +25,7 @@ _ABSTRACTIONS=(
  ("epistemic_workspace",True,False,None,"exact_ack_read_only_projection","NONE"),
  ("capability_catalog",True,False,None,"currently_demonstrable_services_only","NONE"),
  ("runtime_systems",True,False,None,"recognized_persisted_inspection_only","NONE"),
- ("enduser_identity_audit",True,False,None,"session_cycle_integrity_projection","NONE"),
+ ("enduser_identity_audit",True,False,None,"session_cycle_component_provenance_projection","NONE"),
  ("reactive_work",True,False,None,"derived_cognitive_moment_projection","NONE"),
  ("artifacts",True,False,None,"bounded_same_cycle_read_download","NONE"),
  ("bootstrap_diagnostics",True,False,None,"append_only_diagnostics_projection","NONE"),
@@ -45,12 +45,7 @@ def surface_manifest()->dict[str,Any]:
  return {**material,"semantic_contract_sha256":digest,"asset_revision":ASSET_REVISION,"surface_profiles":[{"id":"webapp","semantic_contract_sha256":digest,"authority_effect":"NONE","layout_only":False},{"id":"floating_pwa_profile","semantic_contract_sha256":digest,"authority_effect":"NONE","layout_only":True,"native_os_overlay_claimed":False}],"epistemic_authority":0.0,"execution_authority":0.0}
 
 def record_config_effect(root:str|Path,*,config:dict[str,Any],frame:dict[str,Any])->dict[str,Any]:
- """Persist the zero-authority config revision observed after canonical frame sealing.
-
- The caller records only after the serialized TURN has completed and while exact ACK is still pending;
- S12 rejects config mutation in that interval. Therefore this post-seal revision is the revision that
- could have been consumed by the cycle. Failure to persist this derivative receipt never invalidates the frame.
- """
+ """Persist the zero-authority config revision observed after canonical frame sealing."""
  base=Path(root).resolve();runtime=_runtime(base);session=str(runtime.get("session_id") or "")
  freceipt=frame.get("receipt") if isinstance(frame,dict) else None;cycle=str(freceipt.get("cycle_id") or "") if isinstance(freceipt,dict) else ""
  if not session or not cycle:raise ValueError("config effect receipt requires active session and sealed cycle")
@@ -58,27 +53,34 @@ def record_config_effect(root:str|Path,*,config:dict[str,Any],frame:dict[str,Any
  if not generation:
   cognitive=runtime.get("cognitive") if isinstance(runtime.get("cognitive"),dict) else {};candidate=cognitive.get("last_surface_a_generation") if isinstance(cognitive.get("last_surface_a_generation"),dict) else {}
   if str(candidate.get("cycle_id") or "")==cycle:generation=candidate
- source=str(generation.get("source") or "UNKNOWN");attempted=source in {"MODEL","OPERATIONAL_FALLBACK"}
- out={"schema":CONFIG_EFFECT_SCHEMA,"runtime_session_id":session,"cycle_id":cycle,"config_revision":int(config.get("revision") or 0),"config_sha256":_sha(config),"generation_source":source,"model_contract_attempted":attempted,"final_surface_effect_confirmed":source=="MODEL","binding_basis":"POST_SEAL_PRE_ACK_SERIALIZATION","effect_scope":"GENERATION_ONLY","receipt_is_not_authority":True,"epistemic_authority":0.0,"execution_authority":0.0}
+ source=str(generation.get("source") or "UNKNOWN");attempted=source in {"MODEL","OPERATIONAL_FALLBACK"};epoch=runtime.get("runtime_epoch") if isinstance(runtime.get("runtime_epoch"),dict) else {}
+ out={"schema":CONFIG_EFFECT_SCHEMA,"runtime_session_id":session,"cycle_id":cycle,"runtime_epoch_id":str(epoch.get("epoch_id") or "") or None,"runtime_epoch_ordinal":epoch.get("ordinal") if isinstance(epoch.get("ordinal"),int) else None,"config_revision":int(config.get("revision") or 0),"config_sha256":_sha(config),"generation_source":source,"model_contract_attempted":attempted,"final_surface_effect_confirmed":source=="MODEL","binding_basis":"POST_SEAL_PRE_ACK_SERIALIZATION","effect_scope":"GENERATION_ONLY","receipt_is_not_authority":True,"epistemic_authority":0.0,"execution_authority":0.0}
  out["receipt_sha256"]=_sha(out);atomic_json_write(_effect_path(base),out);return out
 
 def config_effect_projection(root:str|Path,*,config:dict[str,Any]|None=None)->dict[str,Any]:
- base=Path(root).resolve();runtime=_runtime(base);session=str(runtime.get("session_id") or "") or None;cognitive=runtime.get("cognitive") if isinstance(runtime.get("cognitive"),dict) else {};cycle=str(cognitive.get("last_surface_a_cycle_id") or "") or None
+ base=Path(root).resolve();runtime=_runtime(base);session=str(runtime.get("session_id") or "") or None;cognitive=runtime.get("cognitive") if isinstance(runtime.get("cognitive"),dict) else {};cycle=str(cognitive.get("last_surface_a_cycle_id") or "") or None;epoch=runtime.get("runtime_epoch") if isinstance(runtime.get("runtime_epoch"),dict) else {};current_epoch_id=str(epoch.get("epoch_id") or "") or None
  current=config if isinstance(config,dict) else load_experiment_config(base);current_rev=int(current.get("revision") or 0);raw=read_json(_effect_path(base),{})
- if not isinstance(raw,dict) or raw.get("schema")!=CONFIG_EFFECT_SCHEMA:return {"schema":CONFIG_EFFECT_SCHEMA,"status":"NO_CYCLE" if not cycle else "UNATTESTED_CYCLE","runtime_session_id":session,"cycle_id":cycle,"current_config_revision":current_rev,"cycle_config_revision":None,"final_surface_effect_confirmed":False,"epistemic_authority":0.0,"execution_authority":0.0}
- body=deepcopy(raw);actual=str(body.pop("receipt_sha256","") or "");valid=actual==_sha(body);body["receipt_sha256"]=actual;same_session=session is not None and body.get("runtime_session_id")==session;same_cycle=cycle is not None and body.get("cycle_id")==cycle;cycle_rev=body.get("config_revision") if isinstance(body.get("config_revision"),int) else None
+ if not isinstance(raw,dict) or raw.get("schema")!=CONFIG_EFFECT_SCHEMA:return {"schema":CONFIG_EFFECT_SCHEMA,"status":"NO_CYCLE" if not cycle else "UNATTESTED_CYCLE","runtime_session_id":session,"cycle_id":cycle,"runtime_epoch_id":None,"runtime_epoch_binding":"UNATTESTED","current_runtime_epoch_id":current_epoch_id,"current_config_revision":current_rev,"cycle_config_revision":None,"final_surface_effect_confirmed":False,"epistemic_authority":0.0,"execution_authority":0.0}
+ body=deepcopy(raw);actual=str(body.pop("receipt_sha256","") or "");valid=actual==_sha(body);body["receipt_sha256"]=actual;same_session=session is not None and body.get("runtime_session_id")==session;same_cycle=cycle is not None and body.get("cycle_id")==cycle;cycle_rev=body.get("config_revision") if isinstance(body.get("config_revision"),int) else None;receipt_epoch=str(body.get("runtime_epoch_id") or "") or None
+ if not receipt_epoch:epoch_binding="UNATTESTED"
+ elif receipt_epoch==current_epoch_id:epoch_binding="CURRENT"
+ else:
+  try:
+   from .runtime_epoch import known_epoch_ids
+   epoch_binding="PRIOR_KNOWN" if receipt_epoch in known_epoch_ids(base) else "UNKNOWN"
+  except Exception:epoch_binding="UNKNOWN"
  if not valid:status="RECEIPT_INTEGRITY_BLOCKED"
  elif not same_session or not same_cycle:status="STALE_BINDING"
  elif body.get("generation_source")=="MODEL" and body.get("final_surface_effect_confirmed") is True:status="CONFIRMED_CURRENT" if cycle_rev==current_rev else "CONFIRMED_CYCLE_CONFIG_NOW_CHANGED"
  elif body.get("generation_source")=="OPERATIONAL_FALLBACK":status="MODEL_CONFIG_ATTEMPTED_FINAL_FALLBACK"
  else:status="BYPASSED_NON_MODEL_ROUTE"
- return {**body,"status":status,"current_config_revision":current_rev,"cycle_config_revision":cycle_rev,"same_session":same_session,"same_cycle":same_cycle,"integrity_verified":valid,"epistemic_authority":0.0,"execution_authority":0.0}
+ return {**body,"status":status,"runtime_epoch_binding":epoch_binding,"current_runtime_epoch_id":current_epoch_id,"current_config_revision":current_rev,"cycle_config_revision":cycle_rev,"same_session":same_session,"same_cycle":same_cycle,"integrity_verified":valid,"epistemic_authority":0.0,"execution_authority":0.0}
 
 def _state_stamp(root:Path)->dict[str,Any]:
- runtime=_runtime(root);cog=runtime.get("cognitive") if isinstance(runtime.get("cognitive"),dict) else {};config=load_experiment_config(root);transcript=root/".ikant"/"chat"/"transcript.jsonl"
+ runtime=_runtime(root);cog=runtime.get("cognitive") if isinstance(runtime.get("cognitive"),dict) else {};epoch=runtime.get("runtime_epoch") if isinstance(runtime.get("runtime_epoch"),dict) else {};config=load_experiment_config(root);transcript=root/".ikant"/"chat"/"transcript.jsonl"
  try:s=transcript.stat();t=[s.st_size,s.st_mtime_ns]
  except OSError:t=[0,0]
- return {"runtime_session_id":str(runtime.get("session_id") or "") or None,"runtime_status":str(runtime.get("status") or "") or None,"cycle_id":str(cog.get("last_surface_a_cycle_id") or "") or None,"config_revision":int(config.get("revision") or 0),"transcript_stamp":t}
+ return {"runtime_session_id":str(runtime.get("session_id") or "") or None,"runtime_status":str(runtime.get("status") or "") or None,"runtime_epoch_id":str(epoch.get("epoch_id") or "") or None,"runtime_epoch_ordinal":epoch.get("ordinal") if isinstance(epoch.get("ordinal"),int) else None,"cycle_id":str(cog.get("last_surface_a_cycle_id") or "") or None,"config_revision":int(config.get("revision") or 0),"transcript_stamp":t}
 
 def _safe_product(service:Any)->dict[str,Any]:
  try:v=service.product_status()
@@ -99,11 +101,15 @@ def _cache_put(root:Path,session:str,value:dict[str,Any])->None:
  if session:
   with _CACHE_LOCK:_STABLE_CACHE[(str(root),session)]=deepcopy(value)
 
+def _epoch_file(root:Path)->dict[str,Any]:
+ value=read_json(root/".ikant"/"runtime-epoch.json",{});return value if isinstance(value,dict) else {}
+
 def _running_overlay(service:Any,work:dict[str,Any])->dict[str,Any]:
- root=Path(service.root).resolve();stamp=_state_stamp(root);session=str(stamp.get("runtime_session_id") or "");manifest=surface_manifest();cached=_cache_get(root,session)
- if cached is None:
-  config=load_experiment_config(root);out={"schema":SURFACE_CONTRACT_SCHEMA,"version":"S16","asset_revision":ASSET_REVISION,"snapshot_mode":"WORK_OVERLAY","consistency":"NONBLOCKING_NO_STABLE_BASE","semantic_contract_sha256":manifest["semantic_contract_sha256"],"revision_vector":{**stamp,"work":_work_identity(work)},"manifest":manifest,"product":{},"foundation":{"schema":FOUNDATION_SCHEMA,"foundation_version":FOUNDATION_VERSION,"config":config},"public":None,"work":deepcopy(work),"config_effect":config_effect_projection(root,config=config),"presentation_is_authority":False,"epistemic_authority":0.0,"execution_authority":0.0};out["snapshot_sha256"]=_snapshot_sha(out);return out
- base_sha=cached.get("snapshot_sha256");cached["snapshot_mode"]="WORK_OVERLAY";cached["consistency"]="NONBLOCKING_OVER_STABLE_BASE";cached["base_snapshot_sha256"]=base_sha;cached["work"]=deepcopy(work);vector=dict(cached.get("revision_vector") or {});vector.update(stamp);vector["work"]=_work_identity(work);cached["revision_vector"]=vector;cached["snapshot_sha256"]=_snapshot_sha(cached);return cached
+ root=Path(service.root).resolve();stamp=_state_stamp(root);session=str(stamp.get("runtime_session_id") or "");manifest=surface_manifest();cached=_cache_get(root,session);epoch=_epoch_file(root)
+ cached_epoch=((cached or {}).get("revision_vector") or {}).get("runtime_epoch_id") if isinstance(cached,dict) else None
+ if cached is None or (stamp.get("runtime_epoch_id") and cached_epoch!=stamp.get("runtime_epoch_id")):
+  config=load_experiment_config(root);consistency="NONBLOCKING_NO_STABLE_BASE" if cached is None else "NONBLOCKING_EPOCH_REBASE_REQUIRED";out={"schema":SURFACE_CONTRACT_SCHEMA,"version":"S17","asset_revision":ASSET_REVISION,"snapshot_mode":"WORK_OVERLAY","consistency":consistency,"semantic_contract_sha256":manifest["semantic_contract_sha256"],"revision_vector":{**stamp,"work":_work_identity(work)},"manifest":manifest,"runtime_epoch":epoch or None,"product":{},"foundation":{"schema":FOUNDATION_SCHEMA,"foundation_version":FOUNDATION_VERSION,"config":config},"public":None,"work":deepcopy(work),"config_effect":config_effect_projection(root,config=config),"presentation_is_authority":False,"epistemic_authority":0.0,"execution_authority":0.0};out["snapshot_sha256"]=_snapshot_sha(out);return out
+ base_sha=cached.get("snapshot_sha256");cached["snapshot_mode"]="WORK_OVERLAY";cached["consistency"]="NONBLOCKING_OVER_STABLE_BASE";cached["base_snapshot_sha256"]=base_sha;cached["runtime_epoch"]=epoch or cached.get("runtime_epoch");cached["work"]=deepcopy(work);vector=dict(cached.get("revision_vector") or {});vector.update(stamp);vector["work"]=_work_identity(work);cached["revision_vector"]=vector;cached["snapshot_sha256"]=_snapshot_sha(cached);return cached
 
 def _stable(service:Any,work:dict[str,Any])->dict[str,Any]:
  root=Path(service.root).resolve();manifest=surface_manifest();public={};before=after=_state_stamp(root);consistency="STABLE"
@@ -111,9 +117,9 @@ def _stable(service:Any,work:dict[str,Any])->dict[str,Any]:
   before=_state_stamp(root);public=public_projection(service);after=_state_stamp(root)
   if before==after:consistency="STABLE" if attempt==0 else "STABLE_AFTER_RETRY";break
   consistency="DRIFT_AFTER_RETRY"
- foundation=_foundation_from_public(public);config=foundation.get("config") if isinstance(foundation.get("config"),dict) else load_experiment_config(root);product=_safe_product(service);conversation=public.get("conversation") if isinstance(public.get("conversation"),dict) else {}
+ foundation=_foundation_from_public(public);config=foundation.get("config") if isinstance(foundation.get("config"),dict) else load_experiment_config(root);product=_safe_product(service);conversation=public.get("conversation") if isinstance(public.get("conversation"),dict) else {};epoch=public.get("runtime_epoch") if isinstance(public.get("runtime_epoch"),dict) else None
  vector={**after,"conversation_last_sha256":conversation.get("last_sha256"),"product_stage":product.get("stage"),"product_attempt":product.get("attempt"),"work":_work_identity(work)}
- out={"schema":SURFACE_CONTRACT_SCHEMA,"version":"S16","asset_revision":ASSET_REVISION,"snapshot_mode":"STABLE","consistency":consistency,"semantic_contract_sha256":manifest["semantic_contract_sha256"],"revision_vector":vector,"manifest":manifest,"product":product,"foundation":foundation,"public":public,"work":deepcopy(work),"config_effect":config_effect_projection(root,config=config),"presentation_is_authority":False,"epistemic_authority":0.0,"execution_authority":0.0};out["snapshot_sha256"]=_snapshot_sha(out)
+ out={"schema":SURFACE_CONTRACT_SCHEMA,"version":"S17","asset_revision":ASSET_REVISION,"snapshot_mode":"STABLE","consistency":consistency,"semantic_contract_sha256":manifest["semantic_contract_sha256"],"revision_vector":vector,"manifest":manifest,"runtime_epoch":epoch,"product":product,"foundation":foundation,"public":public,"work":deepcopy(work),"config_effect":config_effect_projection(root,config=config),"presentation_is_authority":False,"epistemic_authority":0.0,"execution_authority":0.0};out["snapshot_sha256"]=_snapshot_sha(out)
  if consistency!="DRIFT_AFTER_RETRY":_cache_put(root,str(after.get("runtime_session_id") or ""),out)
  return out
 

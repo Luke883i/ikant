@@ -8,6 +8,7 @@ from .chat_session import ChatLog, sanitize_terminal_text
 from .enduser_identity import enduser_projection
 from .experience_projection import runtime_projection
 from .foundation import foundation_projection
+from .runtime_epoch import RUNTIME_EPOCH_SCHEMA, RuntimeEpochError, current_runtime_epoch
 
 PUBLIC_EXPERIENCE_SCHEMA = "ikant-public-experience/v1-test"
 PUBLIC_RELEASE = "v1.0-public-test"
@@ -17,6 +18,7 @@ MAX_SYSTEM_FILE_BYTES = 2 * 1024 * 1024
 
 _SYSTEM_PROJECTIONS = (
     ("managed_model", "Motore locale", "model-runtime.json"),
+    ("runtime_epoch", "Epoca runtime", "runtime-epoch.json"),
     ("host_conformance", "Conformità host", "host-conformance.json"),
     ("agency", "Capability e lease", "agency.json"),
     ("temporal_memory", "Memoria temporale", "temporal-memory.json"),
@@ -163,6 +165,27 @@ def journey_projection(service: Any) -> dict[str, Any]:
     }
 
 
+def runtime_epoch_projection(root: str | Path) -> dict[str, Any] | None:
+    base = Path(root).resolve()
+    runtime = _json_object(base / ".ikant" / "runtime.json")
+    if not runtime.get("session_id") or not (base / "PRODUCT_CONTRACT.json").is_file():
+        return None
+    try:
+        return current_runtime_epoch(base)
+    except RuntimeEpochError as exc:
+        return {
+            "schema": RUNTIME_EPOCH_SCHEMA,
+            "status": "BLOCKED",
+            "error_class": type(exc).__name__,
+            "identity_label": "iKant",
+            "model_is_identity": False,
+            "local_integrity_only": True,
+            "authenticity_claimed": False,
+            "epistemic_authority": 0.0,
+            "execution_authority": 0.0,
+        }
+
+
 def public_projection(service: Any) -> dict[str, Any]:
     foundation = foundation_projection(service)
     try:
@@ -172,11 +195,13 @@ def public_projection(service: Any) -> dict[str, Any]:
     conversation = conversation_projection(service.root)
     capabilities = foundation.get("capabilities") or {}
     epistemic_value = foundation.get("epistemic_value") or {}
+    runtime_epoch = runtime_epoch_projection(service.root)
     enduser = enduser_projection(
         conversation=conversation,
         experience=experience or {},
         epistemic_value=epistemic_value,
         capabilities=capabilities,
+        runtime_epoch=runtime_epoch,
     )
     return {
         "schema": PUBLIC_EXPERIENCE_SCHEMA,
@@ -185,6 +210,7 @@ def public_projection(service: Any) -> dict[str, Any]:
         "conversation": conversation,
         "capabilities": capabilities,
         "runtime_systems": runtime_system_projection(service.root),
+        "runtime_epoch": runtime_epoch,
         "epistemic_value": epistemic_value,
         "config": foundation.get("config") or {},
         "experience": experience,
@@ -194,6 +220,7 @@ def public_projection(service: Any) -> dict[str, Any]:
             "visible_services_are_demonstrated": True,
             "visible_chat_is_integrity_checked": True,
             "runtime_system_cards_are_inspection_only": True,
+            "runtime_epoch_is_local_provenance_not_identity_or_truth": True,
             "epistemic_summary_does_not_certify_truth": True,
             "enduser_identity_is_session_bound_projection": True,
             "synthetic_neuromodel_does_not_claim_biological_equivalence": True,

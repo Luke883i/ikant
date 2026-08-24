@@ -1,0 +1,34 @@
+{
+  "baseline_main": "4b8d466452e7ace02edc32f2f6012c9d19e10238",
+  "baseline_pr": 54,
+  "dod": {
+    "global": ["full unit green", "Hosted green", "Reticular green", "Product Boundary green after constitutional registration", "S17bis browser recovery remains green"],
+    "intermediate": ["real subprocess pre-prepare crash rolls back", "S17bis interrupted recovery aborts", "validated recovery may commit after exact ACK", "post-ACK terminal reconciliation idempotent"],
+    "local": ["hash-chain verifies", "single active causal TURN", "bounded transient undo", "no private CoT/raw prompt/raw response fields", "exact ACK required for commit"]
+  },
+  "intent": "Bind one human-visible TURN to a crash-recoverable causal commit without creating a second canonical cognitive store.",
+  "invariants_candidate": ["DCS-001", "DCS-002", "DCS-003", "DCS-004"],
+  "metrics": {"commits_without_exact_ack": 0, "material_driver_reexecution_on_recovery": 0, "model_reexecution_on_recovery": 0, "partial_committed_turns": 0, "planner_reexecution_on_recovery": 0, "private_cot_fields": 0},
+  "modeled_100m": {
+    "cases_per_level": 10000000,
+    "harness_sha256": "ab16d0373c840fc6e694ebbd077d0564ccc6179cec8ca9ee58cf79734de67f08",
+    "interpretation": "declared fault-model coverage, not production reliability or 100M physical crash executions",
+    "levels": 10,
+    "receipt_sha256": "93a0316f9497d3e68244db35690c0f2fc79841c93acc99b0367f5ada8bbf7020",
+    "seed_count": 1000,
+    "seed_derivation": "splitmix64 fanout from cryptographically random root",
+    "seed_root": 11869997915535976544,
+    "signature_space_total": 81920,
+    "signatures_observed": 81920,
+    "survivors": 0,
+    "tail_new_signatures": 0,
+    "tail_per_level": 100000,
+    "total_cases": 100000000,
+    "total_tail": 1000000
+  },
+  "name": "Durable Cognitive State / Causal Ledger",
+  "non_goals": ["multi-file 2PC", "parallel canonical database", "chain-of-thought persistence", "memory governance", "task governance", "new execution authority"],
+  "s17bis_hardening": ["atomic JSON/JSONL namespace updates fsync the parent directory on POSIX", "pre-prepare crash state is rolled back before a new human frame is materialized", "S17bis recovery ACK is typed as causal COMMIT only when validated Surface A existed; interruption recovery becomes ABORT"],
+  "schema": "ikant-s18-causal-ledger-convergence/v1-test",
+  "slice": "S18"
+}

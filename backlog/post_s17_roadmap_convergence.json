@@ -1,0 +1,63 @@
+{
+  "schema": "ikant-post-s17-roadmap-convergence/v1-test",
+  "baseline_main_sha": "308a601f9907dd77507514935f4b0494b2b2f9a2",
+  "merged_pr": 50,
+  "product_contract_convergence": "S17",
+  "audit_summary": {
+    "bundle_stale_on_main": true,
+    "branch_protection_observed": false,
+    "direct_S17_to_S18_prerequisite_closed": false,
+    "candidate": "S17bis",
+    "S18_S19_commutable": true
+  },
+  "multiaxial_campaign": {
+    "cases": 10000000,
+    "seed": 202608241302,
+    "fault_families": 96,
+    "domains": {"DEV_TRUTH":8,"SURFACE":10,"EPOCH":10,"RECOVERY":14,"MEMORY":16,"TEMPORAL":10,"PLAN":10,"HYBRID":10,"UX_CI":8},
+    "simultaneous_faults_per_case": 2,
+    "semantic_signature_space": 12288,
+    "semantic_signatures_observed": 12288,
+    "coverage_complete": true,
+    "domain_pair_matrix_complete": true,
+    "family_min_hits": 104619,
+    "family_max_hits": 106072,
+    "tail": 100000,
+    "tail_new_signatures": 0,
+    "structural_conclusion": "S17->S18 directly is not prerequisite-closed; insert S17bis. S18 and S19 are commutable siblings after S17bis. S20 requires both; S21 requires S20.",
+    "model_is_production_reliability_estimate": false
+  },
+  "chain": {
+    "linear_merge_order": ["S17bis","S18","S19","S20","S21"],
+    "causal_edges": [["S17bis","S18"],["S17bis","S19"],["S17bis","S20"],["S17bis","S21"],["S18","S20"],["S19","S20"],["S20","S21"]],
+    "commutable_siblings": [["S18","S19"]],
+    "note": "Numbering is merge order for traceability; only causal_edges imply dependency."
+  },
+  "candidate_s17bis": {
+    "id": "S17bis",
+    "name": "Runtime Recovery / Surface Census / Control-Plane Reconciliation",
+    "state": "CANDIDATE_NEXT",
+    "foundation_links": ["S8 durable exact frame/ACK","S15bis reactive liveness","S16 canonical Surface Contract","S16bis fail-closed canonical bind","S17 epoch"],
+    "expected_runtime": ["rebuild derivative WorkStore/presentation from canonical pending/ACK/epoch after restart","independently census semantic routes, composed controls and real DOM","type PRE_ACTIVE_BOOTSTRAP -> ACTIVE_CANONICAL","reconcile Git/Product Contract/Development Bundle after material merge","distinguish true PR head from synthetic merge in CI receipts"],
+    "user_experience": ["no new product faculty","restart returns exact recovered RUNNING/SEALED/IDLE or typed degradation; never ghost work","no undeclared governance control outside census"],
+    "technology_supply_chain": ["S8 sealed-frame/ACK persistence","S15 WorkStore derived projection","S16 Surface Contract/PWA","S17 epoch","Chromium/CDP","GitHub Actions event context","Git history + Product Contract + bundle"],
+    "dod": {
+      "local": ["deterministic/idempotent zero-authority restart reducer","independent route/asset/control census","candidate-aware bundle gate","true HEAD/MERGE CI receipt"],
+      "intermediate": ["crash matrix before-work/RUNNING/sealed/pre-ACK/post-ACK/epoch-rebase","real Chromium v10 canonical fault: zero legacy reads + bounded recovery","one PRE_ACTIVE -> ACTIVE contract","no duplicate TURN/ACK after restart"],
+      "final": ["Hosted/Reticular/Product Boundary green on one synthetic merge","real Chromium restart/census/fault suite green","S17bis-owned HIGH findings closed or safely split","protected-merge claim only if external ruleset is actually enabled"]
+    },
+    "success_metrics": ["0 duplicate TURNs","0 stale-epoch stable-base reuse","0 undeclared semantic controls/routes","0 mislabeled HEAD/MERGE receipts","100% bundle baseline match Git/Product Contract","recovery bounded by one local reconstruction pass with no model call"],
+    "checklist": ["no second semantic writer","WorkStore remains derivative","recovery derives canonical durable state","census independent of manifest","browser fault oracle executes production assets","branch protection is external/admin","no authority expansion"],
+    "ui_ux_prototype": {"normal":"no visible change","restart":"Ripristino runtime… then exact prior state","drift":"Stato runtime non verificabile; no parallel semantic fallback"},
+    "prerequisites": ["S17 merged","H1 canonical enforcement"]
+  },
+  "evidence_boundaries": ["10M is declared semantic model coverage, not reliability","main branch API reports protected=false","PR50 exact pre-merge receipts were green; connector combined-status on merged main exposed no statuses","external branch protection cannot be fabricated in code"],
+  "key_code_observations": [
+    {"fact":"forget_memory is a single-node temporal-state transition","path":"ikant/temporal_memory.py"},
+    {"fact":"source invalidation owns a separate derivation cascade","path":"ikant/dependency_invalidation.py"},
+    {"fact":"WorkStore registry is process-local","path":"ikant/reactive_hybrid.py"},
+    {"fact":"TemporalAutonomy has durable hash-chained task/wake journal and zero-authority wake","path":"ikant/temporal_autonomy.py"},
+    {"fact":"canonical planner is action ledger -> planning -> execution protocol","path":"ikant/practical_reason.py"},
+    {"fact":"commercial assist uses urllib urlopen and provider-specific response extraction","path":"ikant/commercial_assist.py"}
+  ]
+}

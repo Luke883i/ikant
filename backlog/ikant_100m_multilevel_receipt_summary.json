@@ -1,0 +1,21 @@
+{
+  "schema": "ikant-100m-multilevel-falsification-summary/v1-test",
+  "source_receipt_sha256": "614ab6012718bdd27c24f627a9a42cc0612251e869dbac01451fd2852517f9c1",
+  "total_cases": 100000000,
+  "total_tail": 1000000,
+  "tail_new_signatures_total": 0,
+  "cross_level_pair_matrix_complete": true,
+  "levels": [
+    {"level":0,"key":"hardware","cases":10000000,"signature_space":4096,"signatures_observed":4096,"coverage_complete":true,"modeled_residual_families":10,"tail":100000,"tail_new_signatures":0},
+    {"level":1,"key":"supply","cases":10000000,"signature_space":4096,"signatures_observed":4096,"coverage_complete":true,"modeled_residual_families":12,"tail":100000,"tail_new_signatures":0},
+    {"level":2,"key":"recovery","cases":10000000,"signature_space":4096,"signatures_observed":4096,"coverage_complete":true,"modeled_residual_families":12,"tail":100000,"tail_new_signatures":0},
+    {"level":3,"key":"authority","cases":10000000,"signature_space":4096,"signatures_observed":4096,"coverage_complete":true,"modeled_residual_families":8,"tail":100000,"tail_new_signatures":0},
+    {"level":4,"key":"epistemic","cases":10000000,"signature_space":4096,"signatures_observed":4096,"coverage_complete":true,"modeled_residual_families":12,"tail":100000,"tail_new_signatures":0},
+    {"level":5,"key":"cognitive","cases":10000000,"signature_space":4096,"signatures_observed":4096,"coverage_complete":true,"modeled_residual_families":12,"tail":100000,"tail_new_signatures":0},
+    {"level":6,"key":"planning","cases":10000000,"signature_space":4096,"signatures_observed":4096,"coverage_complete":true,"modeled_residual_families":12,"tail":100000,"tail_new_signatures":0},
+    {"level":7,"key":"external","cases":10000000,"signature_space":4096,"signatures_observed":4096,"coverage_complete":true,"modeled_residual_families":12,"tail":100000,"tail_new_signatures":0},
+    {"level":8,"key":"surface","cases":10000000,"signature_space":4096,"signatures_observed":4096,"coverage_complete":true,"modeled_residual_families":16,"tail":100000,"tail_new_signatures":0},
+    {"level":9,"key":"ux","cases":10000000,"signature_space":4096,"signatures_observed":4096,"coverage_complete":true,"modeled_residual_families":16,"tail":100000,"tail_new_signatures":0}
+  ],
+  "interpretation": "Modeled fault/precondition coverage over declared abstraction vocabularies; survivor counts rank known open control gaps and are not production failure probabilities, browser/OS executions, or formal verification."
+}

@@ -1,0 +1,10 @@
+{
+  "schema": "ikant-final-development-workbook/v1-test",
+  "baseline": {"main_sha":"664a52e2941772a49c0a00f5fe14809b0e3d1b16","merged_pr":51,"constitutional_slice":"S17","product_contract_version":"0.18.0"},
+  "workbook": {"path":"artifacts/iKant_Development_Workbook_100M.xlsx","sha256":"4c289c4595e24a307ab6e6ea641bc63f9e500be9fd8a45c3b03da05a9d799435","sheets":18,"final_dod_requirements":80,"fault_families":320},
+  "modeled_evidence": {"source_path":"scripts/ikant_100m_multilevel_falsify.c","source_sha256":"771be4065868681a41280bd39a58a621917d22add0fe6f53cc75b5653ebaebbe","receipt_sha256":"614ab6012718bdd27c24f627a9a42cc0612251e869dbac01451fd2852517f9c1","cases":100000000,"levels":10,"cases_per_level":10000000,"tail_per_level":100000,"total_tail":1000000,"signatures_per_level":4096,"coverage_complete_all_levels":true,"tail_new_signatures_total":0,"interpretation":"Declared multilevel fault/precondition model coverage only; not production reliability, formal verification, or physical/browser/OS/provider/user execution."},
+  "candidate_runtime_chain":["S17bis Runtime Recovery / Surface Census / Control-Plane Reconciliation","S18 Durable Cognitive State / Causal Ledger","S19 Memory Governance","S20 Temporal Task Governance","S21 Reactive Intent / Plan Reconciliation","S22 Hybrid Abstract Assist Opt-in","S23 Connector Capability Fabric","S24 Material Action / Transaction Orchestration","S25 Native Presence / Background Residency","S26 Release / Update / Privacy / Accessibility Hardening"],
+  "principal_new_finding":"Before user-governable memory/tasks, iKant needs a durable causal commit/ledger that makes cycle, accumulation, central regulation, workspace retroaction, action planning, Surface A and exact ACK crash-consistent and counterfactually auditable.",
+  "next_runtime_candidate":"S17bis",
+  "product_contract_advanced":false
+}

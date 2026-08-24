@@ -1,7 +1,7 @@
 from __future__ import annotations
 import argparse,json,re,subprocess,sys
 from pathlib import Path
-ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT));HARNESS_KEYS=('stress','mutations','edges');SCHEMA_RE=re.compile(r'^ikant-product-contract/(v0\.\d+-test)$');SLICE_RE=re.compile(r'^S([1-9]\d*)(bis)?$')
+ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT));HARNESS_KEYS=('stress','mutations','edges');SCHEMA_RE=re.compile(r'^ikant-product-contract/(v0\.\d+-test)$');SLICE_RE=re.compile(r'^S([1-9]\d*)(bis)?$');COMMIT_RE=re.compile(r'^[0-9a-f]{40}$')
 def fail(msg:str)->None:raise SystemExit(msg)
 def valid_lineage(ids:list[str])->bool:
  if not ids or ids[0]!='S1':return False
@@ -45,8 +45,24 @@ def validate_paths(data:dict)->list[str]:
    if overlap:
     if not corrective or overlap!=inv_set:errors.append(f"{sid} duplicate invariant ownership: {','.join(sorted(overlap))}")
    else:owned.update(inv_set)
+  material=s.get('material_merge')
+  if material is not None:
+   if not isinstance(material,dict) or set(material)!={'pr','merge_commit_sha'} or isinstance(material.get('pr'),bool) or not isinstance(material.get('pr'),int) or material['pr']<1 or not COMMIT_RE.fullmatch(str(material.get('merge_commit_sha') or '')):errors.append(f"{sid} invalid material_merge provenance")
   for key in HARNESS_KEYS:
    if not (ROOT/str(s.get(key) or '')).is_file():errors.append(f"{sid} missing {key}")
+ return errors
+def verify_material_history(data:dict)->list[str]:
+ errors=[]
+ for s in data['slices']:
+  material=s.get('material_merge')
+  if not isinstance(material,dict):continue
+  sid=str(s.get('id'));sha=str(material['merge_commit_sha']);pr=int(material['pr'])
+  exists=subprocess.run(['git','cat-file','-e',sha+'^{commit}'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0
+  if not exists:errors.append(f'{sid} material merge commit unavailable in checkout');continue
+  ancestor=subprocess.run(['git','merge-base','--is-ancestor',sha,'HEAD'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0
+  if not ancestor:errors.append(f'{sid} material merge commit is not ancestor of HEAD')
+  subject=subprocess.run(['git','show','-s','--format=%s',sha],cwd=ROOT,text=True,capture_output=True,check=False).stdout.strip()
+  if f'#{pr}' not in subject:errors.append(f'{sid} material merge subject does not bind PR #{pr}')
  return errors
 def command_for(s:dict,key:str,cases:int,tail:int,seed:int)->list[str]:
  size_arg='--mutations' if key=='mutations' else '--cases';cmd=[sys.executable,s[key],size_arg,str(cases),'--tail',str(tail)]
@@ -65,7 +81,8 @@ def run_current_saturation(data:dict)->dict:
  for key in HARNESS_KEYS:subprocess.run(command_for(current,key,sizes[key],sat['tail'],sat['seed']),cwd=ROOT,check=True)
  return {'slice':current['id'],**sat}
 def main()->int:
- ap=argparse.ArgumentParser();ap.add_argument('--execute',action='store_true');ap.add_argument('--deep-current',action='store_true');ap.add_argument('--cases',type=int,default=100000);ap.add_argument('--tail',type=int,default=10000);ap.add_argument('--seed',type=int,default=883);a=ap.parse_args();data=load_contract();errors=validate_paths(data)
+ ap=argparse.ArgumentParser();ap.add_argument('--execute',action='store_true');ap.add_argument('--deep-current',action='store_true');ap.add_argument('--verify-history',action='store_true');ap.add_argument('--cases',type=int,default=100000);ap.add_argument('--tail',type=int,default=10000);ap.add_argument('--seed',type=int,default=883);a=ap.parse_args();data=load_contract();errors=validate_paths(data)
+ if a.verify_history:errors.extend(verify_material_history(data))
  if errors:fail('; '.join(errors))
  from ikant.invariants import PRODUCT_VERSION,INVARIANT_REGISTRY_SCHEMA,critical_ids
  if data.get('product_version')!=PRODUCT_VERSION:fail('product version drift')
@@ -76,5 +93,5 @@ def main()->int:
  if a.execute and a.deep_current:fail('--execute and --deep-current are mutually exclusive')
  if a.execute:run_harnesses(data,a.cases,a.tail,a.seed)
  saturation=run_current_saturation(data) if a.deep_current else None
- print(json.dumps({'schema':'ikant-product-boundary/'+suffix,'status':'PASS','product_version':PRODUCT_VERSION,'slices':[s['id'] for s in data['slices']],'harnesses_executed':bool(a.execute),'current_saturation':saturation},sort_keys=True));return 0
+ print(json.dumps({'schema':'ikant-product-boundary/'+suffix,'status':'PASS','product_version':PRODUCT_VERSION,'slices':[s['id'] for s in data['slices']],'material_history_verified':bool(a.verify_history),'harnesses_executed':bool(a.execute),'current_saturation':saturation},sort_keys=True));return 0
 if __name__=='__main__':raise SystemExit(main())

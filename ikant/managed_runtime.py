@@ -57,5 +57,31 @@ class ManagedLocalEmbodimentService(LocalEmbodimentService):
  def initialize(self):
   if self._managed_model_check()['status']!='AVAILABLE':raise LocalAppError('INITIALIZE requires the verified managed language engine to remain READY')
   out=super().initialize();self._bind_runtime_epoch();return out
+ def lifecycle(self):
+  out=super().lifecycle()
+  if out.get('state')!='ACTIVE':out['surface_phase']='PRE_ACTIVE_BOOTSTRAP';return out
+  from .runtime import Runtime
+  from .runtime_recovery import verified_recovery
+  try:
+   rt=Runtime(self.state_dir)
+   try:recovery=verified_recovery(rt)
+   finally:rt.close()
+   state=str(recovery.get('state') or '');needs=state in {'INTERRUPTED_UNSEALED','SURFACE_A_UNSEALED','RECOVERY_ACKED_PENDING_RECONCILE','INTEGRITY_BLOCKED'};out['surface_phase']='RECOVERY_REQUIRED' if needs else 'ACTIVE_CANONICAL';out['runtime_recovery']={k:recovery.get(k) for k in ('schema','state','recovery_required','cycle_id','model_reexecuted','planner_reexecuted','material_driver_reexecuted','epistemic_authority','execution_authority')}
+  except Exception:
+   out['surface_phase']='INTEGRITY_CHECK_REQUIRED';out['runtime_recovery']={'schema':'ikant-runtime-recovery/v1-test','state':'INTEGRITY_BLOCKED','recovery_required':True,'epistemic_authority':0.0,'execution_authority':0.0}
+  return out
+ def frame(self):
+  from .runtime import Runtime
+  from .runtime_recovery import materialize_recovery_frame
+  with self._lock:
+   rt=Runtime(self.state_dir)
+   try:
+    rt.require_active();recovered=materialize_recovery_frame(rt)
+    if recovered is not None:return recovered
+   finally:rt.close()
+   return super().frame()
+ def acknowledge(self,ack):
+  from .runtime_recovery import finalize_recovery_after_ack,recovery_ack_target
+  target=recovery_ack_target(self.root);out=super().acknowledge(ack);finalize_recovery_after_ack(self.root,target);return out
  def turn(self,user_text):
   self._bind_runtime_epoch();return super().turn(user_text)

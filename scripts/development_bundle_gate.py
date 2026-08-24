@@ -39,7 +39,8 @@ def _open_blocking(findings: list[dict]) -> list[dict]:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument('--require-ready', action='store_true', help='require that the nominated candidate may start development')
-    ap.add_argument('--require-complete', action='store_true', help='require that all HIGH/CRITICAL objectives owned by the candidate are closed')
+    ap.add_argument('--require-complete', action='store_true', help='require that the candidate has closed its HIGH/CRITICAL objectives')
+    ap.add_argument('--require-advance', action='store_true', help='require a registered, complete candidate ready for merge promotion')
     args = ap.parse_args()
     errors: list[str] = []
 
@@ -55,8 +56,6 @@ def main() -> int:
     if bundle.get('schema') != SCHEMA:
         errors.append('bundle schema drift')
     baseline = bundle.get('baseline') if isinstance(bundle.get('baseline'), dict) else {}
-    if baseline.get('product_contract_current_slice') != contract.get('constitutional_convergence'):
-        errors.append('bundle/product current-slice drift')
     if baseline.get('product_contract_version') != contract.get('contract_version'):
         errors.append('bundle/product contract-version drift')
 
@@ -77,6 +76,16 @@ def main() -> int:
     candidate = str(baseline.get('candidate_slice') or '')
     if not candidate or candidate not in ids:
         errors.append('candidate slice missing from roadmap')
+
+    baseline_slice = str(baseline.get('product_contract_current_slice') or '')
+    contract_slice = str(contract.get('constitutional_convergence') or '')
+    if contract_slice == baseline_slice:
+        registration_state = 'DEVELOPMENT_CANDIDATE'
+    elif candidate and contract_slice == candidate:
+        registration_state = 'REGISTERED_CANDIDATE'
+    else:
+        registration_state = 'INVALID'
+        errors.append('bundle/product promotion drift')
 
     dag = bundle.get('dependency_dag') if isinstance(bundle.get('dependency_dag'), dict) else {}
     edges = dag.get('causal_edges') if isinstance(dag.get('causal_edges'), list) else []
@@ -119,21 +128,25 @@ def main() -> int:
     status = 'PASS' if not errors else 'FAIL'
     ready_to_develop = not errors and not candidate_entry_blockers
     candidate_complete = not errors and not candidate_objectives
+    ready_to_advance = ready_to_develop and candidate_complete and registration_state == 'REGISTERED_CANDIDATE'
     out = {
-        'schema': 'ikant-development-continuity-gate/v2-test',
+        'schema': 'ikant-development-continuity-gate/v3-test',
         'status': status,
         'candidate_slice': candidate,
+        'candidate_registration_state': registration_state,
         'ready_to_develop_candidate': ready_to_develop,
         'candidate_complete': candidate_complete,
-        'ready_to_advance': ready_to_develop,
+        'ready_to_advance': ready_to_advance,
         'bundle_sha256': sha(bundle),
         'baseline_main_sha': baseline.get('main_sha'),
-        'product_contract_current_slice': contract.get('constitutional_convergence'),
+        'baseline_product_contract_current_slice': baseline_slice,
+        'product_contract_current_slice': contract_slice,
         'roadmap': ids,
         'candidate_entry_blockers': [x.get('id') for x in candidate_entry_blockers],
         'candidate_open_objectives': [x.get('id') for x in candidate_objectives],
         'future_open_risks': [x.get('id') for x in future_open_risks],
         'errors': errors,
+        'registered_candidate_is_not_merged_main': registration_state == 'REGISTERED_CANDIDATE',
         'model_receipts_are_not_runtime_oracles': True,
     }
     print(json.dumps(out, sort_keys=True))
@@ -143,6 +156,8 @@ def main() -> int:
         return 3
     if args.require_complete and not candidate_complete:
         return 4
+    if args.require_advance and not ready_to_advance:
+        return 5
     return 0
 
 

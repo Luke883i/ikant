@@ -1,0 +1,15 @@
+{
+  "schema":"ikant-roadmap-partition-saturation/v1-test",
+  "baseline_main_sha":"70dc14894a88e117dbc9f4e879c90a90b692f291",
+  "domains":["S16bis_foundation","S17_identity","S18_memory","S19_temporal","S20_plan","S21_hybrid"],
+  "design_vocabulary":"all 2^5=32 adjacent merge/split partitions preserving prerequisite order",
+  "slice_overhead_weight":3,
+  "coupling_weights":{"S16bis-S17":6,"S16bis-S18":8,"S16bis-S19":8,"S16bis-S20":10,"S16bis-S21":12,"S17-S18":4,"S17-S19":5,"S17-S20":6,"S17-S21":7,"S18-S19":7,"S18-S20":5,"S18-S21":8,"S19-S20":5,"S19-S21":7,"S20-S21":9},
+  "architectures_enumerated":32,
+  "minimum_weighted_cost":18,
+  "minimum_count":1,
+  "selected_partition":[["S16bis_foundation"],["S17_identity"],["S18_memory"],["S19_temporal"],["S20_plan"],["S21_hybrid"]],
+  "runner_up":{"cost":19,"partition":[["S16bis_foundation"],["S17_identity","S18_memory"],["S19_temporal"],["S20_plan"],["S21_hybrid"]]},
+  "original_s17_shape":{"partition":[["S16bis_foundation"],["S17_identity","S18_memory","S19_temporal"],["S20_plan"],["S21_hybrid"]],"weighted_cost":28},
+  "interpretation":"The six-slice roadmap is the unique minimum only inside this declared ordered-partition and coupling-cost model. Weights encode audited blast-radius/supply-chain coupling and are engineering assumptions, not empirical probabilities or universal optimality."
+}

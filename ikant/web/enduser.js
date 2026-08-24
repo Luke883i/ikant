@@ -13,7 +13,7 @@ function ensureSurface(){
   const overview=$('inspector-overview');if(!overview)return null;
   if(!$('enduser-identity')){
     const identity=node('section','context-card');identity.id='enduser-identity';identity.setAttribute('aria-label','Io locale');
-    const head=node('div','foundation-head');head.append(node('h3','', 'Io locale'),node('span','foundation-version','sessione'));
+    const head=node('div','foundation-head');head.append(node('h3','', 'Io locale'),node('span','foundation-version','runtime'));
     const label=node('strong');label.id='enduser-identity-label';const copy=node('p','epistemic-caption');copy.id='enduser-identity-copy';const fp=node('code');fp.id='enduser-identity-fingerprint';identity.append(head,label,copy,fp);
     overview.prepend(identity);
   }
@@ -33,12 +33,13 @@ function ensureSurface(){
   }
   return overview;
 }
+function short(value,n=8){const s=String(value||'');return s?s.slice(0,n):'';}
 function renderIdentity(v){
   const label=$('enduser-identity-label'),copy=$('enduser-identity-copy'),fp=$('enduser-identity-fingerprint'),inline=$('enduser-identity-inline');if(!label)return;
-  const available=v?.status==='AVAILABLE';label.textContent=available?String(v.label||'iKant locale'):'Identità locale non disponibile';
-  copy.textContent=available?'Identità operativa di questa sessione runtime. Il modello è un componente sostituibile, non l’identità.':'Disponibile quando la sessione runtime locale è attiva.';
-  fp.textContent=available&&v.fingerprint?'sessione · '+String(v.fingerprint):'';
-  if(inline){inline.hidden=!available;inline.textContent=available?'locale · '+String(v.fingerprint||'').slice(0,6):'';}
+  const available=v?.status==='AVAILABLE',epoch=v?.runtime_epoch||{},hasEpoch=Boolean(epoch?.epoch_id),relationSafe=!hasEpoch||epoch?.model_is_identity===false,ordinal=Number.isInteger(epoch?.ordinal)?epoch.ordinal:null,model=relationSafe?String(epoch?.model_id||'').trim():'';label.textContent=available?String(v.label||'iKant locale'):'Identità locale non disponibile';
+  copy.textContent=!available?'Disponibile quando la sessione runtime locale è attiva.':relationSafe?'Identità operativa locale. Epoca e modello descrivono la provenance del runtime; il modello resta un componente sostituibile, non l’identità.':'Provenance componente non coerente: il modello non viene presentato come identità o dettaglio affidabile.';
+  const facts=[];if(available&&v.fingerprint)facts.push('sessione '+String(v.fingerprint));if(ordinal!==null)facts.push('epoca '+ordinal+(epoch?.epoch_id?' · '+short(epoch.epoch_id,12):''));if(model)facts.push('modello '+model);fp.textContent=facts.join(' · ');
+  if(inline){inline.hidden=!available;inline.textContent=available?'iKant locale'+(ordinal!==null?' · e'+ordinal:''):'';}
 }
 function factText(facts){
   const names={intent_bound:'intento',mined_objects:'oggetti',selected_objects:'collegati',objects:'collegati',conflicts:'conflitti',epistemic_debt:'debito',closure:'chiusura',material_action:'azione',candidate_actions:'azioni',route:'via',generation_ms:'ms',response_memory:'memoria'};
@@ -55,14 +56,16 @@ function renderAudit(v){
   host.append(chip('audit',ok?'coerente':String(v?.status||'—'),ok?'support':'warn'));
   host.append(chip('sessione',v?.session_coherent?'coerente':'drift',v?.session_coherent?'support':'warn'));
   host.append(chip('ciclo',v?.cycle_coherent?'coerente':'drift',v?.cycle_coherent?'support':'warn'));
+  if(Number.isInteger(v?.runtime_epoch_ordinal))host.append(chip('epoca','e'+v.runtime_epoch_ordinal,'support'));
   host.append(chip('catena chat',v?.conversation_integrity_verified?'verificata':'non verificata',v?.conversation_integrity_verified?'support':'warn'));
   const visible=Number(v?.visible_record_count||0),total=Number(v?.record_count||0);host.append(chip('cronologia',`${visible}/${total}${v?.conversation_truncated?' · ultimi':''}`,v?.record_counts_coherent===false?'warn':''));
   if(v?.generation_route)host.append(chip('generazione',String(v.generation_route)));
   hash.textContent=v?.conversation_last_sha256?'sha256 · '+String(v.conversation_last_sha256).slice(0,16)+'…':'';
 }
 function renderEnduser(v){if(!v||v.schema!==ENDUSER_SCHEMA)return;ensureSurface();renderIdentity(v.identity);renderNeuromodel(v.neuromodel);renderAudit(v.audit);}
+function renderSnapshot(snapshot){const enduser=snapshot?.public?.enduser;if(enduser)renderEnduser(enduser);}
 async function refresh(){
-  if(refreshing||!token()||$('active-panel')?.hidden)return;refreshing=true;try{const r=await fetch('/api/v8/public',{headers:{Authorization:'Bearer '+token(),Accept:'application/json'},cache:'no-store'});if(!r.ok)return;const out=await r.json();const key=JSON.stringify([out?.enduser?.audit?.cycle_id,out?.enduser?.audit?.conversation_last_sha256,out?.enduser?.identity?.fingerprint,out?.enduser?.audit?.status]);if(key===lastKey)return;lastKey=key;renderEnduser(out?.enduser);}catch(_){/* the primary controller owns transport diagnostics */}finally{refreshing=false;}}
-function install(){ensureSurface();const active=$('active-panel');if(active)new MutationObserver(()=>{if(!active.hidden)refresh();}).observe(active,{attributes:true,attributeFilter:['hidden']});const log=$('conversation-log');if(log)new MutationObserver(()=>queueMicrotask(refresh)).observe(log,{childList:true,subtree:true,characterData:true});document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});timer=setInterval(refresh,5000);window.addEventListener('beforeunload',()=>clearInterval(timer));refresh();}
+  if(refreshing||!token()||$('active-panel')?.hidden)return;refreshing=true;try{const r=await fetch('/api/v8/public',{headers:{Authorization:'Bearer '+token(),Accept:'application/json'},cache:'no-store'});if(!r.ok)return;const out=await r.json();const epoch=out?.enduser?.identity?.runtime_epoch||{};const key=JSON.stringify([out?.enduser?.audit?.cycle_id,out?.enduser?.audit?.conversation_last_sha256,out?.enduser?.identity?.fingerprint,out?.enduser?.audit?.status,epoch?.epoch_id,epoch?.model_id]);if(key===lastKey)return;lastKey=key;renderEnduser(out?.enduser);}catch(_){/* the primary controller owns transport diagnostics */}finally{refreshing=false;}}
+function install(){ensureSurface();const active=$('active-panel');if(active)new MutationObserver(()=>{if(!active.hidden)refresh();}).observe(active,{attributes:true,attributeFilter:['hidden']});const log=$('conversation-log');if(log)new MutationObserver(()=>queueMicrotask(refresh)).observe(log,{childList:true,subtree:true,characterData:true});document.addEventListener('ikant:surface-snapshot',event=>renderSnapshot(event.detail));document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});timer=setInterval(refresh,5000);window.addEventListener('beforeunload',()=>clearInterval(timer));refresh();}
 install();
 })();

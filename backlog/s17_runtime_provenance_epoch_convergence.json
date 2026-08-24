@@ -1,0 +1,60 @@
+{
+  "schema": "ikant-s17-runtime-provenance-epoch-convergence/v1-test",
+  "slice": "S17",
+  "name": "Runtime Identity & Provenance Epoch",
+  "base_main_sha": "d77150e3287ba0ef440fe21032899dd022a6b708",
+  "intent": "Bind durable runtime semantics to one monotonic local provenance epoch without allowing model/component replacement to replace iKant identity or create authority.",
+  "runtime_reticulum": {
+    "material": ["runtime_session", "product_contract", "surface_contract_digest", "generation_config_revision", "verified_managed_component_binding"],
+    "excluded_from_identity": ["live_process_status", "browser_layout", "presentation_profile"],
+    "flow": "material -> material_sha256 -> append_only_epoch_ledger -> compact_runtime_epoch -> cycle/config/surface/enduser projections",
+    "authority_effect": "NONE"
+  },
+  "decisions": [
+    {"id": "S17-D1", "decision": "Use deterministic material identity plus monotonic ledger ordinal.", "reason": "A process restart with identical verified components must not create a new epoch; A->B->A must remain three historical epochs."},
+    {"id": "S17-D2", "decision": "Require verified S5 managed binding before managed TURN cognition.", "reason": "Epoch provenance must constrain the causal boundary, not merely decorate a later projection."},
+    {"id": "S17-D3", "decision": "Treat ledger hashes as local integrity only.", "reason": "No signing/attestation supply chain exists; actor authenticity and SLSA attestation are not claimed."},
+    {"id": "S17-D4", "decision": "Keep identity label iKant locale stable across component swaps.", "reason": "The replaceable language model is subordinate runtime provenance, not the agent identity."},
+    {"id": "S17-D5", "decision": "Reconcile material corrective Git history in Product Contract.", "reason": "A self-consistent constitutional registry that omits merged PR47/S15bis is materially incomplete."}
+  ],
+  "falsification_log": [
+    {"id": "S17-F1", "severity": "CRITICAL", "finding": "Including live process status in epoch material makes harmless engine restart look like identity replacement.", "resolution": "live_status excluded from material digest and explicitly projected as non-identity."},
+    {"id": "S17-F2", "severity": "CRITICAL", "finding": "Reusing an S16 stable cache from a prior component epoch during RUNNING mixes two semantic bases.", "resolution": "NONBLOCKING_EPOCH_REBASE_REQUIRED overlay refuses the stale base while preserving TURN liveness."},
+    {"id": "S17-F3", "severity": "CRITICAL", "finding": "A config receipt can be locally intact but belong to a prior epoch.", "resolution": "receipt projection distinguishes CURRENT, PRIOR_KNOWN, UNATTESTED and UNKNOWN bindings."},
+    {"id": "S17-F4", "severity": "HIGH", "finding": "S16bis test encoded FND-002 as permanently OPEN.", "resolution": "historical oracle now requires CLOSED once S15bis is constitutionally reconciled."}
+  ],
+  "modeled_fault_space": {
+    "fault_families": 48,
+    "phases": 8,
+    "contexts": 4,
+    "mutation_classes": 4,
+    "signature_space": 6144,
+    "declared_cases_per_harness": 10000000,
+    "declared_tail": 100000,
+    "seed": 2026082417,
+    "model_is_production_reliability_estimate": false
+  },
+  "architecture_saturation": {
+    "interventions": 16,
+    "architectures": 65536,
+    "full_coverage_architectures": 360,
+    "unique_minimum_within_declared_vocabulary": true,
+    "minimum_weighted_cost": 26,
+    "minimum_enabled_interventions": 10,
+    "selected": ["material_digest", "monotonic_ledger", "model_binding_verify", "exclude_live_status", "managed_turn_gate", "config_receipt_epoch", "surface_epoch", "identity_projection", "git_lineage", "browser_swap_oracle"]
+  },
+  "physical_oracles": {
+    "unit_transition_tamper_recovery": "registered in tests/test_runtime_epoch_s17.py",
+    "git_lineage": "registered in scripts/product_boundary.py --verify-history with fetch-depth 0",
+    "browser_component_swap": "registered in scripts/runtime_epoch_browser_liveness.mjs and public browser suite",
+    "exact_synthetic_merge_receipts": "PENDING_PR_CI"
+  },
+  "non_claims": [
+    "No actor authentication from SHA-256.",
+    "No SLSA provenance attestation claim.",
+    "No updater/TUF activation.",
+    "No native OS floating-host activation.",
+    "No model or component authority.",
+    "No production reliability estimate from modeled saturation."
+  ]
+}

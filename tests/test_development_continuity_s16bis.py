@@ -24,9 +24,9 @@ class DevelopmentContinuityS16bisTests(unittest.TestCase):
   self.assertEqual([x['campaign'] for x in rows],['hardening','hypothetical','usage'])
   for row in rows:
    self.assertEqual(row['cases'],10_000_000);self.assertEqual(row['tail'],100_000);self.assertTrue(row['coverage_complete']);self.assertEqual(row['signatures_observed'],row['signature_space']);self.assertEqual(row['tail_new_signatures'],0);self.assertIn('not',row['interpretation'].lower())
- def test_structural_bundle_gate_passes_but_does_not_claim_readiness_with_open_blockers(self):
+ def test_structural_bundle_gate_passes_and_reconciled_lineage_is_no_longer_a_blocker(self):
   run=subprocess.run([sys.executable,'scripts/development_bundle_gate.py'],cwd=ROOT,text=True,capture_output=True,check=False)
-  self.assertEqual(run.returncode,0,run.stderr+run.stdout);out=json.loads(run.stdout);self.assertEqual(out['status'],'PASS');self.assertFalse(out['ready_to_advance']);self.assertIn('FND-002',out['open_high_or_critical_blockers'])
+  self.assertEqual(run.returncode,0,run.stderr+run.stdout);out=json.loads(run.stdout);self.assertEqual(out['status'],'PASS');self.assertFalse(out['ready_to_advance']);self.assertNotIn('FND-002',out['open_high_or_critical_blockers']);self.assertIn('FND-003',out['open_high_or_critical_blockers'])
  def test_surface_contract_source_fails_closed_only_after_canonical_bind(self):
   source=(ROOT/'ikant/web/surface-contract.js').read_text(encoding='utf-8')
   self.assertIn("canonicalBound=true",source);self.assertIn("legacy_semantic_fallback:false",source);self.assertIn("if(canonicalBound)return failClosed",source);self.assertIn("return nativeFetch(input,init)",source)
@@ -39,5 +39,6 @@ class DevelopmentContinuityS16bisTests(unittest.TestCase):
   contract=json.loads((ROOT/'PRODUCT_CONTRACT.json').read_text(encoding='utf-8'));ids=[x['id'] for x in contract['slices']]
   bundle=json.loads((ROOT/'IKANT_DEVELOPMENT_BUNDLE.json').read_text(encoding='utf-8'));finding={x['id']:x for x in bundle['audit_findings']}['FND-002']
   if 'S15bis' not in ids:self.assertEqual(finding['status'],'OPEN')
+  else:self.assertEqual(finding['status'],'CLOSED')
 
 if __name__=='__main__':unittest.main()

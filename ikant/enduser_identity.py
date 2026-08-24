@@ -41,9 +41,35 @@ def _trace_shape_valid(trace: dict[str, Any]) -> bool:
     )
 
 
-def local_identity_projection(*, runtime_session_id: object, state: object) -> dict[str, Any]:
+def _epoch_descriptor(value: object) -> dict[str, Any] | None:
+    epoch = value if isinstance(value, dict) else {}
+    if not epoch.get("epoch_id"):
+        return None
+    component = epoch.get("component") if isinstance(epoch.get("component"), dict) else {}
+    model = component.get("model") if isinstance(component.get("model"), dict) else {}
+    engine = component.get("engine") if isinstance(component.get("engine"), dict) else {}
+    return {
+        "epoch_id": _text(epoch.get("epoch_id"), 96),
+        "ordinal": epoch.get("ordinal") if isinstance(epoch.get("ordinal"), int) else None,
+        "material_sha256": _text(epoch.get("material_sha256"), 96) or None,
+        "component_binding_sha256": _text(component.get("binding_sha256"), 96) or None,
+        "component_binding_verified": component.get("binding_verified") is True,
+        "model_id": _text(model.get("id"), 160) or None,
+        "model_revision": _text(model.get("revision"), 96) or None,
+        "engine_id": _text(engine.get("id"), 96) or None,
+        "engine_version": _text(engine.get("version"), 96) or None,
+        "local_integrity_only": True,
+        "authenticity_claimed": False,
+        "model_is_identity": False,
+        "epistemic_authority": 0.0,
+        "execution_authority": 0.0,
+    }
+
+
+def local_identity_projection(*, runtime_session_id: object, state: object, runtime_epoch: object = None) -> dict[str, Any]:
     session = _text(runtime_session_id, 512)
     active = bool(session)
+    epoch = _epoch_descriptor(runtime_epoch)
     return {
         "schema": LOCAL_IDENTITY_SCHEMA,
         "status": "AVAILABLE" if active else "UNAVAILABLE",
@@ -52,6 +78,7 @@ def local_identity_projection(*, runtime_session_id: object, state: object) -> d
         "runtime_state": _text(state, 48) or "UNKNOWN",
         "scope": "questa istanza runtime locale",
         "runtime_session_bound": True,
+        "runtime_epoch": epoch,
         "model_relation": "componente cognitivo sostituibile; non identità",
         "memory_relation": "memoria locale verificabile della sessione; non memoria umana",
         "consciousness_claimed": False,
@@ -102,7 +129,7 @@ def _last_assistant_cycle(conversation: dict[str, Any]) -> str | None:
     return None
 
 
-def audit_projection(*, conversation: object, experience: object, epistemic_value: object, capabilities: object) -> dict[str, Any]:
+def audit_projection(*, conversation: object, experience: object, epistemic_value: object, capabilities: object, runtime_epoch: object = None) -> dict[str, Any]:
     conv = conversation if isinstance(conversation, dict) else {}
     exp = experience if isinstance(experience, dict) else {}
     epi = epistemic_value if isinstance(epistemic_value, dict) else {}
@@ -135,6 +162,7 @@ def audit_projection(*, conversation: object, experience: object, epistemic_valu
     consistency = integrity and cycle_coherent and session_coherent and trace_valid and truth_boundary and record_counts_coherent
     timing = exp.get("timing") if isinstance(exp.get("timing"), dict) else {}
     phases = timing.get("phases") if isinstance(timing.get("phases"), list) else []
+    epoch = _epoch_descriptor(runtime_epoch)
     return {
         "schema": AUDIT_SCHEMA,
         "status": "CONSISTENT" if consistency else ("NO_CYCLE" if not cycle else "DEGRADED"),
@@ -142,6 +170,9 @@ def audit_projection(*, conversation: object, experience: object, epistemic_valu
         "cycle_refs": cycle_refs,
         "cycle_coherent": cycle_coherent,
         "session_coherent": session_coherent,
+        "runtime_epoch_id": epoch.get("epoch_id") if epoch else None,
+        "runtime_epoch_ordinal": epoch.get("ordinal") if epoch else None,
+        "runtime_epoch_integrity_local_only": True if epoch else None,
         "conversation_integrity_verified": integrity,
         "conversation_last_sha256": _text(conv.get("last_sha256"), 128) or None,
         "record_count": total,
@@ -159,11 +190,11 @@ def audit_projection(*, conversation: object, experience: object, epistemic_valu
     }
 
 
-def enduser_projection(*, conversation: object, experience: object, epistemic_value: object, capabilities: object) -> dict[str, Any]:
+def enduser_projection(*, conversation: object, experience: object, epistemic_value: object, capabilities: object, runtime_epoch: object = None) -> dict[str, Any]:
     exp = experience if isinstance(experience, dict) else {}
-    identity = local_identity_projection(runtime_session_id=exp.get("runtime_session_id"), state=exp.get("state"))
+    identity = local_identity_projection(runtime_session_id=exp.get("runtime_session_id"), state=exp.get("state"), runtime_epoch=runtime_epoch)
     neuromodel = synthetic_neuromodel_projection(exp)
-    audit = audit_projection(conversation=conversation, experience=exp, epistemic_value=epistemic_value, capabilities=capabilities)
+    audit = audit_projection(conversation=conversation, experience=exp, epistemic_value=epistemic_value, capabilities=capabilities, runtime_epoch=runtime_epoch)
     return {
         "schema": ENDUSER_SCHEMA,
         "identity": identity,
@@ -171,6 +202,7 @@ def enduser_projection(*, conversation: object, experience: object, epistemic_va
         "audit": audit,
         "promise": {
             "identity_is_session_bound_operational_projection": True,
+            "runtime_epoch_is_component_provenance_not_identity": True,
             "model_is_not_identity": True,
             "neuromodel_is_synthetic_not_biological": True,
             "audit_integrity_does_not_certify_truth": True,

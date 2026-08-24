@@ -44,9 +44,18 @@ class ManagedLocalRuntime:
 class ManagedLocalEmbodimentService(LocalEmbodimentService):
  def _managed_model_check(self):
   managed=bool(getattr(self.model,'managed_runtime',False));healthy=managed and self.model.health();binding=str(getattr(self.model,'runtime_binding_digest','') or '');return {'status':'AVAILABLE' if healthy and len(binding)==64 else 'UNAVAILABLE','detail':'verified managed engine reachable' if healthy and len(binding)==64 else 'managed engine unavailable or unbound','binding_sha256':binding if len(binding)==64 else None,'model_output_is_authority':False,'epistemic_authority':0.0,'execution_authority':0.0}
+ def _bind_runtime_epoch(self):
+  from .runtime import Runtime
+  from .runtime_epoch import compact_epoch,materialize_runtime_epoch
+  rt=Runtime(self.state_dir)
+  try:
+   rt.require_active();epoch=materialize_runtime_epoch(self.root,require_managed_binding=True);rt.runtime['runtime_epoch']=compact_epoch(epoch);rt._write_runtime();return epoch
+  finally:rt.close()
  def probe(self):
   with self._lock:
    out=super().probe();out['checks']['MODEL_RUNTIME']=self._managed_model_check();out['overall']='READY' if all(x.get('status')=='AVAILABLE' for x in out['checks'].values()) else 'BLOCKED';from .admission import save_probe;save_probe(self.state_dir,out);return out
  def initialize(self):
   if self._managed_model_check()['status']!='AVAILABLE':raise LocalAppError('INITIALIZE requires the verified managed language engine to remain READY')
-  return super().initialize()
+  out=super().initialize();self._bind_runtime_epoch();return out
+ def turn(self,user_text):
+  self._bind_runtime_epoch();return super().turn(user_text)

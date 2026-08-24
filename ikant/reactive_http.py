@@ -1,4 +1,5 @@
 from __future__ import annotations
+import json
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -25,6 +26,14 @@ def _cycle(out):
 def _has_frame(out):
  return isinstance(out,dict) and isinstance(out.get('frame'),dict)
 
+def _recovery_boundary_present(root):
+ state=Path(root).resolve()/'.ikant'
+ if (state/'egress.json').is_file():return True
+ try:raw=json.loads((state/'runtime.json').read_text(encoding='utf-8'))
+ except Exception:return False
+ marker=raw.get('egress_guard') if isinstance(raw,dict) else None
+ return bool(isinstance(marker,dict) and marker.get('required') is True)
+
 def make_reactive_handler(service,pairing,*,assets_dir:Path,allowed_hosts:frozenset[str],expected_port:int):
  Base=make_bootstrap_handler(service,pairing,assets_dir=assets_dir,allowed_hosts=allowed_hosts,expected_port=expected_port)
  class Handler(Base):
@@ -40,7 +49,7 @@ def make_reactive_handler(service,pairing,*,assets_dir:Path,allowed_hosts:frozen
    if path in {'/api/v9/work/current','/api/v10/surface'}:
     if not self._guard():return
     try:
-     session=active_session(service.root);live=store_for_root(service.root).projection(session);work=recover_work_for_root(service.root,live)
+     session=active_session(service.root);live=store_for_root(service.root).projection(session);work=recover_work_for_root(service.root,live) if live.get('active') is True or _recovery_boundary_present(service.root) else live
      if path=='/api/v9/work/current':self._json(200,work)
      else:self._json(200,surface_snapshot(service,work=work))
     except Exception as exc:self._json(409,transport_diagnostic(path,exc))

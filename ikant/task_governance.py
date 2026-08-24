@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
 from pathlib import Path
 from typing import Any, Iterable
 
 from .human_frame import ActorSessionBinding, validate_human_frame, validate_interaction_receipt
 from .store import append_jsonl, atomic_json_write, fsync_parent, read_json
-from .temporal_autonomy import TemporalAutonomyError, TemporalAutonomyKernel, schedule_action_fingerprint, schedule_spec
+from .temporal_autonomy import MAX_INTENT_BYTES, TemporalAutonomyError, TemporalAutonomyKernel, schedule_action_fingerprint, schedule_spec, validate_schedule_authorization
 
 TEMPORAL_TASK_GOVERNANCE_SCHEMA = "ikant-temporal-task-governance/v1-test"
 TEMPORAL_GOVERNED_SPEC_SCHEMA = "ikant-governed-temporal-spec/v1-test"
@@ -56,7 +57,7 @@ def _deps(values: Iterable[object]) -> list[str]:
 
 def governed_schedule_spec(*, session_id: str, intent_text: str, due_at_ms: int, interval_ms: int | None = None, max_fires: int = 1, retry_attempts: int = 3, retry_base_ms: int = 30_000, memory_dependency_ids: Iterable[object] = (), now_ms: int | None = None) -> dict[str, Any]:
     text = str(intent_text or "").strip()
-    if not text:
+    if not text or len(text.encode("utf-8")) > MAX_INTENT_BYTES:
         raise ValueError("intent_text")
     deps = _deps(memory_dependency_ids)
     binding = {
@@ -283,6 +284,23 @@ class GovernedTemporalTasks:
                 path.unlink()
                 fsync_parent(path)
 
+    def _cleanup_orphan_capsules(self) -> list[str]:
+        if not self.capsule_dir.exists():
+            return []
+        referenced = {str(x.get("capsule_id") or "") for x in self._bindings().values()}
+        for task in self.core.state().tasks.values():
+            try:
+                capsule_id, _ = self._parse_token(task.get("intent_text"))
+                referenced.add(capsule_id)
+            except TemporalTaskGovernanceError:
+                continue
+        removed: list[str] = []
+        for path in sorted(self.capsule_dir.glob("*.json")):
+            if path.stem in referenced:
+                continue
+            path.unlink(); fsync_parent(path); removed.append(path.stem)
+        return removed
+
     def reconcile(self) -> dict[str, Any]:
         self._reconcile_erased_capsules()
         bindings = self._bindings()
@@ -304,14 +322,24 @@ class GovernedTemporalTasks:
                 "recovered_after_restart": True,
             })
             recovered.append(tid)
-        return {"schema": TEMPORAL_TASK_GOVERNANCE_SCHEMA, "ok": True, "recovered_task_ids": recovered, "authority_effect": "NONE"}
+        removed = self._cleanup_orphan_capsules()
+        return {"schema": TEMPORAL_TASK_GOVERNANCE_SCHEMA, "ok": True, "recovered_task_ids": recovered, "removed_orphan_capsule_ids": removed, "authority_effect": "NONE"}
 
     def schedule(self, spec: dict[str, Any], frame: dict[str, Any], receipt: dict[str, Any], *, binding: ActorSessionBinding, secret: bytes, now_ms: int | None = None) -> dict[str, Any]:
         raw = _spec_copy(spec)
         if raw.get("session_id") != self.session_id:
             raise TemporalTaskGovernanceAuthorityError("governed schedule session mismatch")
-        capsule = self._write_capsule(spec, created_at_ms=0 if now_ms is None else int(now_ms))
-        task = self.core.schedule(raw["core_spec"], frame, receipt, binding=binding, secret=secret, now_ms=now_ms)
+        ok, errors = validate_schedule_authorization(raw["core_spec"], frame, receipt, binding=binding, secret=secret)
+        if not ok:
+            raise TemporalTaskGovernanceAuthorityError("invalid governed schedule authorization: " + "; ".join(errors))
+        path = self._capsule_path(raw["capsule_id"]); existed = path.exists()
+        created_at = int(time.time_ns() // 1_000_000 if now_ms is None else now_ms)
+        capsule = self._write_capsule(spec, created_at_ms=created_at)
+        try:
+            task = self.core.schedule(raw["core_spec"], frame, receipt, binding=binding, secret=secret, now_ms=now_ms)
+        except Exception:
+            if not existed and path.exists(): path.unlink(); fsync_parent(path)
+            raise
         bindings = self._bindings()
         if task["task_id"] not in bindings:
             self._append("TASK_BOUND", {

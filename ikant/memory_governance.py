@@ -36,7 +36,7 @@ def _sha(value: Any) -> str:
 
 
 def _event_hash(row: dict[str, Any]) -> str:
-    material = {k: row[k] for k in ("schema", "seq", "runtime_session_id", "op", "payload", "prev_sha256")}
+    material = {k: row[k] for k in ("schema", "seq", "origin_session_id", "op", "payload", "prev_sha256")}
     return _sha(material)
 
 
@@ -67,12 +67,9 @@ def governance_events(runtime: Any) -> list[dict[str, Any]]:
         by[seq] = row
     ordered = [by[k] for k in sorted(by)]
     prev = ZERO
-    session = str(runtime.runtime.get("session_id") or "")
     for seq, row in enumerate(ordered, 1):
         if row.get("schema") != MEMORY_GOVERNANCE_EVENT_SCHEMA or row.get("seq") != seq:
             raise MemoryGovernanceError("memory governance schema/sequence drift")
-        if row.get("runtime_session_id") != session:
-            raise MemoryGovernanceError("memory governance session drift")
         if row.get("op") != "FORGET_COMMITTED":
             raise MemoryGovernanceError("memory governance unknown operation")
         if row.get("prev_sha256") != prev or row.get("sha256") != _event_hash(row):
@@ -86,7 +83,7 @@ def _append_governance_event(runtime: Any, payload: dict[str, Any]) -> dict[str,
     row = {
         "schema": MEMORY_GOVERNANCE_EVENT_SCHEMA,
         "seq": len(rows) + 1,
-        "runtime_session_id": str(runtime.runtime.get("session_id") or ""),
+        "origin_session_id": str(runtime.runtime.get("session_id") or ""),
         "op": "FORGET_COMMITTED",
         "payload": dict(payload),
         "prev_sha256": rows[-1]["sha256"] if rows else ZERO,
@@ -264,10 +261,6 @@ def apply_forget(runtime: Any, preview: dict[str, Any], frame: dict[str, Any], r
     ok, errors = validate_forget_authorization(preview, frame, receipt, binding=binding, secret=secret)
     if not ok:
         raise MemoryGovernanceAuthorityError("invalid forget authorization: " + "; ".join(errors))
-    current = preview_forget(runtime, str(preview["node_id"]), reason=str(preview.get("reason") or ""), task_projection=task_projection)
-    if current["preview_sha256"] != preview["preview_sha256"]:
-        raise MemoryGovernanceError("forget impact drifted after preview")
-    before = {nid: float(node.evidence) for nid, node in runtime.nodes.items()}
     for existing in governance_events(runtime):
         if (existing.get("payload") or {}).get("preview_sha256") == preview["preview_sha256"]:
             rec = reconcile_memory_governance(runtime)
@@ -284,6 +277,10 @@ def apply_forget(runtime: Any, preview: dict[str, Any], frame: dict[str, Any], r
                 "epistemic_authority": 0.0,
                 "execution_authority": 0.0,
             }
+    current = preview_forget(runtime, str(preview["node_id"]), reason=str(preview.get("reason") or ""), task_projection=task_projection)
+    if current["preview_sha256"] != preview["preview_sha256"]:
+        raise MemoryGovernanceError("forget impact drifted after preview")
+    before = {nid: float(node.evidence) for nid, node in runtime.nodes.items()}
     event = _append_governance_event(runtime, {
         "preview_sha256": preview["preview_sha256"],
         "node_id": preview["node_id"],

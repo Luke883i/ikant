@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -16,6 +17,19 @@ def sha(v)->str:return hashlib.sha256(canonical(v)).hexdigest()
 def _open_blocking(rows):return [r for r in rows if isinstance(r,dict) and r.get('status')=='OPEN' and r.get('severity') in BLOCKING_SEVERITIES]
 def _git(*args):return subprocess.run(['git',*args],cwd=ROOT,text=True,capture_output=True,check=False)
 
+def _event_base_sha()->str|None:
+ p=os.environ.get('GITHUB_EVENT_PATH')
+ if not p:return None
+ try:
+  event=json.loads(Path(p).read_text(encoding='utf-8'));value=(((event.get('pull_request') or {}).get('base') or {}).get('sha'))
+  return str(value) if value else None
+ except Exception:return None
+
+def _raw_head_parents()->list[str]:
+ raw=_git('cat-file','-p','HEAD')
+ if raw.returncode!=0:return []
+ return [line.split()[1] for line in raw.stdout.splitlines() if line.startswith('parent ') and len(line.split())==2]
+
 def _verify_baseline(main_sha:str,merged_pr)->tuple[str,list[str]]:
  errors=[]
  if not COMMIT_RE.fullmatch(main_sha):return 'INVALID',['baseline main sha invalid']
@@ -25,9 +39,12 @@ def _verify_baseline(main_sha:str,merged_pr)->tuple[str,list[str]]:
   subject=_git('show','-s','--format=%s',main_sha).stdout.strip()
   if isinstance(merged_pr,int) and f'#{merged_pr}' not in subject:errors.append('baseline main merge subject/pr drift')
   return 'FULL_HISTORY',errors
- parents=_git('show','-s','--format=%P','HEAD').stdout.strip().split()
- if main_sha in parents:return 'SYNTHETIC_MERGE_PARENT',errors
- errors.append('baseline main commit unavailable and not a synthetic-merge parent');return 'UNVERIFIED',errors
+ event_base=_event_base_sha()
+ if event_base:
+  if event_base==main_sha:return 'GITHUB_EVENT_BASE',errors
+  return 'GITHUB_EVENT_BASE',['baseline main differs from pull_request.base.sha']
+ if main_sha in _raw_head_parents():return 'RAW_SYNTHETIC_PARENT',errors
+ errors.append('baseline main unavailable in shallow checkout and no matching base evidence');return 'UNVERIFIED',errors
 
 def main()->int:
  ap=argparse.ArgumentParser();ap.add_argument('--require-ready',action='store_true');ap.add_argument('--require-complete',action='store_true');ap.add_argument('--require-advance',action='store_true');args=ap.parse_args();errors=[]
@@ -65,11 +82,15 @@ def main()->int:
  for row in campaigns:
   if row.get('cases')!=10_000_000 or row.get('tail')!=100_000 or row.get('coverage_complete') is not True or row.get('tail_new_signatures')!=0:errors.append('modeled campaign receipt drift')
  status='PASS' if not errors else 'FAIL';ready=not errors and not candidate_entry_blockers;complete=not errors and not candidate_objectives;advance=ready and complete and registration_state=='REGISTERED_CANDIDATE'
- out={'schema':'ikant-development-continuity-gate/v4-test','status':status,'candidate_slice':candidate,'candidate_registration_state':registration_state,'ready_to_develop_candidate':ready,'candidate_complete':complete,'ready_to_advance':advance,'bundle_sha256':sha(bundle),'baseline_main_sha':main_sha,'baseline_merged_pr':merged_pr,'baseline_merged_slice':merged_slice,'baseline_product_contract_current_slice':baseline_slice,'product_contract_current_slice':contract_slice,'roadmap':ids,'candidate_entry_blockers':[x.get('id') for x in candidate_entry_blockers],'candidate_open_objectives':[x.get('id') for x in candidate_objectives],'future_open_risks':[x.get('id') for x in future_open_risks],'errors':errors,'registered_candidate_is_not_merged_main':registration_state=='REGISTERED_CANDIDATE','git_baseline_checked':git_mode in {'FULL_HISTORY','SYNTHETIC_MERGE_PARENT'},'git_baseline_check_mode':git_mode,'full_history_lineage_deferred_to_product_boundary':git_mode=='SYNTHETIC_MERGE_PARENT','model_receipts_are_not_runtime_oracles':True}
+ out={'schema':'ikant-development-continuity-gate/v4-test','status':status,'candidate_slice':candidate,'candidate_registration_state':registration_state,'ready_to_develop_candidate':ready,'candidate_complete':complete,'ready_to_advance':advance,'bundle_sha256':sha(bundle),'baseline_main_sha':main_sha,'baseline_merged_pr':merged_pr,'baseline_merged_slice':merged_slice,'baseline_product_contract_current_slice':baseline_slice,'product_contract_current_slice':contract_slice,'roadmap':ids,'candidate_entry_blockers':[x.get('id') for x in candidate_entry_blockers],'candidate_open_objectives':[x.get('id') for x in candidate_objectives],'future_open_risks':[x.get('id') for x in future_open_risks],'errors':errors,'registered_candidate_is_not_merged_main':registration_state=='REGISTERED_CANDIDATE','git_baseline_checked':git_mode in {'FULL_HISTORY','GITHUB_EVENT_BASE','RAW_SYNTHETIC_PARENT'},'git_baseline_check_mode':git_mode,'full_history_lineage_deferred_to_product_boundary':git_mode!='FULL_HISTORY','model_receipts_are_not_runtime_oracles':True}
+ if errors:
+  for error in errors:print('BUNDLE_GATE_ERROR: '+error,file=sys.stderr)
  print(json.dumps(out,sort_keys=True))
  if errors:return 2
  if args.require_ready and not ready:return 3
  if args.require_complete and not complete:return 4
  if args.require_advance and not advance:return 5
  return 0
-if __name__=='__main__':raise SystemExit(main())
+if __name__=='__main__':
+ import sys
+ raise SystemExit(main())

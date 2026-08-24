@@ -35,36 +35,21 @@ def _bind_engine(runtime, engine_label: str | None) -> str:
 
 
 def conforming_turn(runtime, intent: str, *, engine_label: str | None = None, limit: int = 12, horizon=None, atoms=None, docx_path=None) -> dict:
-    """Compatibility entrypoint delegated to the single canonical runtime host loop.
-
-    The canonical loop persists the same-cycle JSON snapshot synchronously while
-    keeping DOCX rendering outside the pre-primary path.  This function must not
-    reintroduce a second cognitive compiler or artifact timing policy.
-    """
     from .runtime_host import conforming_turn as _canonical_conforming_turn
-    return _canonical_conforming_turn(
-        runtime,
-        intent,
-        engine_label=engine_label,
-        limit=limit,
-        horizon=horizon,
-        atoms=atoms,
-        docx_path=docx_path,
-    )
+    return _canonical_conforming_turn(runtime,intent,engine_label=engine_label,limit=limit,horizon=horizon,atoms=atoms,docx_path=docx_path)
 
 
 def emit_conforming_surface_a(runtime, cycle_id: str, text: str, *, intention_node_id: str | None = None) -> dict:
     runtime.require_active();cognitive=runtime.runtime.setdefault('cognitive',{})
     pending=cognitive.get('pending_surface_a_cycle_id')
-    if pending!=cycle_id:
-        raise PermissionError('Surface A cycle is not the single pending conforming turn')
+    if pending!=cycle_id: raise PermissionError('Surface A cycle is not the single pending conforming turn')
     contract=cognitive.get('pending_interaction_contract')
-    if not contract:
-        raise PermissionError('missing interaction contract for pending turn')
+    if not contract: raise PermissionError('missing interaction contract for pending turn')
     ok,errors=validate_interaction_surface(text,contract)
-    if not ok:
-        raise ValueError('Interaction Surface A validation failed: '+'; '.join(errors))
+    if not ok: raise ValueError('Interaction Surface A validation failed: '+'; '.join(errors))
     rec=record_surface_a(runtime,cycle_id,text,intention_node_id=intention_node_id)
+    from .causal_ledger import bind_surface_a
+    bind_surface_a(runtime,cycle_id,rec)
     cognitive.pop('pending_surface_a_cycle_id',None);cognitive.pop('pending_interaction_contract',None);runtime._write_runtime();runtime._event('INTERACTION_CLOSE',cycle_id,{'response_id':rec['response_id'],'interaction_validated':True})
     rec['interaction_validated']=True;rec['interaction_contract_schema']=contract['schema']
     return rec

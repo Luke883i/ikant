@@ -36,8 +36,8 @@ function ensureSurface(){
 function short(value,n=8){const s=String(value||'');return s?s.slice(0,n):'';}
 function renderIdentity(v){
   const label=$('enduser-identity-label'),copy=$('enduser-identity-copy'),fp=$('enduser-identity-fingerprint'),inline=$('enduser-identity-inline');if(!label)return;
-  const available=v?.status==='AVAILABLE',epoch=v?.runtime_epoch||{},ordinal=Number.isInteger(epoch?.ordinal)?epoch.ordinal:null,model=String(epoch?.model_id||'').trim();label.textContent=available?String(v.label||'iKant locale'):'Identità locale non disponibile';
-  copy.textContent=available?'Identità operativa locale. Epoca e modello descrivono la provenance del runtime; il modello resta un componente sostituibile, non l’identità.':'Disponibile quando la sessione runtime locale è attiva.';
+  const available=v?.status==='AVAILABLE',epoch=v?.runtime_epoch||{},hasEpoch=Boolean(epoch?.epoch_id),relationSafe=!hasEpoch||epoch?.model_is_identity===false,ordinal=Number.isInteger(epoch?.ordinal)?epoch.ordinal:null,model=relationSafe?String(epoch?.model_id||'').trim():'';label.textContent=available?String(v.label||'iKant locale'):'Identità locale non disponibile';
+  copy.textContent=!available?'Disponibile quando la sessione runtime locale è attiva.':relationSafe?'Identità operativa locale. Epoca e modello descrivono la provenance del runtime; il modello resta un componente sostituibile, non l’identità.':'Provenance componente non coerente: il modello non viene presentato come identità o dettaglio affidabile.';
   const facts=[];if(available&&v.fingerprint)facts.push('sessione '+String(v.fingerprint));if(ordinal!==null)facts.push('epoca '+ordinal+(epoch?.epoch_id?' · '+short(epoch.epoch_id,12):''));if(model)facts.push('modello '+model);fp.textContent=facts.join(' · ');
   if(inline){inline.hidden=!available;inline.textContent=available?'iKant locale'+(ordinal!==null?' · e'+ordinal:''):'';}
 }

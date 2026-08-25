@@ -1,0 +1,37 @@
+{
+  "schema": "ikant-s19-s20-runtime-convergence/v1-test",
+  "baseline": {"main_sha": "34e9836c893959c3df21eefa3d509c8347935717", "merged_slice": "S18", "branch": "agent/s19-s20-memory-temporal-governance-v030"},
+  "intent": "Materialize S19 Memory Governance and S20 Temporal Task Governance together over S18 while preserving one memory graph/replay and one S6 scheduler.",
+  "blob_chain": [
+    {"stage": "pre_model", "blob_sha": "be28904fdf86e5c3968a2915c95ddf911d441d78"},
+    {"stage": "first_convergence", "blob_sha": "066039ee1c557bf6d5350a4f9853f4a6c1b4d95c"},
+    {"stage": "refalsified_v2", "blob_sha": "e2e94817b39254d75e9a648f472685491ead7f0f"},
+    {"stage": "repository_harness_v3", "blob_sha": "40d6db04b31e5d4fc1cf4c433cbebef24a5219ad"}
+  ],
+  "modeled_campaigns": [
+    {"version": "v1", "master_seed": 2044818992607630536, "cases": 1000000, "tail": 100000, "signature_space": 32768, "signatures_observed": 32768, "domain_pairs": "210/210", "survivor_path": [1000000,942311,833531,710592,486755,212750,0], "tail_new_signatures": 0},
+    {"version": "v2", "master_seed": 1954789815589693358, "cases": 1000000, "tail": 100000, "signature_space": 32768, "signatures_observed": 32768, "domain_pairs": "210/210", "survivor_path": [1000000,946034,865160,740152,548284,368643,137661,0], "tail_new_signatures": 0},
+    {"version": "v3", "master_seed": 13891469440689307710, "cases": 1000000, "tail": 100000, "seed_fanout": 64, "domains": 20, "families": 128, "phases": 8, "contexts": 8, "mutation_classes": 4, "signature_space": 32768, "signatures_observed": 32768, "domain_pair_space": 210, "domain_pairs_observed": 210, "family_min_hits": 7812, "family_max_hits": 7813, "unique_scenario_buckets": 58623, "survivor_path": [1000000,976743,871879,728787,574888,361332,134635,0], "tail_new_signatures": 0, "source_probe_errors": []}
+  ],
+  "falsifications_that_changed_design": [
+    "Root-only forget is insufficient: unsupported derived cognitive state must be invalidated while alternate current support survives.",
+    "A scheduled intent cannot be copied as plaintext into task and wake journals when S26+ privacy/backup/erase are considered.",
+    "A failed schedule authorization can otherwise leave an orphan plaintext capsule.",
+    "A forget tombstone bound to only the originating runtime session can be lost after future restore/migration.",
+    "A governance wrapper is insufficient if the local product still starts TemporalAutonomyRunner directly; the canonical poller must be governed."
+  ],
+  "converged_protections": ["backup_restore_tombstone_precedence","capsule_ref_only_in_journal","cross_session_tombstone_replay","derived_alt_support_preserve","explicit_task_independence","forget_exact_confirmation","forget_preview_digest","forget_replay_op","forget_support_closure","forget_task_impact_projection","forget_tombstone_migration","future_connector_fresh_scope","future_native_single_runtime","future_transaction_fresh_approval","governed_product_runner","intent_capsule_erase_scope","intent_capsule_integrity","intent_capsule_single_copy","orphan_capsule_reconciliation","residency_truth_in_process","task_creation_epoch_receipt","task_memory_dependency_gate","task_projection_user_visible","task_schema_migration_guard","wake_capsule_missing_block","wake_capsule_tamper_block","wake_current_memory_revalidation"],
+  "runtime_chain": [
+    "S18 exact committed causal TURN",
+    "S19 preview-forget -> exact ACTION_CONFIRMATION -> append-only governance tombstone -> support-aware temporal closure -> replay reconciliation",
+    "S20 governed schedule -> one erasable intent capsule + opaque S6 token -> exact S6 schedule -> task binding -> current memory/capsule validation -> governed wake -> fresh authority barrier",
+    "local product -> GovernedTemporalTaskRunner -> governed S6 poll only"
+  ],
+  "future_pressure": {"S21": "intent/plan reconciliation consumes S19/S20 envelopes but may not bypass them", "S22": "external assist receives no implicit memory/task authority", "S23": "connectors require fresh scope at use time", "S24": "transactions require fresh exact approval/idempotence", "S25": "resident/native host may not become a second cognitive runtime", "S26_plus": "backup/update/migration must preserve tombstone precedence, capsule retention/erase semantics and schema fail-closed behavior"},
+  "commit_chain": [
+    {"sha": "c4ce29b33aa81e0b14ba1d8b22f8a4c2acbe9acf", "semantic": "runtime primitives"},
+    {"sha": "108533885b3949f04cbe6f5e858650d26dcf8d4e", "semantic": "close restore/orphan mutation survivors"},
+    {"sha": "92060f43781671aa29af1c7b0857844c8b12247e", "semantic": "subordinate product temporal polling to governance"}
+  ],
+  "claim_boundary": "All mutation counts are modeled architecture/fault-vocabulary cases. They are not production reliability estimates and are not one million physical crashes, browser runs, connector calls, transactions or native-host executions."
+}

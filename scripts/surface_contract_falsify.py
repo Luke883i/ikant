@@ -85,6 +85,29 @@ INTERVENTIONS = (
     ("manifest_only_validation", 5, frozenset({"all_only", "zero_authority"})),
 )
 
+BASE_EXPECTED_ABSTRACTIONS = frozenset({
+    "admission_lifecycle",
+    "conversation_turn",
+    "generation_config",
+    "cognitive_trace",
+    "epistemic_workspace",
+    "capability_catalog",
+    "runtime_systems",
+    "enduser_identity_audit",
+    "reactive_work",
+    "artifacts",
+    "bootstrap_diagnostics",
+    "voice_candidate",
+})
+
+# Independent product-boundary oracle: extending the canonical human surface requires
+# both a constitutional slice and an explicit mapping here. Unknown manifest extras
+# therefore still fail closed instead of becoming accepted by self-description.
+SURFACE_EXTENSIONS_BY_SLICE = {
+    "S19": frozenset({"memory_governance"}),
+    "S20": frozenset({"temporal_tasks"}),
+}
+
 
 def splitmix64(value: int) -> int:
     value = (value + 0x9E3779B97F4A7C15) & MASK64
@@ -114,11 +137,24 @@ def modeled_campaign(size: int, seed: int, seen: bytearray | None = None) -> tup
         if not seen[idx]:
             seen[idx] = 1
             new_signatures += 1
-        # Every declared family must map to an explicit S16 defense. A survivor is a generated
-        # family with no defense mapping; the mapping itself is audited below against production artifacts.
         if family >= len(FAULT_FAMILIES):
             survivors += 1
     return survivors, seen, family_counts
+
+
+def _registered_surface_extensions() -> tuple[set[str], list[str]]:
+    errors: list[str] = []
+    try:
+        contract = json.loads((ROOT / "PRODUCT_CONTRACT.json").read_text(encoding="utf-8"))
+    except Exception as exc:
+        return set(), ["product contract unreadable: " + type(exc).__name__]
+    slices = contract.get("slices") if isinstance(contract.get("slices"), list) else []
+    registered = {str(row.get("id") or "") for row in slices if isinstance(row, dict)}
+    extensions: set[str] = set()
+    for slice_id, abstractions in SURFACE_EXTENSIONS_BY_SLICE.items():
+        if slice_id in registered:
+            extensions.update(abstractions)
+    return extensions, errors
 
 
 def production_manifest_probe() -> dict:
@@ -126,21 +162,8 @@ def production_manifest_probe() -> dict:
     abstractions = manifest.get("abstractions") if isinstance(manifest.get("abstractions"), list) else []
     ids = [str(row.get("id") or "") for row in abstractions if isinstance(row, dict)]
     profiles = {str(row.get("id") or ""): row for row in manifest.get("surface_profiles", []) if isinstance(row, dict)}
-    expected = {
-        "admission_lifecycle",
-        "conversation_turn",
-        "generation_config",
-        "cognitive_trace",
-        "epistemic_workspace",
-        "capability_catalog",
-        "runtime_systems",
-        "enduser_identity_audit",
-        "reactive_work",
-        "artifacts",
-        "bootstrap_diagnostics",
-        "voice_candidate",
-    }
-    errors = []
+    extensions, errors = _registered_surface_extensions()
+    expected = set(BASE_EXPECTED_ABSTRACTIONS) | extensions
     if len(ids) != len(set(ids)):
         errors.append("duplicate abstraction ids")
     if set(ids) != expected:
@@ -158,7 +181,14 @@ def production_manifest_probe() -> dict:
         if row.get("id") != "admission_lifecycle" and row.get("authority_effect") != "NONE":
             errors.append("surface authority widening")
             break
-    return {"ok": not errors, "errors": errors, "abstractions": len(ids), "semantic_contract_sha256": semantic}
+    return {
+        "ok": not errors,
+        "errors": errors,
+        "abstractions": len(ids),
+        "base_abstractions": len(BASE_EXPECTED_ABSTRACTIONS),
+        "registered_extensions": sorted(extensions),
+        "semantic_contract_sha256": semantic,
+    }
 
 
 def architecture_saturation() -> dict:

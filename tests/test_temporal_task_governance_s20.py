@@ -4,6 +4,7 @@ from pathlib import Path
 from ikant.human_frame import build_actor_binding,build_human_frame,issue_interaction_receipt
 from ikant.task_governance import GovernedTemporalTasks,TemporalTaskGovernanceAuthorityError,TemporalTaskGovernanceError,erase_intent_action_fingerprint,governed_schedule_action_fingerprint,governed_schedule_spec
 from ikant.temporal_autonomy import cancel_action_fingerprint
+from ikant.governance_runtime import task_governance_projection
 SECRET=b't'*32;SESSION='SES-S20';BINDING=build_actor_binding(session_id=SESSION,channel_id='web-paired',secret=SECRET)
 def auth(fp,seq=1,title='Temporal control'):
  f=build_human_frame(session_id=SESSION,actor_binding_id=BINDING.binding_id,frame_seq=seq,purpose='ACTION_CONFIRMATION',title=title,body='Confirm exact control.',action_fingerprint=fp);return f,issue_interaction_receipt(f,binding=BINDING,decision='APPROVE',secret=SECRET)
@@ -35,4 +36,7 @@ class TemporalTaskGovernanceS20Tests(unittest.TestCase):
  def test_terminal_task_intent_can_be_erased_without_rewriting_journal(self):
   with tempfile.TemporaryDirectory() as td:
    root=self.setup_root(td);g=GovernedTemporalTasks(root,session_id=SESSION);spec=governed_schedule_spec(session_id=SESSION,intent_text='erase me',due_at_ms=1000,now_ms=0);f,r=auth(governed_schedule_action_fingerprint(spec));task=g.schedule(spec,f,r,binding=BINDING,secret=SECRET,now_ms=0);cf,cr=auth(cancel_action_fingerprint(task['task_id']),seq=2,title='Cancel');g.cancel(task['task_id'],cf,cr,binding=BINDING,secret=SECRET,now_ms=1);ef,er=auth(erase_intent_action_fingerprint(task['task_id']),seq=3,title='Erase intent');out=g.erase_intent(task['task_id'],ef,er,binding=BINDING,secret=SECRET);self.assertTrue(out['intent_erased']);self.assertEqual(list((root/'temporal-intents').glob('*.json')),[]);self.assertIn('TASK_SCHEDULED',(root/'temporal-autonomy-events.jsonl').read_text(encoding='utf-8'));self.assertNotIn('erase me',(root/'temporal-autonomy-events.jsonl').read_text(encoding='utf-8'))
+ def test_surface_task_projection_is_strictly_read_only(self):
+  with tempfile.TemporaryDirectory() as td:
+   root=self.setup_root(td);before=sorted(str(p.relative_to(root)) for p in root.rglob('*') if p.is_file());out=task_governance_projection(root,session_id=SESSION);after=sorted(str(p.relative_to(root)) for p in root.rglob('*') if p.is_file());self.assertEqual(before,after);self.assertEqual(out['integrity'],'VERIFIED');self.assertTrue(out['read_only_projection']);self.assertEqual(out['task_count'],0)
 if __name__=='__main__':unittest.main()

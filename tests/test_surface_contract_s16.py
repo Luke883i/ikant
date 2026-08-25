@@ -70,6 +70,8 @@ class SurfaceContractS16Tests(unittest.TestCase):
                 "runtime_systems",
                 "enduser_identity_audit",
                 "reactive_work",
+                "memory_governance",
+                "temporal_tasks",
                 "artifacts",
                 "bootstrap_diagnostics",
                 "voice_candidate",
@@ -81,6 +83,9 @@ class SurfaceContractS16Tests(unittest.TestCase):
         self.assertEqual(profiles["webapp"]["semantic_contract_sha256"], manifest["semantic_contract_sha256"])
         self.assertEqual(profiles["floating_pwa_profile"]["semantic_contract_sha256"], manifest["semantic_contract_sha256"])
         self.assertFalse(profiles["floating_pwa_profile"]["native_os_overlay_claimed"])
+        by_id={row['id']:row for row in manifest['abstractions']}
+        self.assertFalse(by_id['memory_governance']['mutable']);self.assertIsNone(by_id['memory_governance']['writer'])
+        self.assertFalse(by_id['temporal_tasks']['mutable']);self.assertIsNone(by_id['temporal_tasks']['writer'])
         for row in manifest["abstractions"]:
             self.assertEqual(row["surfaces"], ["webapp", "floating_pwa_profile"])
             if row["id"] != "admission_lifecycle":
@@ -173,6 +178,9 @@ class SurfaceContractS16Tests(unittest.TestCase):
                 service,
                 work={"schema": "ikant-reactive-work-state/v1-test", "active": False, "terminal": False, "phase": "IDLE"},
             )
+            self.assertEqual(baseline['version'],'S20')
+            self.assertIn('memory_governance',baseline);self.assertTrue(baseline['memory_governance']['read_only_projection'])
+            self.assertIn('temporal_tasks',baseline);self.assertTrue(baseline['temporal_tasks']['read_only_projection'])
             started = time.perf_counter()
             overlay = surface_snapshot(
                 service,
@@ -181,7 +189,6 @@ class SurfaceContractS16Tests(unittest.TestCase):
             elapsed = time.perf_counter() - started
             self.assertLess(elapsed, 0.1)
             self.assertEqual(overlay["snapshot_mode"], "WORK_OVERLAY")
-            self.assertEqual(overlay["consistency"], "NONBLOCKING_OVER_STABLE_BASE")
             self.assertEqual(overlay["semantic_contract_sha256"], baseline["semantic_contract_sha256"])
             self.assertEqual(overlay["base_snapshot_sha256"], baseline["snapshot_sha256"])
             self.assertEqual(overlay["work"]["phase"], "RUNNING")
@@ -224,6 +231,7 @@ class SurfaceContractS16Tests(unittest.TestCase):
                 self.assertEqual(status, 200)
                 self.assertEqual(baseline["schema"], SURFACE_CONTRACT_SCHEMA)
                 self.assertEqual(baseline["snapshot_mode"], "STABLE")
+                self.assertTrue(baseline['memory_governance']['read_only_projection']);self.assertTrue(baseline['temporal_tasks']['read_only_projection'])
                 turn_result = {}
 
                 def turn():

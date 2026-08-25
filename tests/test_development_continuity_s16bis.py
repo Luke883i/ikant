@@ -10,7 +10,7 @@ import unittest
 ROOT=Path(__file__).resolve().parents[1]
 
 class DevelopmentContinuityS16bisTests(unittest.TestCase):
-    def test_bundle_has_adaptive_post_s17bis_roadmap_and_dod_shapes(self):
+    def test_bundle_has_adaptive_post_s18_roadmap_and_dod_shapes(self):
         bundle=json.loads((ROOT/'IKANT_DEVELOPMENT_BUNDLE.json').read_text(encoding='utf-8'))
         self.assertEqual(bundle['schema'],'ikant-development-continuity-bundle/v1-test')
         self.assertEqual([x['id'] for x in bundle['roadmap']],['S16bis','S17','S17bis','S18','S19','S20','S21','S22','S23','S24','S25','S26'])
@@ -21,19 +21,21 @@ class DevelopmentContinuityS16bisTests(unittest.TestCase):
         self.assertEqual(set(bundle['iteration_protocol']['end_of_iteration_choices']),{'DEVELOP','ANTI_ENTROPY_REVIEW','HANDOFF'})
         dag=bundle['dependency_dag'];self.assertIn(['S19','S20'],dag['commutable_siblings']);self.assertIn(['S18','S19'],dag['causal_edges']);self.assertIn(['S18','S20'],dag['causal_edges']);self.assertNotIn(['S19','S20'],dag['causal_edges']);self.assertIn(['S23','S24'],dag['causal_edges']);self.assertNotIn(['S22','S24'],dag['causal_edges'])
 
-    def test_bundle_records_modeled_campaigns_without_reliability_claim(self):
+    def test_bundle_records_modeled_campaigns_without_hardcoding_one_scale(self):
         bundle=json.loads((ROOT/'IKANT_DEVELOPMENT_BUNDLE.json').read_text(encoding='utf-8'));rows=bundle['modeled_campaigns']
-        self.assertEqual([x['campaign'] for x in rows],['hardening','hypothetical','usage','post_s17_multiaxial','s17bis_runtime_recovery','s18_causal_100m'])
+        self.assertEqual([x['campaign'] for x in rows],['hardening','hypothetical','usage','post_s17_multiaxial','s17bis_runtime_recovery','s18_causal_100m','s19_s20_future_falsification'])
         for row in rows:
-            self.assertEqual(row['cases'],10_000_000);self.assertEqual(row['tail'],100_000);self.assertTrue(row['coverage_complete']);self.assertEqual(row['signatures_observed'],row['signature_space']);self.assertEqual(row['tail_new_signatures'],0);self.assertIn('not',row['interpretation'].lower())
-        s18=rows[-1];self.assertEqual(s18['levels'],10);self.assertEqual(s18['aggregate_cases'],100_000_000);self.assertEqual(s18['seed_fanout'],1000)
+            self.assertGreater(row['cases'],0);self.assertGreaterEqual(row['tail'],0);self.assertTrue(row['coverage_complete']);self.assertEqual(row['signatures_observed'],row['signature_space']);self.assertEqual(row['tail_new_signatures'],0);self.assertIn('not',row['interpretation'].lower())
+        for row in rows[:6]:self.assertEqual(row['cases'],10_000_000);self.assertEqual(row['tail'],100_000)
+        s18=rows[5];self.assertEqual(s18['levels'],10);self.assertEqual(s18['aggregate_cases'],100_000_000);self.assertEqual(s18['seed_fanout'],1000)
+        s19s20=rows[-1];self.assertEqual(s19s20['cases'],1_000_000);self.assertEqual(s19s20['seed_fanout'],64);self.assertEqual(s19s20['signature_space'],32_768)
 
-    def test_bundle_gate_represents_s18_registered_candidate_over_merged_s17bis(self):
+    def test_bundle_gate_represents_composite_s19_s20_candidate_over_merged_s18(self):
         run=subprocess.run([sys.executable,'scripts/development_bundle_gate.py'],cwd=ROOT,text=True,capture_output=True,check=False);self.assertEqual(run.returncode,0,run.stderr+run.stdout);out=json.loads(run.stdout)
-        self.assertEqual(out['status'],'PASS');self.assertEqual(out['candidate_slice'],'S18');self.assertEqual(out['candidate_registration_state'],'REGISTERED_CANDIDATE');self.assertEqual(out['baseline_product_contract_current_slice'],'S17bis');self.assertEqual(out['product_contract_current_slice'],'S18');self.assertTrue(out['registered_candidate_is_not_merged_main']);self.assertTrue(out['git_baseline_checked']);self.assertTrue(out['ready_to_develop_candidate']);self.assertTrue(out['candidate_complete']);self.assertTrue(out['ready_to_advance']);self.assertEqual(out['candidate_entry_blockers'],[]);self.assertEqual(out['candidate_open_objectives'],[]);self.assertIn('FND-003',out['future_open_risks'])
+        self.assertEqual(out['status'],'PASS');self.assertEqual(out['candidate_slices'],['S19','S20']);self.assertEqual(out['candidate_registration_state'],'DEVELOPMENT_CANDIDATE_SET');self.assertEqual(out['baseline_product_contract_current_slice'],'S18');self.assertEqual(out['product_contract_current_slice'],'S18');self.assertFalse(out['registered_candidate_is_not_merged_main']);self.assertTrue(out['composite_candidate_support']);self.assertTrue(out['ready_to_develop_candidate']);self.assertFalse(out['candidate_complete']);self.assertFalse(out['ready_to_advance']);self.assertEqual(out['candidate_entry_blockers'],[]);self.assertEqual(set(out['candidate_open_objectives']),{'FND-008','FND-009'});self.assertIn('FND-003',out['future_open_risks'])
         bundle=json.loads((ROOT/'IKANT_DEVELOPMENT_BUNDLE.json').read_text(encoding='utf-8'));findings={x['id']:x for x in bundle['audit_findings']}
-        for fid in ('FND-017','FND-018','FND-019'):self.assertEqual(findings[fid]['status'],'CLOSED')
-        self.assertEqual(bundle['baseline']['main_sha'],'4b8d466452e7ace02edc32f2f6012c9d19e10238');self.assertEqual(bundle['baseline']['merged_pr'],54);self.assertEqual(bundle['baseline']['merged_slice'],'S17bis')
+        for fid in ('FND-017','FND-018','FND-019','FND-024'):self.assertEqual(findings[fid]['status'],'CLOSED')
+        self.assertEqual(bundle['baseline']['main_sha'],'34e9836c893959c3df21eefa3d509c8347935717');self.assertEqual(bundle['baseline']['merged_pr'],55);self.assertEqual(bundle['baseline']['merged_slice'],'S18')
 
     def test_post_s17_model_is_historical_not_current_roadmap_authority(self):
         from scripts.post_s17_multiaxial_falsify import run

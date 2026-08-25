@@ -9,6 +9,7 @@ from ikant.intent_reconciliation import build_intent_envelope, reconcile_intent
 
 SCHEMA = "ikant-s21-intent-plan-falsification/v1-test"
 SIGNATURE_SPACE = 64
+ROUTES = ("COGNITIVE", "MEMORY_GOVERNANCE", "TEMPORAL_TASK_GOVERNANCE", "CANONICAL_PLANNER")
 
 
 class K(str, Enum):
@@ -94,7 +95,7 @@ def _expected(code: int) -> tuple[str, str]:
     candidate_shape = (code >> 2) & 3
     available = bool((code >> 4) & 1)
     truncated = bool((code >> 5) & 1)
-    route = ("COGNITIVE", "MEMORY_GOVERNANCE", "TEMPORAL_TASK_GOVERNANCE", "CANONICAL_PLANNER")[intent_kind]
+    route = ROUTES[intent_kind]
     if truncated:
         return "BLOCK", route
     material_candidate = candidate_shape >= 2
@@ -107,6 +108,15 @@ def _expected(code: int) -> tuple[str, str]:
     return "DEMOTE", route
 
 
+def _mutate(expected: tuple[str, str], family: int) -> tuple[str, str]:
+    status, route = expected
+    if family % 2 == 0:
+        alternate = {"MATCH": "BLOCK", "BLOCK": "DEMOTE", "DEMOTE": "MATCH"}[status]
+        return alternate, route
+    step = 1 + ((family // 2) % (len(ROUTES) - 1))
+    return status, ROUTES[(ROUTES.index(route) + step) % len(ROUTES)]
+
+
 def _run_model(count: int, tail: int, seed: int, mutation_mode: bool) -> dict:
     seen: set[int] = set()
     survivors = 0
@@ -117,11 +127,7 @@ def _run_model(count: int, tail: int, seed: int, mutation_mode: bool) -> dict:
         expected = _expected(code)
         seen.add(code)
         if mutation_mode:
-            family = (i + seed) % 16
-            mutated = (("MATCH", "CANONICAL_PLANNER") if family % 4 == 0 else
-                       ("DEMOTE", expected[1]) if family % 4 == 1 else
-                       ("BLOCK", "CANONICAL_PLANNER") if family % 4 == 2 else
-                       (expected[0], "COGNITIVE" if expected[1] != "COGNITIVE" else "MEMORY_GOVERNANCE"))
+            mutated = _mutate(expected, (i + seed) % 16)
             if mutated == expected:
                 survivors += 1
             else:
@@ -136,6 +142,7 @@ def _run_model(count: int, tail: int, seed: int, mutation_mode: bool) -> dict:
         "signature_space": SIGNATURE_SPACE,
         "coverage_complete": len(seen) == SIGNATURE_SPACE,
         "tail_new_signatures": len(tail_new),
+        "mutation_families": 16,
         "mutation_kills": killed,
         "mutation_survivors": survivors,
     }

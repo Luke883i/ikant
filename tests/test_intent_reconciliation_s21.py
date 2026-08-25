@@ -116,6 +116,13 @@ class IntentEnvelopeTests(unittest.TestCase):
         self.assertIn('"planner_count": 1', proc.stdout)
         self.assertIn('"reactive_execution_refs": []', proc.stdout)
 
+    def test_source_bound_falsifier_kills_all_modeled_mutations(self):
+        proc = subprocess.run([sys.executable, "scripts/intent_plan_falsify_s21.py", "--mutations", "512", "--tail", "64", "--seed", "2026082521"], cwd=Path(__file__).resolve().parents[1], text=True, capture_output=True)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertIn('"mutation_families": 16', proc.stdout)
+        self.assertIn('"mutation_survivors": 0', proc.stdout)
+        self.assertIn('"real_code_probes": 6', proc.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

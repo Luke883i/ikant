@@ -1,86 +1,11 @@
 {
-  "schema": "ikant-enterprise-candidate-workbook-manifest/v1-test",
-  "artifact": {
-    "filename": "iKant_Enterprise_Candidate_Workbook_v1.xlsx",
-    "sha256": "1c589476aa42e29693e70ccc658437458c672ea7b306fd669189e8e05a7e92a1",
-    "sheets": 17,
-    "binary_committed": false,
-    "artifact_role": "session control/evidence workbook; repository facts outrank workbook snapshots"
-  },
-  "observed_live_repository": {
-    "main_sha": "c46db91c968edbf2203a27de9f0f17de46c38108",
-    "merged_pr": 57,
-    "constitutional_convergence": "S21",
-    "contract_version": "0.22.0",
-    "open_pull_requests": 0,
-    "main_branch_protected": false
-  },
-  "workbook_model": {
-    "target_convergence": "S35",
-    "runtime_slices_after_s21": 14,
-    "control_governance_gates": ["C0", "G0"],
-    "minimality_rule": "split only when authority, trust, persistence, or physical-oracle boundary changes; otherwise prefer compression",
-    "evidence_classes": ["REPO", "PROPOSED", "STANDARD", "MODELED", "PHYSICAL_ORACLE"],
-    "proposed_chain": ["C0", "G0", "S22", "S23", "S24", "S25", "S26", "S27", "S28", "S29", "S30", "S31", "S32", "S33", "S34", "S35"],
-    "proposed_slice_semantics": {
-      "S22": "Enterprise Context & Policy Foundation",
-      "S23": "External Trust & Adapter Supply Boundary",
-      "S24": "Hybrid Provider Assist & Provenance",
-      "S25": "Connector Capability Fabric & Revocation",
-      "S26": "External Ingress Quarantine & Trigger Governance",
-      "S27": "Epistemic Revision & Conflict",
-      "S28": "Enterprise Authority & Delegation",
-      "S29": "Material Transaction Orchestration",
-      "S30": "World Outcome Reconciliation & Compensation",
-      "S31": "Native Residency & Multi-Surface Convergence",
-      "S32": "Enterprise Audit & Incident Projection",
-      "S33": "Release & Data Lifecycle",
-      "S34": "Fleet & Software Supply Governance",
-      "S35": "Enterprise Assurance & E2E Convergence"
-    },
-    "modeled_claim_boundary": "simulation figures are architecture-vocabulary/design-space claims only, never runtime reliability or physical execution evidence"
-  },
-  "live_conflicts_confirmed": [
-    {
-      "id": "C0-BUNDLE-DRIFT",
-      "class": "REPO",
-      "severity": "HIGH",
-      "finding": "IKANT_DEVELOPMENT_BUNDLE.json still records merged S20 / PR56 baseline with S21 as registered candidate although S21 / PR57 is merged on main",
-      "closure": "reconcile bundle baseline, roadmap state and gate semantics to merged S21 before activating a new capability"
-    },
-    {
-      "id": "C0-SURFACE-LABEL-DRIFT",
-      "class": "REPO",
-      "severity": "HIGH",
-      "finding": "ikant/surface_contract.py and its tests still expose Surface Contract version/asset lineage as S20 after S21 merged",
-      "closure": "project merged S21 truth without widening surface authority or changing canonical writer semantics"
-    },
-    {
-      "id": "G0-MAIN-PROTECTION",
-      "class": "REPO",
-      "severity": "HIGH",
-      "finding": "main remains unprotected and required checks are not materially enforced",
-      "closure": "repository-admin ruleset/required-check enforcement; code may detect/report but must not fabricate protection"
-    }
-  ],
-  "next_engineering_unit": {
-    "id": "C0",
-    "name": "Post-S21 Anti-Entropy",
-    "kind": "control gate",
-    "adds_runtime_capability": false,
-    "prerequisite_for": ["G0", "S22", "S23"],
-    "semantic_dod": [
-      "development bundle describes exact merged S21 main rather than candidate S21",
-      "development gate no longer encodes registered-candidate-is-not-merged-main semantics for S21",
-      "canonical Surface Contract projection no longer labels merged runtime truth as S20",
-      "Product Contract remains S21 / 0.22.0 and no execution or epistemic authority is widened"
-    ],
-    "physical_oracle": ["exact Git/main census", "development bundle gate", "existing Surface Contract HTTP/browser regression suite"]
-  },
-  "claim_boundary": {
-    "enterprise_candidate_achieved": false,
-    "s22_or_later_implemented": false,
-    "standards_compliance_claimed": false,
-    "modeled_saturation_is_reliability": false
-  }
+  "schema":"ikant-enterprise-candidate-workbook-manifest/v2-test",
+  "artifact":{"filename":"iKant_Enterprise_Candidate_Workbook_v1.xlsx","sha256":"1c589476aa42e29693e70ccc658437458c672ea7b306fd669189e8e05a7e92a1","sheets":17,"binary_committed":false,"artifact_role":"session control/evidence workbook; repository facts and RTA receipts outrank workbook snapshots"},
+  "observed_live_repository":{"main_sha":"c46db91c968edbf2203a27de9f0f17de46c38108","merged_pr":57,"constitutional_convergence":"S21","contract_version":"0.22.0","main_branch_protected":false},
+  "workbook_v1":{"target_convergence":"S35","runtime_slices_after_s21":14,"control_governance_gates":["C0","G0"],"minimality_rule":"split only when authority, trust, persistence, or physical-oracle boundary changes; otherwise prefer compression","evidence_classes":["REPO","PROPOSED","STANDARD","MODELED","PHYSICAL_ORACLE"],"status":"FALSIFIED_BY_RTA"},
+  "rta_falsification":{"receipt":"backlog/rta/rta_200k_receipt.json","master_seed":1085021672383838793,"as_is_cases":100000,"workbook_cases":100000,"tail_each":1000,"tail_new_semantic_signatures":0,"findings":["S35 cannot remain a runtime slice because the workbook itself says it adds no capability","external ingress quarantine cannot follow provider/connector activation","product-truth and polish foundation must enter before capability expansion"],"claim_boundary":"fault-model/design-space coverage, not production reliability or physical execution"},
+  "converged_model":{"runtime_slices_after_s21":12,"non_runtime_gates":["C0","G0","E0"],"runtime_chain":["S22","S23","S24","S25","S26","S27","S28","S29","S30","S31","S32","S33"],"semantics":{"S22":"Enterprise Context & Policy Foundation","S23":"External Trust & Ingress Membrane","S24":"Hybrid Provider Assist & Provenance","S25":"Connector Capability Fabric & Revocation","S26":"Epistemic Revision & Conflict","S27":"Enterprise Authority & Delegation","S28":"Material Transaction Orchestration","S29":"World Outcome Reconciliation & Compensation","S30":"Native Residency & Multi-Surface Convergence","S31":"Enterprise Audit & Incident Projection","S32":"Release & Data Lifecycle","S33":"Fleet & Software Supply Governance"},"commutable_siblings":[["C0","G0"],["S24","S25"]],"polish":"cross-cutting Surface/UX DoD; C0 establishes product-truth/design-system foundation and E0 performs final visual/content/a11y assurance"},
+  "live_conflicts":[{"id":"G0-MAIN-PROTECTION","class":"REPO","severity":"HIGH","status":"OPEN","finding":"main remains unprotected and required checks are not materially enforced"},{"id":"C0-VISUAL-A11Y-ORACLE","class":"REPO","severity":"MEDIUM","status":"OPEN","finding":"visual polish/accessibility still lacks a browser-grade regression oracle"}],
+  "next_engineering_unit":{"id":"S22","name":"Enterprise Context & Policy Foundation","eligibility":"BLOCKED_BY_G0_AND_OWN_IMPLEMENTATION","adds_runtime_capability":true,"prerequisites":["merged S21","C0 product-truth convergence","G0 repository governance"]},
+  "claim_boundary":{"enterprise_candidate_achieved":false,"s22_or_later_implemented":false,"standards_compliance_claimed":false,"modeled_saturation_is_reliability":false}
 }

@@ -1,47 +1,69 @@
-# Enterprise-Candidate Workbook v1 — repository handoff
+# Enterprise-Candidate Workbook v1 — RTA handoff
 
-This document binds the session artifact `iKant_Enterprise_Candidate_Workbook_v1.xlsx` to repository truth without committing the binary workbook itself.
+This document binds the session artifact `iKant_Enterprise_Candidate_Workbook_v1.xlsx` to repository truth and records its falsification. The workbook binary is not repository truth; Git, Product Contract, exact CI and physical oracles outrank it.
 
-## Evidence boundary
+## Live repository baseline
 
-The workbook is a control/evidence artifact, not runtime proof. Repository/Git/CI facts outrank workbook snapshots. `REPO`, `PROPOSED`, `STANDARD`, `MODELED`, and `PHYSICAL_ORACLE` must remain distinct evidence classes. Modeled saturation and design-space enumeration never imply production reliability, standards compliance, browser/OS/provider execution, or enterprise readiness.
+- `main` = `c46db91c968edbf2203a27de9f0f17de46c38108`, merged PR57 / S21.
+- `PRODUCT_CONTRACT.json` = S21, contract `0.22.0`.
+- package = `0.29.0a1`.
+- main branch protection/required checks remain externally unenforced.
 
-## Live state verified before this handoff
+C0 in PR58 reconciles the stale post-PR57 bundle, README and canonical Surface metadata without advancing the Product Contract or adding execution/epistemic authority.
 
-- `main` = `c46db91c968edbf2203a27de9f0f17de46c38108` (merged PR57 / S21).
-- `PRODUCT_CONTRACT.json` converges constitutionally at S21, contract version `0.22.0`.
-- no open pull requests were observed during this audit.
-- `main` is not materially protected by branch protection/required checks.
-- `IKANT_DEVELOPMENT_BUNDLE.json` is stale after PR57: it still describes merged PR56/S20 as baseline and S21 as a registered candidate.
-- `ikant/surface_contract.py` still labels the canonical surface projection and asset revision as S20, and the existing Surface Contract test asserts S20.
+## RTA campaign
 
-These conflicts are repository-backed anti-entropy findings; they must be closed before capability expansion.
+Master seed was drawn from session system entropy and captured for replay: `1085021672383838793`.
 
-## Workbook architectural compression
+Two independent bounded campaigns are recorded in `backlog/rta/rta_200k_receipt.json`:
 
-The workbook proposes an enterprise-candidate target at S35. It uses one compression rule: create a distinct slice only when **authority, trust, persistence, or physical-oracle boundary changes**; otherwise fuse the work.
+- 100,000 AS-IS main mutations + 1,000 no-novelty tail;
+- 100,000 workbook-lattice mutations (188,718 operator applications) + 1,000 no-novelty tail.
 
-The proposed post-S21 lattice is:
+Both tails produced zero new semantic signatures. These are fault-model/design-space coverage statements, **not** production reliability, formal verification or physical execution counts.
 
-`C0 anti-entropy -> G0 repository governance -> S22 enterprise context/policy -> S23 external trust/adapter supply -> {S24 provider assist, S25 connector fabric} -> S26 ingress quarantine -> S27 epistemic revision -> S28 enterprise authority/delegation -> S29 transaction -> S30 world reconciliation -> S31 native/multi-surface -> S32 enterprise audit -> S33 release/data lifecycle -> S34 fleet/software supply -> S35 assurance/E2E convergence`
+## AS-IS result
 
-C0 and G0 are gates rather than runtime faculties. S24 and S25 are commutable siblings after S23. All S22-S35 identifiers and meanings remain **PROPOSED** until constitutionally materialized and registered.
+The strongest current bounded areas are admission/egress, causal TURN, memory/task governance, runtime recovery/provenance and the single S21 planner path. Survivors concentrate in product-truth drift, visual/a11y polish, repository governance and software-supply reproducibility.
 
-## Next minimum RLA unit: C0
+The audit therefore rejects two bad shortcuts: a UI facelift cannot substitute for runtime proof, and green runtime tests cannot substitute for an accurate product surface or enforced repository governance.
 
-Do not start S22 yet. First converge repository truth after merged S21.
+## Workbook v1 falsified
 
-C0 must:
+The original 14-runtime-slice / 2-gate proposal does not survive RTA unchanged:
 
-1. advance the Development Bundle baseline from merged PR56/S20 to merged PR57/S21;
-2. remove the false state in which S21 is represented as a registered-but-unmerged candidate;
-3. make the bundle gate describe the next candidate rather than re-proving an already merged candidate;
-4. update the canonical Surface Contract projection/asset lineage so it no longer claims S20 while the Product Contract is S21;
-5. preserve single-writer, zero-authority surface semantics and all S16-S21 runtime invariants;
-6. leave G0's GitHub ruleset enforcement as an explicit external/admin requirement rather than simulating protection in code.
+1. **S35 is not a runtime faculty.** The workbook types it `Runtime`, while its own decision log says it adds no capability. It becomes final gate **E0 — Enterprise Assurance & E2E Convergence**.
+2. **Ingress quarantine is too late.** Original S26 follows S24 provider/S25 connector activation. Untrusted provider/connector responses and events must cross a trust/ingress membrane before entering cognition. Original S26 is absorbed into S23.
+3. **Product truth and polish are too late/implicit.** C0 expands into a zero-authority Product Truth & Surface Foundation: README/Surface/version truth, design-system coherence and the contract for future visual/a11y oracles.
 
-The minimum acceptance surface is exact Git census + Development Bundle gate + existing Surface Contract unit/HTTP/browser regressions. C0 adds no user-facing capability and must not advance the Product Contract beyond S21.
+## Converged minimum lattice
 
-## Next iteration after C0
+Non-runtime gates:
 
-Only after C0 is exact-green should the session decide whether G0 can be materially enforced with available repository administration rights. Runtime S22 must not be activated before the repository control plane is truthfully converged and the enterprise identity/policy boundary is specified against the real current code.
+`C0 Product Truth & Surface Foundation` · `G0 Repository Governance` · `E0 Enterprise Assurance`
+
+Proposed runtime chain:
+
+`S22 Enterprise Context & Policy Foundation`
+`→ S23 External Trust & Ingress Membrane`
+`→ {S24 Hybrid Provider Assist & Provenance, S25 Connector Capability Fabric & Revocation}`
+`→ S26 Epistemic Revision & Conflict`
+`→ S27 Enterprise Authority & Delegation`
+`→ S28 Material Transaction Orchestration`
+`→ S29 World Outcome Reconciliation & Compensation`
+`→ {S30 Native Residency & Multi-Surface Convergence, S31 Enterprise Audit & Incident Projection}`
+`→ S32 Release & Data Lifecycle`
+`→ S33 Fleet & Software Supply Governance`
+`→ E0 Enterprise Assurance & E2E Convergence`
+
+This is **12 proposed runtime slices + 3 non-runtime gates**. C0/G0 and S24/S25 are commutable siblings at their respective frontier.
+
+## Cosmetics and polish
+
+Polish is deliberately not a constitutional runtime slice because presentation does not create authority. C0 establishes the product-truth/design-system foundation. Every future runtime slice must define intentional loading, empty, blocked, error, recovery and success states on the canonical Surface Contract and preserve keyboard/focus/contrast behavior. E0 performs the final cross-surface content-truth, visual-consistency and accessibility assurance.
+
+The current CSS already has a useful token/responsive/reduced-motion base; the open debt is coherence and browser-grade visual/a11y regression evidence, not the total absence of styling.
+
+## Next boundary
+
+S22 is the next runtime candidate but is **not ready**: G0 branch/ruleset enforcement is still open and S22 enterprise context/policy is unimplemented. No S22+ capability, standards compliance, production reliability or enterprise readiness is claimed by PR58.

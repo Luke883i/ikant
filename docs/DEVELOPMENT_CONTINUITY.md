@@ -2,66 +2,44 @@
 
 ## Purpose
 
-`IKANT_DEVELOPMENT_BUNDLE.json` is the machine-readable continuity and anti-entropy contract for AI-assisted repository development. A fresh chat session must be able to reconstruct the engineering frontier from repository state rather than from conversational memory.
+`IKANT_DEVELOPMENT_BUNDLE.json` is the machine-readable anti-entropy handoff for AI-assisted development. A fresh session reconstructs the frontier from repository state rather than conversational memory. Repository/Git/CI facts outrank workbook or roadmap snapshots.
 
-The bundle is control-plane state. Its simulations, hashes, CI receipts and design decisions are not world evidence and do not replace runtime/browser/OS/provider oracles.
+The bundle is control-plane state. Modeled simulations, hashes and design decisions never substitute for browser/OS/provider/world oracles.
 
 ## Start of every development iteration
 
 After the admission/rights boundary in `AGENTS.md` permits repository study:
 
-1. fetch current `main`, current open/draft PRs and exact `PRODUCT_CONTRACT.json`;
-2. read `AGENTS.md`, `PRODUCT_CONTRACT.json`, `IKANT_DEVELOPMENT_BUNDLE.json`, then the code/tests/docs owned by the current candidate slice;
+1. fetch current `main`, protection/rulesets, open/draft PRs and exact `PRODUCT_CONTRACT.json`;
+2. read `AGENTS.md`, `PRODUCT_CONTRACT.json`, `IKANT_DEVELOPMENT_BUNDLE.json`, the current RTA receipt and candidate-owned code/tests;
 3. run `python scripts/development_bundle_gate.py`;
-4. if baseline, Product Contract or high/critical findings changed, enter `ANTI_ENTROPY_REVIEW` before adding capability;
-5. choose the smallest roadmap slice whose prerequisites and concrete technological supply chain can actually be exercised.
+4. if baseline/Product Contract/high-critical prerequisites drift, enter `ANTI_ENTROPY_REVIEW` before adding capability;
+5. choose the smallest semantic slice whose authority, trust, persistence and physical-oracle boundaries can actually be exercised.
 
-`python scripts/development_bundle_gate.py --require-ready` is a stricter advancement gate: it fails while any HIGH/CRITICAL bundle blocker remains open.
-
-## Three iteration modes
-
-### DEVELOP
-
-Materialize the next minimal semantic runtime slice. Use atomic commits, independent oracles, exact-head CI and a draft PR until the declared DoD is materially green.
-
-### ANTI_ENTROPY_REVIEW
-
-Re-audit `main` and the current PR, rerun the declared model campaigns, challenge assumptions, supply-chain claims, roadmap ordering and UI/UX semantics, then update the bundle before feature work.
-
-### HANDOFF
-
-Freeze current engineering truth into the bundle: exact SHA/PR/check state, open ignorance, decision/falsification logs and next prerequisites. The next chat starts from files, not from remembered prose.
+`--require-ready`, `--require-complete` and `--require-advance` are stricter gates; ordinary structural PASS may truthfully coexist with an unresolved external/admin blocker.
 
 ## Evidence hierarchy
 
-Use separate labels for:
+Keep distinct: modeled coverage; unit/property tests; integration HTTP/process tests; real browser tests; real OS/native tests; real provider/connector tests; observed world read-back; repository governance. A stronger label may never be inferred from a weaker one.
 
-- modeled coverage: mutation/scenario/design-space vocabulary only;
-- unit/property tests: executable local logic;
-- integration HTTP tests: real local transport and concurrency;
-- real browser tests: Chromium DOM/event-loop/cache/controller behavior;
-- real OS/native tests: installed host, permissions, process lifecycle and platform behavior;
-- real provider tests: effective network origin, credential boundary and actual provider schemas;
-- repository governance: exact CI receipts plus materially enforced branch/ruleset checks.
+## Current truth after merged S21 and RTA
 
-A stronger label may never be inferred from a weaker one.
+`main@c46db91c968edbf2203a27de9f0f17de46c38108` is merged PR57 / S21. The current candidate is **S22**, but it is not ready while **G0 repository governance** remains externally unenforced and S22 itself is unimplemented.
 
-## Current roadmap after S16 audit
+The enterprise workbook v1 was falsified by the RTA campaign recorded in `backlog/rta/rta_200k_receipt.json`. The compressed frontier is:
 
-The original post-S16 three-slice proposal is intentionally superseded by:
+`S21 -> {C0 product-truth/surface foundation, G0 repository governance} -> S22 enterprise context/policy -> S23 external trust + ingress membrane -> {S24 provider assist, S25 connector fabric} -> S26 epistemic revision -> S27 enterprise authority/delegation -> S28 material transactions -> S29 world outcome reconciliation -> {S30 native/multi-surface, S31 enterprise audit} -> S32 release/data lifecycle -> S33 fleet/software supply -> E0 enterprise assurance`
 
-`S16bis Foundation Enforcement & Development Continuity -> S17 Runtime Identity & Provenance Epoch -> S18 Memory Governance -> S19 Temporal Task Governance -> S20 Reactive Intent / Plan Reconciliation -> S21 Hybrid Abstract Assist Opt-in`.
+C0/G0/E0 are non-runtime gates. S24/S25 are commutable siblings. Future IDs are planning identifiers only until constitutionally registered.
 
-The full foundation links, expected runtime behavior, end-user interaction, technological supply chain, local/intermediate/final DoD, metrics, checklists and UI/UX prototypes are canonical in `IKANT_DEVELOPMENT_BUNDLE.json`.
+## Product polish rule
 
-## End of every iteration
+Cosmetics are not a separate authority-bearing faculty. C0 aligns README, Surface metadata and visible product narrative and establishes the design-system/a11y regression foundation. Every later runtime slice must deliberately define loading, empty, blocked, error, recovery and success states on the canonical Surface Contract. E0 reruns cross-surface visual consistency, content-truth and accessibility evidence.
 
-Update the required logs in the bundle/backlog, separate modeled results from physical-boundary receipts, create semantic commits, open/update the exact-head draft PR, run the bundle gate and report `ready_to_advance` truthfully.
+## Iteration modes
 
-The final human choice must be presented as exactly three semantic options:
+- `DEVELOP`: materialize the next minimum executable semantic slice.
+- `ANTI_ENTROPY_REVIEW`: reconcile repository/product/bundle truth and re-falsify the frontier.
+- `HANDOFF`: freeze exact SHA/PR/check state, open ignorance, evidence and next prerequisites.
 
-- `DEVELOP` — continue with the next eligible slice;
-- `ANTI_ENTROPY_REVIEW` — re-audit, stress and reconverge the bundle/product;
-- `HANDOFF` — freeze/update the bundle for continuation in a fresh chat session.
-
-No option implies that work continues asynchronously. A new iteration starts only from a new user instruction.
+No mode implies asynchronous work. Each iteration ends with semantic commits and exact PR/CI truth.

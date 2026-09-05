@@ -15,7 +15,7 @@ from .governance_runtime import memory_governance_projection, task_governance_pr
 SURFACE_CONTRACT_SCHEMA="ikant-surface-contract/v1-test"
 SURFACE_MANIFEST_SCHEMA="ikant-surface-manifest/v1-test"
 CONFIG_EFFECT_SCHEMA="ikant-config-effect-receipt/v1-test"
-ASSET_REVISION="v030-s20-memory-temporal-governance-1"
+ASSET_REVISION="v031-c0-product-truth-surface-foundation-1"
 _CACHE_LOCK=threading.RLock();_STABLE_CACHE:dict[tuple[str,str],dict[str,Any]]={}
 
 _ABSTRACTIONS=(
@@ -115,7 +115,7 @@ def _running_overlay(service:Any,work:dict[str,Any])->dict[str,Any]:
  root=Path(service.root).resolve();stamp=_state_stamp(root);session=str(stamp.get("runtime_session_id") or "");manifest=surface_manifest();cached=_cache_get(root,session);epoch=_epoch_file(root);governance=_governance(root,session)
  cached_epoch=((cached or {}).get("revision_vector") or {}).get("runtime_epoch_id") if isinstance(cached,dict) else None
  if cached is None or (stamp.get("runtime_epoch_id") and cached_epoch!=stamp.get("runtime_epoch_id")):
-  config=load_experiment_config(root);consistency="NONBLOCKING_NO_STABLE_BASE" if cached is None else "NONBLOCKING_EPOCH_REBASE_REQUIRED";out={"schema":SURFACE_CONTRACT_SCHEMA,"version":"S20","asset_revision":ASSET_REVISION,"snapshot_mode":"WORK_OVERLAY","consistency":consistency,"semantic_contract_sha256":manifest["semantic_contract_sha256"],"revision_vector":{**stamp,"work":_work_identity(work)},"manifest":manifest,"runtime_epoch":epoch or None,"product":{},"foundation":{"schema":FOUNDATION_SCHEMA,"foundation_version":FOUNDATION_VERSION,"config":config},"public":None,"work":deepcopy(work),**governance,"config_effect":config_effect_projection(root,config=config),"presentation_is_authority":False,"epistemic_authority":0.0,"execution_authority":0.0};out["snapshot_sha256"]=_snapshot_sha(out);return out
+  config=load_experiment_config(root);consistency="NONBLOCKING_NO_STABLE_BASE" if cached is None else "NONBLOCKING_EPOCH_REBASE_REQUIRED";out={"schema":SURFACE_CONTRACT_SCHEMA,"version":"S21","asset_revision":ASSET_REVISION,"snapshot_mode":"WORK_OVERLAY","consistency":consistency,"semantic_contract_sha256":manifest["semantic_contract_sha256"],"revision_vector":{**stamp,"work":_work_identity(work)},"manifest":manifest,"runtime_epoch":epoch or None,"product":{},"foundation":{"schema":FOUNDATION_SCHEMA,"foundation_version":FOUNDATION_VERSION,"config":config},"public":None,"work":deepcopy(work),**governance,"config_effect":config_effect_projection(root,config=config),"presentation_is_authority":False,"epistemic_authority":0.0,"execution_authority":0.0};out["snapshot_sha256"]=_snapshot_sha(out);return out
  base_sha=cached.get("snapshot_sha256");cached["snapshot_mode"]="WORK_OVERLAY";cached["consistency"]="NONBLOCKING_OVER_STABLE_BASE";cached["base_snapshot_sha256"]=base_sha;cached["runtime_epoch"]=epoch or cached.get("runtime_epoch");cached["work"]=deepcopy(work);cached.update(governance);vector=dict(cached.get("revision_vector") or {});vector.update(stamp);vector["work"]=_work_identity(work);cached["revision_vector"]=vector;cached["snapshot_sha256"]=_snapshot_sha(cached);return cached
 
 def _stable(service:Any,work:dict[str,Any])->dict[str,Any]:
@@ -126,7 +126,7 @@ def _stable(service:Any,work:dict[str,Any])->dict[str,Any]:
   consistency="DRIFT_AFTER_RETRY"
  foundation=_foundation_from_public(public);config=foundation.get("config") if isinstance(foundation.get("config"),dict) else load_experiment_config(root);product=_safe_product(service);conversation=public.get("conversation") if isinstance(public.get("conversation"),dict) else {};epoch=public.get("runtime_epoch") if isinstance(public.get("runtime_epoch"),dict) else None;session=str(after.get("runtime_session_id") or "");governance=_governance(root,session)
  vector={**after,"conversation_last_sha256":conversation.get("last_sha256"),"product_stage":product.get("stage"),"product_attempt":product.get("attempt"),"work":_work_identity(work)}
- out={"schema":SURFACE_CONTRACT_SCHEMA,"version":"S20","asset_revision":ASSET_REVISION,"snapshot_mode":"STABLE","consistency":consistency,"semantic_contract_sha256":manifest["semantic_contract_sha256"],"revision_vector":vector,"manifest":manifest,"runtime_epoch":epoch,"product":product,"foundation":foundation,"public":public,"work":deepcopy(work),**governance,"config_effect":config_effect_projection(root,config=config),"presentation_is_authority":False,"epistemic_authority":0.0,"execution_authority":0.0};out["snapshot_sha256"]=_snapshot_sha(out)
+ out={"schema":SURFACE_CONTRACT_SCHEMA,"version":"S21","asset_revision":ASSET_REVISION,"snapshot_mode":"STABLE","consistency":consistency,"semantic_contract_sha256":manifest["semantic_contract_sha256"],"revision_vector":vector,"manifest":manifest,"runtime_epoch":epoch,"product":product,"foundation":foundation,"public":public,"work":deepcopy(work),**governance,"config_effect":config_effect_projection(root,config=config),"presentation_is_authority":False,"epistemic_authority":0.0,"execution_authority":0.0};out["snapshot_sha256"]=_snapshot_sha(out)
  if consistency!="DRIFT_AFTER_RETRY":_cache_put(root,session,out)
  return out
 

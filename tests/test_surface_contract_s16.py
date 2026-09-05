@@ -178,7 +178,7 @@ class SurfaceContractS16Tests(unittest.TestCase):
                 service,
                 work={"schema": "ikant-reactive-work-state/v1-test", "active": False, "terminal": False, "phase": "IDLE"},
             )
-            self.assertEqual(baseline['version'],'S20')
+            self.assertEqual(baseline['version'],'S21')
             self.assertIn('memory_governance',baseline);self.assertTrue(baseline['memory_governance']['read_only_projection'])
             self.assertIn('temporal_tasks',baseline);self.assertTrue(baseline['temporal_tasks']['read_only_projection'])
             started = time.perf_counter()

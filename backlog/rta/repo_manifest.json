@@ -1,0 +1,43 @@
+{
+  "schema": "ikant-rta-repo-manifest/v1-test",
+  "repository": "Luke883i/iKant",
+  "audited_ref": "c46db91c968edbf2203a27de9f0f17de46c38108",
+  "audited_merge": {"pr": 57, "slice": "S21", "constitutional_convergence": "S21", "contract_version": "0.22.0"},
+  "languages": ["Python", "JavaScript", "CSS", "HTML", "Shell", "C (falsification harnesses)"],
+  "build": {"backend": "setuptools.build_meta", "python": ">=3.11", "package_version": "0.29.0a1", "project_dependencies_declared": false},
+  "entrypoints": [
+    {"type": "CLI", "symbol": "ikant.app_cli:main", "path": "ikant/app_cli.py"},
+    {"type": "local_web", "path": "ikant/reactive_http.py"},
+    {"type": "product_surface", "path": "ikant/web/index.html"}
+  ],
+  "control_files": ["ADMISSION.json", "BOOTSTRAP.json", "IKANT_ACCESS_CONTRACT.md", "PRODUCT_CONTRACT.json", "IKANT_DEVELOPMENT_BUNDLE.json", "MODEL_RUNTIME.json", "RIGHTS.json", "AGENTS.md"],
+  "runtime_components": ["admission", "bootstrap", "runtime", "chat/session egress", "cognitive/epistemic runtime", "causal ledger", "memory governance", "temporal governance", "intent reconciliation", "planning", "execution handoff/receipts", "runtime recovery", "runtime epoch/provenance", "canonical Surface Contract"],
+  "persistence": [".ikant/runtime.json", ".ikant/chat/transcript.jsonl", "causal ledger", "memory/task journals", "runtime epoch ledger", "plan-ledger.json", "execution receipts", "bootstrap-events.jsonl"],
+  "external_systems_as_is": ["local managed model/runtime", "Chromium in CI"],
+  "future_external_systems_not_currently_activated": ["enterprise IdP/SCIM", "remote model providers", "service connectors", "native host", "updater", "fleet/MDM", "SIEM"],
+  "ci": {
+    "workflows": [".github/workflows/ci.yml", ".github/workflows/product-boundary.yml", ".github/workflows/reticular.yml", ".github/workflows/unit-diagnostic.yml"],
+    "exact_main_runs": [
+      {"id": 32895948798, "name": "iKant CI", "conclusion": "success"},
+      {"id": 32895948788, "name": "iKant reticular boundary", "conclusion": "success"}
+    ],
+    "physical_oracles_observed": ["real Chromium public landing/liveness", "process restart recovery", "HTTP concurrency", "source/DOM census"],
+    "modeled_oracles_observed": ["seeded stress", "semantic mutations", "edge campaigns", "reticular campaigns", "no-novelty campaigns"]
+  },
+  "repository_governance": {"main_branch_protected": false, "required_status_checks_enforced": false},
+  "source_blobs": {
+    "README.md": "f3f9f9bd5c8da99f877190213f8b7730001d6e64",
+    "pyproject.toml": "b2ca31f8b40267689af92662b9c285de872d93df",
+    "PRODUCT_CONTRACT.json": "7c6cfa0eb7be66df1384001fbf7a250c50caea45",
+    "IKANT_DEVELOPMENT_BUNDLE.json": "41f4f7ddd2f02b46bc0c5fb9944b9455af78663f",
+    "ikant/app_cli.py": "dead07c7ff53532ef79c8905220df0732d04ab05",
+    "ikant/practical_reason.py": "b1a09fcfade096107d9332c6cc1c480d9ccfbe10",
+    "ikant/intent_reconciliation.py": "1e1c980820c806dc0e187e9f68e60d0234c8abec",
+    "ikant/planning.py": "ce35cde0d9488f7a51c603b7882a72673f088beb",
+    "ikant/execution_protocol.py": "233102f518ec3dc8acd9e1adb62a250075aabe27",
+    "ikant/web/index.html": "2886c2fe3059306b8008d51f14c877229fa363dd",
+    "ikant/web/styles.css": "5c4b80c16c0b4fc68f4f3c0ea0b5a0610f3c294b",
+    ".github/workflows/ci.yml": "15fb771e36314e0d86388213364723ddf51ff075"
+  },
+  "claim_boundary": "Repository manifest is a source-bound audit snapshot, not a declaration that all discovered capabilities are enterprise-ready."
+}

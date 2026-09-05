@@ -1,0 +1,50 @@
+{
+  "schema": "ikant-rta-repository-graph/v1-test",
+  "audited_ref": "c46db91c968edbf2203a27de9f0f17de46c38108",
+  "nodes": [
+    {"id":"N-ENTRY-CLI","type":"entrypoint","ref":"ikant.app_cli:main"},
+    {"id":"N-ADMISSION","type":"capability","ref":"accept -> probe -> initialize"},
+    {"id":"N-EGRESS","type":"component","ref":"session egress / exact frame ACK"},
+    {"id":"N-TURN","type":"capability","ref":"canonical TURN"},
+    {"id":"N-COGNITION","type":"component","ref":"cognitive/epistemic runtime"},
+    {"id":"N-ACTION","type":"component","ref":"action governance ledger"},
+    {"id":"N-INTENT","type":"component","ref":"intent reconciliation"},
+    {"id":"N-PLANNER","type":"component","ref":"ikant.planning.finalize_planning"},
+    {"id":"N-EXEC","type":"component","ref":"execution handoff/receipt protocol"},
+    {"id":"N-SURFACE","type":"interface","ref":"GET /api/v10/surface"},
+    {"id":"N-WEB","type":"surface","ref":"ikant/web"},
+    {"id":"N-PERSIST","type":"datastore","ref":".ikant local durable state"},
+    {"id":"N-CI","type":"evidence","ref":"exact-main GitHub Actions"},
+    {"id":"N-CLAIM-S21","type":"claim","ref":"natural intent reconciles into one canonical planner without authority widening"}
+  ],
+  "edges": [
+    ["N-ENTRY-CLI","N-ADMISSION","calls"],
+    ["N-ADMISSION","N-EGRESS","activates"],
+    ["N-EGRESS","N-TURN","governs human delivery"],
+    ["N-TURN","N-COGNITION","invokes"],
+    ["N-COGNITION","N-ACTION","produces bounded candidates"],
+    ["N-ACTION","N-INTENT","reconciled by"],
+    ["N-INTENT","N-PLANNER","feeds MATCH-only planner input"],
+    ["N-PLANNER","N-EXEC","prepares zero-authority execution handoff"],
+    ["N-TURN","N-PERSIST","causal commit / recovery"],
+    ["N-TURN","N-SURFACE","projects"],
+    ["N-SURFACE","N-WEB","renders"],
+    ["N-CI","N-CLAIM-S21","tests/evidences"],
+    ["N-INTENT","N-CLAIM-S21","implementation"],
+    ["N-PLANNER","N-CLAIM-S21","canonical call-path"]
+  ],
+  "material_flow": {
+    "trigger":"natural user intent",
+    "path":["Chat/turn","cognitive runtime","action ledger","IntentEnvelope","MATCH/DEMOTE/BLOCK","canonical planner","execution ledger/handoff"],
+    "as_is_terminal_effect":"runtime prepares/reconciles handoff; it does not itself execute an external material mutation",
+    "observability":["runtime state","plan ledger","execution ledger/receipts","Surface Contract","CI receipts"]
+  },
+  "detected_disconnections": [
+    "README/product narrative is not synchronized with S21 constitution",
+    "Surface Contract metadata remains S20 on main S21",
+    "web release badge remains v1.0 public test",
+    "Development Bundle still treats S21 as candidate over PR56/S20 baseline",
+    "branch protection is externally unenforced",
+    "no visual-regression/a11y oracle closes cosmetic quality"
+  ]
+}

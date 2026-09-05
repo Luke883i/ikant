@@ -1,0 +1,40 @@
+{
+  "schema": "ikant-enterprise-lattice-convergence/v1-test",
+  "basis": {"rta_receipt": "rta_200k_receipt.json", "master_seed": 1085021672383838793, "repo_cases": 100000, "workbook_cases": 100000, "tail_each": 1000},
+  "workbook_v1_falsified": true,
+  "falsifications": [
+    {"id":"WB-F01","finding":"S35 is typed Runtime while decision D-16 says it adds no capability","resolution":"retype as final Enterprise Assurance/E2E gate"},
+    {"id":"WB-F02","finding":"S26 ingress quarantine follows S24 provider and S25 connector activation","resolution":"absorb quarantine/event ingress into S23 External Trust & Ingress Membrane before any external source can enter cognition"},
+    {"id":"WB-F03","finding":"current product-truth/cosmetic debt has no early convergence obligation","resolution":"expand C0 to include product-truth synchronization and a surface/design-system polish foundation; keep polish cross-cutting rather than inventing a runtime faculty"}
+  ],
+  "minimal_runtime_lattice": [
+    {"id":"S22","name":"Enterprise Context & Policy Foundation"},
+    {"id":"S23","name":"External Trust & Ingress Membrane"},
+    {"id":"S24","name":"Hybrid Provider Assist & Provenance"},
+    {"id":"S25","name":"Connector Capability Fabric & Revocation"},
+    {"id":"S26","name":"Epistemic Revision & Conflict"},
+    {"id":"S27","name":"Enterprise Authority & Delegation"},
+    {"id":"S28","name":"Material Transaction Orchestration"},
+    {"id":"S29","name":"World Outcome Reconciliation & Compensation"},
+    {"id":"S30","name":"Native Residency & Multi-Surface Convergence"},
+    {"id":"S31","name":"Enterprise Audit & Incident Projection"},
+    {"id":"S32","name":"Release & Data Lifecycle"},
+    {"id":"S33","name":"Fleet & Software Supply Governance"}
+  ],
+  "gates": [
+    {"id":"C0","name":"Post-S21 Product Truth & Surface Foundation","state":"CURRENT_CANDIDATE","adds_runtime_capability":false},
+    {"id":"G0","name":"Repository Governance","state":"EXTERNAL_ADMIN_BLOCKER","adds_runtime_capability":false},
+    {"id":"E0","name":"Enterprise Assurance & E2E Convergence","state":"FUTURE_FINAL_GATE","adds_runtime_capability":false}
+  ],
+  "dag": [
+    ["S21","C0"],["S21","G0"],["C0","S22"],["G0","S22"],["S22","S23"],["S23","S24"],["S23","S25"],["S23","S26"],["S26","S27"],["S22","S27"],["S25","S28"],["S27","S28"],["S28","S29"],["S26","S29"],["S29","S30"],["S29","S31"],["S30","S32"],["S31","S32"],["S23","S33"],["S32","S33"],["S24","E0"],["S25","E0"],["S29","E0"],["S33","E0"]
+  ],
+  "commutable_siblings": [["C0","G0"],["S24","S25"]],
+  "counts": {"runtime_slices_after_s21":12,"non_runtime_gates":3},
+  "polish_contract": {
+    "C0": ["synchronize README/Surface/UI release truth", "consolidate visual tokens/states without new authority", "define screenshot/DOM/a11y regression oracle"],
+    "every_runtime_slice": ["new user-visible state enters canonical Surface Contract", "loading/error/blocked/recovery/empty states are intentional", "keyboard/focus/contrast remain gated"],
+    "E0": ["final visual consistency and content-truth audit", "no stale release/slice labels", "cross-surface equivalence and accessibility evidence"]
+  },
+  "claim_boundary": "This is a model-bounded minimum. Runtime slices are PROPOSED until implementation, physical evidence, Product Contract registration, exact synthetic-merge CI, and merge."
+}

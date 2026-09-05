@@ -1,17 +1,25 @@
-# iKant v0.29-test
+# iKant v0.29-test — S21
 
-iKant is a governed local epistemic agent runtime. Product v0.29 preserves S1-S10 and adds **S10bis Bootstrap Transparency / Runtime Observability** before the deliberative S11 work.
+iKant is a governed local epistemic-agent runtime. The current constitutional convergence is **S21 — Reactive Intent / Plan Reconciliation** (`PRODUCT_CONTRACT.json` contract `0.22.0`, package `0.29.0a1`).
 
-## S10bis bootstrap contract
+The current product preserves the admission and local-runtime chain built across S1–S20 and reconciles natural intent into the **single canonical planner** through a typed `MATCH / DEMOTE / BLOCK` boundary. Reactive work is derivative, planner output grants no execution authority, and the runtime prepares execution handoff/receipts without treating transport success as observed world truth.
 
-`./ikant.sh` serves the local product first, then exposes one auditable bootstrap journey:
+## Current local path
 
-`WEB_APP -> MANIFEST -> ENGINE_COMPONENT -> MODEL_COMPONENT -> ENGINE_PROCESS -> ENGINE_READINESS -> PRODUCT_SERVICE -> READY`
+`T&C -> probe -> initialize -> local runtime -> canonical TURN -> cognition -> action ledger -> IntentEnvelope -> MATCH/DEMOTE/BLOCK -> canonical planner -> execution handoff -> Surface A -> exact ACK`
 
-Every failing side-effect boundary is preceded by a causal marker. The raw source is the bounded, SHA-256 chained `.ikant/bootstrap-events.jsonl`; the landing page compresses the same evidence into success/failure/progress gates with stable error codes and remediation. No bootstrap diagnostic has epistemic or execution authority, no browser state can manufacture READY, and `/api/v5/bootstrap/*` remains authenticated GET-only diagnostics. Retry remains the existing S9 setup mutation path.
+Durable causal TURN state, support-aware forgetting, governed temporal tasks, runtime recovery and provenance epochs remain part of the current registered product. The canonical web/floating presentation is a projection over one runtime; presentation itself grants no authority.
 
-The v0.12 access contract and same-session chat-study erratum remain unchanged. Official local iKant still requires clean admission plus technical conformance; S10bis observes that path but does not weaken it.
+The governing distinction remains:
 
-`diagnostics != evidence != permission != approval != grant != lease != execution != world truth`
+`diagnostics != evidence != permission != approval != grant != lease != execution != reported outcome != observed world truth`
 
-S10bis is registered with `BOS-001..004`, 10M stress, 10M semantic mutations, 10M edges, +1000 no-novelty and exhaustive 1,048,576-architecture minimality. See `docs/S10BIS_BOOTSTRAP_OBSERVABILITY.md`.
+## Evidence boundary
+
+Repository tests, seeded mutation campaigns and design-space saturation are bounded engineering evidence, not production reliability. Real Chromium/process/HTTP oracles are stronger evidence but still do not imply enterprise readiness. `main` branch protection is currently an external governance gap and must not be simulated in code.
+
+## Enterprise-candidate frontier
+
+The post-S21 Repository Truth Audit is recorded under `backlog/rta/`. It falsifies the first enterprise workbook into a smaller candidate lattice: **12 proposed runtime slices plus C0/G0/E0 non-runtime gates**. C0 aligns product truth and the Surface/design-system foundation; G0 is repository governance; E0 is the final enterprise assurance gate. Future S22+ capabilities remain proposed until implementation, physical evidence, Product Contract registration, exact synthetic-merge CI and merge.
+
+Start development from `AGENTS.md`, `PRODUCT_CONTRACT.json`, `IKANT_DEVELOPMENT_BUNDLE.json` and `docs/DEVELOPMENT_CONTINUITY.md`; repository/Git/CI truth outranks static planning artifacts.
